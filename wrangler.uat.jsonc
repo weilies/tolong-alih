@@ -1,0 +1,9 @@
+{
+  "name": "tolong-alih-uat",
+  "compatibility_date": "2026-08-04",
+  "assets": { "directory": "./public" },
+  "vars": {
+    "APP_ENV": "uat",
+    "APP_SCHEMA": "app_alih_uat"
+  }
+}
