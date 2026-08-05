@@ -1,0 +1,37 @@
+name: Deploy
+
+# develop -> tolong-alih-uat (uat.alih.nextnovas.com)
+# main    -> tolong-alih     (alih.nextnovas.com)
+#
+# Needs two repository secrets: CLOUDFLARE_API_TOKEN (with the "Edit
+# Cloudflare Workers" template) and CLOUDFLARE_ACCOUNT_ID.
+
+on:
+  push:
+    branches: [main, develop]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Pick the wrangler config for this branch
+        id: cfg
+        run: |
+          if [ "${{ github.ref_name }}" = "main" ]; then
+            echo "file=wrangler.jsonc" >> "$GITHUB_OUTPUT"
+          else
+            echo "file=wrangler.uat.jsonc" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: deploy -c ${{ steps.cfg.outputs.file }}

@@ -32,7 +32,14 @@ Solo project. Prefer boring, cheap, few dependencies. TypeScript/JavaScript.
 | Branch | `develop` | `main` |
 | Config | `wrangler.uat.jsonc` | `wrangler.jsonc` |
 
-Deploy command for UAT: `npx wrangler deploy -c wrangler.uat.jsonc`
+Pushing to the branch deploys it (`.github/workflows/deploy.yml`, needs
+`CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` as repo secrets).
+Manual deploy for UAT: `npx wrangler deploy -c wrangler.uat.jsonc`
+
+`src/worker.js` exists for one reason: a static file has nowhere to bake
+`APP_SCHEMA` in, so the worker serves `/config.js` from its wrangler `vars` and
+the page reads `window.__ENV`. Per-env config belongs in `wrangler*.jsonc` and
+nowhere else.
 
 ## Database
 
@@ -42,11 +49,21 @@ One Supabase project hosts several small apps. `platform` schema is the control 
 `auth.users` is shared across apps; isolation is schema + RLS.
 
 Tables per env: `profiles`, `cars`, `blocks`, `block_targets`, `messages`,
-`push_subs`, `ads`, `ad_events`. View: `ad_performance`.
-All have RLS enabled. Migrations in `supabase/migrations/` are already applied.
+`push_subs`, `ads`, `ad_events`, `trace_attempts`. View: `ad_performance`.
+All have RLS enabled.
 
-**Client must set the schema**, e.g.
-`createClient(url, anonKey, { db: { schema: import.meta.env.APP_SCHEMA } })`
+**Client must set the schema**:
+`createClient(url, anonKey, { db: { schema: window.__ENV.schema } })`
+
+**The four verbs are RPCs, not table writes** — `declare_block`, `clear_block`,
+`flag_block`, `contact_blocker`, `trace_block`, all `security definer`
+(`0002_actions.sql`). RLS cannot express flag (victim updates the blocker's row)
+or trace (victim is unregistered by definition), and letting the client write
+`messages` directly meant anyone could forge one. Add new cross-party actions as
+RPCs too; do not loosen a policy to make a write work.
+
+`0002_actions.sql` is applied to `app_alih_uat` only — run it against
+`app_alih_prod` before merging to `main`.
 
 ## Decisions already made — do not relitigate
 
@@ -63,10 +80,11 @@ All have RLS enabled. Migrations in `supabase/migrations/` are already applied.
 
 ## Build order (highest value first)
 
-1. **Wire Supabase auth** — Google OAuth + email/password with verification.
-   Capture phone at signup into `profiles.phone`.
-2. **Replace the in-memory `DB` object** in `public/index.html` with real queries.
-   The UI is done; only the data layer is fake.
+1. ~~**Wire Supabase auth**~~ — done. Google OAuth + email/password with
+   six-digit verification; phone captured at signup into `profiles.phone`.
+2. ~~**Replace the in-memory `DB` object**~~ — done. All four verbs, garage,
+   inbox and ads read from Postgres. Alerts refresh on a 45s poll and on tab
+   focus; Web Push replaces that.
 3. **Web Push** — service worker, VAPID keys, Supabase Edge Function that fires
    on block declare. This is what makes the product work. iOS Safari needs the
    site added to home screen first.
@@ -76,7 +94,12 @@ All have RLS enabled. Migrations in `supabase/migrations/` are already applied.
 
 ## Not yet built
 
-- Rate limiting on `trace` (cap attempts/user/hour or it becomes plate enumeration)
+- ~~Rate limiting on `trace`~~ — done, 10/user/hour in `trace_block`.
+- "Is this your car?" confirmation on the first block received. `cars.plate_norm`
+  is uniquely indexed, so a squatter can claim a plate and take its alerts. This
+  is the agreed mitigation — not document checks.
 - PDPA: privacy notice, consent log, data export, account deletion
 - Abuse: block/report, rule for repeat `flag` against one driver
 - IP-country fallback when GPS fails
+- The CSP in `public/_headers` needs `script-src 'unsafe-inline'` because the app
+  is one file with an inline script. Moving the script out would let it tighten.

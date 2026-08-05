@@ -101,10 +101,14 @@
   .topbar .nm{font-size:12.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .topbar .loc{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--hazard);white-space:nowrap}
 
-  .dev{background:#2A281F;padding:6px 10px;display:flex;gap:6px;justify-content:center;flex-wrap:wrap}
-  .dev span{font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:#7C7768;align-self:center}
-  .dev button{background:none;border:1px solid #46422F;color:#B5AF9C;cursor:pointer;font-family:'JetBrains Mono',monospace;font-size:10.5px;padding:4px 9px}
-  .dev button[aria-pressed="true"]{background:var(--hazard);color:var(--tarmac);border-color:var(--hazard);font-weight:700}
+  .out{background:none;border:1px solid #46422F;color:#B5AF9C;cursor:pointer;flex:none;
+    font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 100,'wght' 600;
+    font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;padding:5px 8px}
+  .out:focus-visible{outline:2px solid var(--hazard);outline-offset:2px}
+
+  .wait{display:inline-block;width:13px;height:13px;border:2px solid rgba(22,21,15,.25);
+    border-top-color:var(--tarmac);border-radius:99px;animation:spin .7s linear infinite;vertical-align:-2px}
+  @keyframes spin{to{transform:rotate(360deg)}}
 
   main{padding:22px 16px 0;flex:1}
   .panel{display:none}
@@ -259,8 +263,11 @@
         <input id="email" type="email" placeholder="you@email.com" autocomplete="email" inputmode="email" />
         <span class="lbl eyebrow">Password</span>
         <input id="pw" type="password" placeholder="At least 8 characters" autocomplete="current-password" />
+        <span class="lbl eyebrow">Phone <span style="text-transform:none;letter-spacing:0">— new accounts only</span></span>
+        <input id="phone" type="tel" placeholder="012-345 6789" autocomplete="tel" inputmode="tel" />
         <button class="btn btn-hz" id="signup">Create account</button>
-        <p class="note">By continuing you agree we may store your plate numbers and contact details to run the service. You can delete both at any time.</p>
+        <button class="btn btn-flat" id="signin">I already have an account</button>
+        <p class="note">Your number is the fallback if the app can't reach the other driver. It is never shown to them. By continuing you agree we may store your plate numbers and contact details to run the service. You can delete both at any time.</p>
       </div>
     </div>
   </section>
@@ -277,7 +284,8 @@
         <span class="lbl eyebrow">Verification code</span>
         <input id="code" class="plate-in" placeholder="000000" maxlength="6" inputmode="numeric" autocomplete="one-time-code" />
         <button class="btn btn-hz" id="verify">Verify and continue</button>
-        <p class="note">Prototype: any six digits work. Try <b class="mono">123456</b>.</p>
+        <button class="btn btn-flat" id="resend">Send it again</button>
+        <p class="note">The email also carries a link — tapping that works just as well as typing the code.</p>
       </div>
     </div>
   </section>
@@ -286,16 +294,12 @@
   <div id="app">
     <div class="topbar">
       <div class="id"><div class="mk">⬛</div><span class="nm" id="topName">—</span></div>
-      <span class="loc" id="topLoc">—</span>
+      <div class="id" style="flex:none">
+        <span class="loc" id="topLoc">—</span>
+        <button class="out" id="signout">Sign out</button>
+      </div>
     </div>
     <div class="hazard thin" id="hz"></div>
-
-    <div class="dev">
-      <span>Demo as</span>
-      <button id="uA" aria-pressed="true">Ah Meng · 2 cars</button>
-      <button id="uB">Siti</button>
-      <button id="uC">Ravi</button>
-    </div>
 
     <main>
       <!-- DECLARE -->
@@ -355,12 +359,14 @@
         <span class="lbl eyebrow">Add a car</span>
         <input id="newPlate" class="plate-in" placeholder="JQY 2841" maxlength="12" autocomplete="off" />
         <button class="btn btn-flat" id="addCar">Add to garage</button>
-        <p class="note">Real version: verified against a photo of the plate beside the road tax disc.</p>
+        <p class="note">Plates are self-declared — no documents to upload. A plate can only be claimed once, and alerts are tied to your account, so claiming someone else's gets you their alerts and nothing else.</p>
       </section>
     </main>
 
     <footer>
-      Tolong Alih prototype — nothing leaves this page. <b>Switch drivers above.</b> As Ah Meng, block <b>JQY 2841</b> and <b>PPP 7788</b>, clear it, then switch to Siti and flag that he's bluffing.
+      <b>Tolong Alih</b> — declare when you box someone in, clear it when you move.
+      Neither driver ever sees the other's number.
+      <span id="buildTag" class="mono" style="display:block;margin-top:8px;font-size:10px"></span>
     </footer>
 
     <nav class="tabs" role="tablist">
@@ -394,367 +400,600 @@
 
 <div class="toast" id="toast"></div>
 
+<script src="/config.js"></script>
+<script src="/vendor/supabase-js-2.112.0.js"></script>
 <script>
 (function(){
 "use strict";
 
-/* ================= data ================= */
-var DB={
-  users:{
-    A:{name:"Ah Meng",cars:[{plate:"ABC 1234",nick:"Myvi — daily"},{plate:"WPK 8890",nick:"Hilux — weekend"}]},
-    B:{name:"Siti",   cars:[{plate:"JQY 2841",nick:"Axia"}]},
-    C:{name:"Ravi",   cars:[{plate:"PPP 7788",nick:"Saga"}]}
-  },
-  blocks:[], msgs:[]
-};
-var me="A", eta=15, seq=0, geo=null, acct=null;
+/* ================= environment =================
+   /config.js is generated per worker from wrangler vars — see src/worker.js.
+   It is the only reason this app needs a worker script at all. */
+var ENV = window.__ENV || {};
+var sb = null, cfgErr = null;
+try{
+  if(!window.supabase) throw new Error("The Supabase client failed to load.");
+  if(!ENV.supabaseUrl || !ENV.supabaseAnonKey || !ENV.schema)
+    throw new Error("No /config.js — is this being served by the worker?");
+  sb = window.supabase.createClient(ENV.supabaseUrl, ENV.supabaseAnonKey, {
+    db:{ schema: ENV.schema },
+    auth:{ persistSession:true, autoRefreshToken:true, detectSessionInUrl:true, flowType:"pkce" }
+  });
+}catch(e){ cfgErr = e.message; }
+
+/* ================= state ================= */
+var me       = null;   /* { id, email } */
+var cars     = [];     /* my garage */
+var declared = [];     /* blocks I opened that are still live */
+var inbox    = [];     /* messages addressed to me */
+var blockIx  = {};     /* block id -> { blocker_id, status, blocker_plate_norm } */
+var myPlate  = {};     /* block id -> which of my plates is boxed in */
+var ads      = [];
+var adShown  = {};     /* slot -> ad, so a re-render is not a fresh impression */
+var traced   = null;   /* { block, plate } from the last successful trace */
+var eta = 15, geo = null, poll = null;
 
 /* ================= utils ================= */
 function norm(v){ return (v||"").toUpperCase().replace(/[^A-Z0-9]/g,""); }
 function nice(v){ return (v||"").toUpperCase().replace(/\s+/g," ").trim(); }
-function clock(){ var d=new Date(); return String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0"); }
-function esc(s){ return String(s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];}); }
-function owner(p){ var k=norm(p),h=null; Object.keys(DB.users).forEach(function(u){
-  DB.users[u].cars.forEach(function(c){ if(norm(c.plate)===k) h=u; }); }); return h; }
-function mineP(){ return DB.users[me].cars.map(function(c){ return norm(c.plate); }); }
-function plate(p,cap,sm){ return '<div class="plate'+(sm?" sm":"")+'"><b>'+esc(nice(p))+'</b>'+(cap?'<small>'+esc(cap)+'</small>':'')+'</div>'; }
+function pad(n){ return String(n).padStart(2,"0"); }
+function hhmm(ts){ var d = ts ? new Date(ts) : new Date(); return pad(d.getHours())+":"+pad(d.getMinutes()); }
+function esc(s){ return String(s==null?"":s).replace(/[&<>"']/g,function(c){
+  return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); }
+function plate(p,cap,sm){ return '<div class="plate'+(sm?" sm":"")+'"><b>'+esc(nice(p))+'</b>'+
+  (cap?'<small>'+esc(cap)+'</small>':'')+'</div>'; }
 function toast(t){ var e=document.getElementById("toast"); e.textContent=t; e.classList.add("on");
   clearTimeout(e._x); e._x=setTimeout(function(){ e.classList.remove("on"); },2700); }
+function $(id){ return document.getElementById(id); }
+
+/* Turn a Supabase/Postgres error into something a driver can act on. */
+function why(e, fallback){
+  if(!e) return fallback;
+  var m = e.message || e.error_description || "";
+  if(e.code === "PGRST106" || /schema must be one of/i.test(m))
+    return "Schema "+ENV.schema+" is not exposed in Supabase yet.";
+  if(e.code === "PGRST202") return "The database is missing 0002_actions.sql.";
+  if(e.code === "23505") return "That plate is already registered.";
+  if(/Failed to fetch|NetworkError|Load failed/i.test(m)) return "No connection. Try again.";
+  return m || fallback;
+}
+
+function busy(btn,on,label){
+  if(!btn) return;
+  if(on){ btn._label = btn.innerHTML; btn.disabled = true; btn.innerHTML = '<span class="wait"></span>'; }
+  else { btn.disabled = false; btn.innerHTML = label || btn._label || btn.innerHTML; }
+}
+
 function stage(id){
-  ["gGeo","gAuth","gVerify"].forEach(function(g){ document.getElementById(g).classList.toggle("on",g===id); });
-  document.getElementById("app").classList.toggle("on",id==="app");
+  ["gGeo","gAuth","gVerify"].forEach(function(g){ $(g).classList.toggle("on", g===id); });
+  $("app").classList.toggle("on", id==="app");
   window.scrollTo(0,0);
 }
 
 /* ================= gate 1: location ================= */
-var MY={latMin:0.8,latMax:7.5,lngMin:99.5,lngMax:119.4};
-var noteEl=document.getElementById("geoNote");
+var MY = {latMin:0.8,latMax:7.5,lngMin:99.5,lngMax:119.4};
+var noteEl = $("geoNote");
 
 function inMalaysia(g){ return g.lat>MY.latMin&&g.lat<MY.latMax&&g.lng>MY.lngMin&&g.lng<MY.lngMax; }
+function saveGeo(){ try{ sessionStorage.setItem("alih.geo", JSON.stringify(geo)); }catch(e){} }
+function readGeo(){ try{ var s=sessionStorage.getItem("alih.geo"); return s?JSON.parse(s):null; }catch(e){ return null; } }
 
 function acceptGeo(g,label){
-  geo=g; geo.inMY=inMalaysia(g);
+  geo = g; geo.inMY = inMalaysia(g); saveGeo();
   if(!geo.inMY){
-    noteEl.innerHTML="Located outside Malaysia. There's nothing here to unblock yet — "+
+    noteEl.innerHTML = "Located outside Malaysia. There's nothing here to unblock yet — "+
       "<button class='addmore' id='anyway' style='padding:4px 0'>continue anyway</button>";
-    document.getElementById("anyway").addEventListener("click",function(){ stage("gAuth"); });
+    $("anyway").addEventListener("click", afterGeo);
     return;
   }
-  toast(label||"Location confirmed — Malaysia");
-  stage("gAuth");
+  if(label !== false) toast(label || "Location confirmed — Malaysia");
+  afterGeo();
 }
 
-/* Permas Jaya shoplots — used when the browser can't or won't give a fix */
-function useFallback(){
-  acceptGeo({lat:1.5127,lng:103.8207,acc:0,mock:true},"Using Permas Jaya, Johor");
-}
+/* Fallback fix: Permas Jaya shoplots, for when the browser will not give one. */
+$("mockGeo").addEventListener("click", function(){
+  acceptGeo({lat:1.5127,lng:103.8207,acc:0,mock:true}, "Using Permas Jaya, Johor");
+});
 
-document.getElementById("mockGeo").addEventListener("click",useFallback);
-
-/* Artifact previews run in a sandboxed frame that blocks GPS outright.
-   Say so up front instead of letting the user hit a dead end. */
-(function flagSandbox(){
-  var framed = (function(){ try{ return window.self!==window.top; }catch(e){ return true; } })();
-  var blocked = !navigator.geolocation || !window.isSecureContext ||
-    (navigator.permissions ? false : false);
-  if(framed || blocked){
-    noteEl.innerHTML="<b>Preview limitation:</b> this is running inside a sandboxed frame, "+
-      "which blocks GPS even when your phone's location is on. Tap <b>Set location manually</b> "+
-      "to continue — real GPS works once this is hosted on its own domain.";
-    var mg=document.getElementById("mockGeo");
-    mg.classList.remove("btn-flat"); mg.classList.add("btn-hz");
-    var ag=document.getElementById("askGeo");
-    ag.classList.remove("btn-hz"); ag.classList.add("btn-flat");
-  }
-})();
-
-document.getElementById("askGeo").addEventListener("click",function(){
-  var btn=this;
-  if(!navigator.geolocation||!window.isSecureContext){
-    noteEl.innerHTML="This frame can't access location — <b>artifact previews block it</b>. "+
-      "Download the file and open it directly for the real prompt, or set your location manually.";
+$("askGeo").addEventListener("click", function(){
+  var btn = this;
+  if(!navigator.geolocation || !window.isSecureContext){
+    noteEl.textContent = "This browser can't give a location here. Set it manually to keep going.";
     return;
   }
-  btn.disabled=true; btn.textContent="Locating…";
+  btn.disabled = true; btn.textContent = "Locating…";
 
-  var settled=false;
-  var bail=setTimeout(function(){
-    if(settled) return; settled=true;
-    btn.disabled=false; btn.textContent="Try again";
-    noteEl.innerHTML="No response from the browser — <b>artifact previews block location</b>. "+
-      "Open the downloaded file directly, or set your location manually.";
-  },7000);
+  var settled = false;
+  var bail = setTimeout(function(){
+    if(settled) return; settled = true;
+    btn.disabled = false; btn.textContent = "Try again";
+    noteEl.textContent = "No response from the browser. Set your location manually to keep going.";
+  }, 7000);
 
-  try{
-    navigator.geolocation.getCurrentPosition(function(p){
-      if(settled) return; settled=true; clearTimeout(bail);
-      acceptGeo({lat:p.coords.latitude,lng:p.coords.longitude,acc:Math.round(p.coords.accuracy)});
-    },function(err){
-      if(settled) return; settled=true; clearTimeout(bail);
-      btn.disabled=false; btn.textContent="Try again";
-      var why = err && err.code===1
-          ? "Permission denied. In an artifact preview this happens even with phone location on, because the frame itself is blocked."
-        : err && err.code===2
-          ? "No position available — common indoors or in a car park."
-        : "Timed out waiting for GPS.";
-      noteEl.innerHTML=why+" Set your location manually to keep going.";
-    },{enableHighAccuracy:true,timeout:6000,maximumAge:60000});
-  }catch(e){
-    settled=true; clearTimeout(bail);
-    btn.disabled=false; btn.textContent="Try again";
-    noteEl.innerHTML="Location is blocked in this frame. Set your location manually to keep going.";
-  }
+  navigator.geolocation.getCurrentPosition(function(p){
+    if(settled) return; settled = true; clearTimeout(bail);
+    acceptGeo({lat:p.coords.latitude, lng:p.coords.longitude, acc:Math.round(p.coords.accuracy)});
+  }, function(err){
+    if(settled) return; settled = true; clearTimeout(bail);
+    btn.disabled = false; btn.textContent = "Try again";
+    noteEl.textContent = (err && err.code===1
+      ? "Permission denied."
+      : err && err.code===2
+        ? "No position available — common indoors or in a car park."
+        : "Timed out waiting for GPS.") + " Set your location manually to keep going.";
+  }, {enableHighAccuracy:true, timeout:6000, maximumAge:60000});
 });
 
 /* ================= gate 2: auth ================= */
-document.getElementById("google").addEventListener("click",function(){
-  acct={email:"weilies.chok@gmail.com",via:"google",verified:true};
-  toast("Signed in with Google");
-  boot();
-});
-document.getElementById("signup").addEventListener("click",function(){
-  var e=document.getElementById("email").value.trim(), p=document.getElementById("pw").value;
-  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)){ toast("Enter a valid email address."); return; }
-  if(p.length<8){ toast("Password needs at least 8 characters."); return; }
-  acct={email:e,via:"password",verified:false};
-  document.getElementById("mailTo").textContent=e;
-  stage("gVerify");
-});
-document.getElementById("verify").addEventListener("click",function(){
-  var c=document.getElementById("code").value.replace(/\D/g,"");
-  if(c.length!==6){ toast("Enter the six-digit code."); return; }
-  acct.verified=true; toast("Email verified"); boot();
+function authNote(msg){
+  var p = document.querySelector("#gAuth .note");
+  if(p) p.innerHTML = '<b style="color:var(--alert)">'+esc(msg)+'</b>';
+}
+
+function tidyPhone(v){
+  var d = (v||"").replace(/[^\d]/g,"").replace(/^60/,"0");
+  return d ? (d[0]==="0" ? d : "0"+d) : "";
+}
+
+$("google").addEventListener("click", async function(){
+  if(!sb) return authNote(cfgErr);
+  var r = await sb.auth.signInWithOAuth({
+    provider:"google",
+    options:{ redirectTo: location.origin }
+  });
+  if(r.error) authNote(why(r.error,"Google sign-in is not enabled on this project yet."));
 });
 
-function boot(){
-  document.getElementById("topName").textContent=acct.email;
-  document.getElementById("topLoc").textContent= geo
+$("signup").addEventListener("click", async function(){
+  if(!sb) return authNote(cfgErr);
+  var email = $("email").value.trim(), pw = $("pw").value, phone = tidyPhone($("phone").value);
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return toast("Enter a valid email address.");
+  if(pw.length < 8) return toast("Password needs at least 8 characters.");
+  if(phone.length < 9) return toast("Enter the phone number we can fall back to.");
+
+  busy(this,true);
+  var r = await sb.auth.signUp({
+    email: email, password: pw,
+    options:{ data:{ phone: phone }, emailRedirectTo: location.origin }
+  });
+  busy(this,false,"Create account");
+  if(r.error) return toast(why(r.error,"Could not create that account."));
+
+  if(r.data.session) return boot(r.data.session);   /* verification switched off */
+  $("mailTo").textContent = email;
+  stage("gVerify");
+});
+
+$("signin").addEventListener("click", async function(){
+  if(!sb) return authNote(cfgErr);
+  var email = $("email").value.trim(), pw = $("pw").value;
+  if(!email || !pw) return toast("Enter your email and password.");
+  busy(this,true);
+  var r = await sb.auth.signInWithPassword({ email: email, password: pw });
+  busy(this,false,"I already have an account");
+  if(r.error) return toast(why(r.error,"Those details did not match."));
+  boot(r.data.session);
+});
+
+/* ================= gate 3: verify ================= */
+$("verify").addEventListener("click", async function(){
+  var token = $("code").value.replace(/\D/g,"");
+  var email = $("mailTo").textContent;
+  if(token.length !== 6) return toast("Enter the six-digit code.");
+  busy(this,true);
+  var r = await sb.auth.verifyOtp({ email: email, token: token, type:"signup" });
+  if(r.error) r = await sb.auth.verifyOtp({ email: email, token: token, type:"email" });
+  busy(this,false,"Verify and continue");
+  if(r.error) return toast(why(r.error,"That code did not work."));
+  toast("Email verified");
+  boot(r.data.session);
+});
+
+$("resend").addEventListener("click", async function(){
+  busy(this,true);
+  var r = await sb.auth.resend({ type:"signup", email: $("mailTo").textContent });
+  busy(this,false,"Send it again");
+  toast(r.error ? why(r.error,"Could not resend.") : "Sent again — check your inbox.");
+});
+
+$("signout").addEventListener("click", async function(){
+  clearInterval(poll);
+  await sb.auth.signOut();
+  me = null; cars = []; declared = []; inbox = []; traced = null; adShown = {};
+  stage("gAuth");
+});
+
+/* ================= boot ================= */
+async function afterGeo(){
+  if(!sb){ stage("gAuth"); authNote(cfgErr); return; }
+  var r = await sb.auth.getSession();
+  if(r.data && r.data.session) boot(r.data.session);
+  else stage("gAuth");
+}
+
+async function boot(session){
+  if(!session) return stage("gAuth");
+  me = { id: session.user.id, email: session.user.email };
+  $("topName").textContent = me.email;
+  $("topLoc").textContent = geo
     ? (geo.inMY?"MY ":"—— ")+geo.lat.toFixed(3)+","+geo.lng.toFixed(3)
     : "no fix";
-  stage("app"); render();
+  $("buildTag").textContent = (ENV.env||"local")+" · "+ENV.schema;
+  stage("app");
+  render();
+  await ensureProfile(session);
+  await Promise.all([refresh(), loadAds()]);
+  render();
+  clearInterval(poll);
+  poll = setInterval(function(){ if(!document.hidden && me) refresh(); }, 45000);
+}
+
+document.addEventListener("visibilitychange", function(){ if(!document.hidden && me) refresh(); });
+
+/* profiles has no insert trigger, so the client owns its own row. */
+async function ensureProfile(session){
+  var u = session.user, meta = u.user_metadata || {};
+  var row = { id: u.id };
+  var name = meta.full_name || meta.name;
+  if(name) row.display_name = name;
+  if(meta.phone) row.phone = tidyPhone(meta.phone);
+  var r = await sb.from("profiles").upsert(row, { onConflict:"id" });
+  if(r.error) toast(why(r.error,"Could not save your profile."));
+}
+
+/* ================= load ================= */
+async function refresh(){
+  if(!me) return;
+  var err = null;
+
+  var g = await sb.from("cars").select("id,plate,plate_norm,nickname")
+    .eq("owner_id", me.id).order("created_at");
+  cars = g.data || []; err = err || g.error;
+
+  var b = await sb.from("blocks")
+    .select("id,blocker_plate_norm,eta_minutes,status,declared_at,lat,block_targets(victim_plate_norm)")
+    .eq("blocker_id", me.id).in("status", ["open","disputed"])
+    .order("declared_at", {ascending:false});
+  declared = b.data || []; err = err || b.error;
+
+  var m = await sb.from("messages").select("id,block_id,from_label,kind,body,created_at")
+    .eq("to_user", me.id).order("created_at", {ascending:false}).limit(60);
+  inbox = m.data || []; err = err || m.error;
+
+  blockIx = {}; myPlate = {};
+  var ids = inbox.map(function(x){ return x.block_id; }).filter(Boolean);
+  if(ids.length){
+    var r = await sb.from("blocks").select("id,blocker_id,status,blocker_plate_norm").in("id", ids);
+    (r.data||[]).forEach(function(x){ blockIx[x.id] = x; });
+
+    /* read_targets only returns rows I am party to; keep the ones that are mine */
+    var mine = cars.map(function(c){ return c.plate_norm; });
+    var t = await sb.from("block_targets").select("block_id,victim_plate_norm").in("block_id", ids);
+    (t.data||[]).forEach(function(x){
+      if(mine.indexOf(x.victim_plate_norm) > -1) myPlate[x.block_id] = x.victim_plate_norm;
+    });
+  }
+
+  if(err) toast(why(err,"Could not reach the database."));
+  render();
+}
+
+async function loadAds(){
+  var now = new Date().toISOString();
+  var r = await sb.from("ads")
+    .select("id,merchant,mark,headline,body,cta_url,lat,lng,radius_m,slots")
+    .eq("active", true).lte("starts_at", now).gte("ends_at", now).limit(50);
+  ads = r.data || [];
 }
 
 /* ================= ads ================= */
-var ADS=[
-  {mk:"AC",title:"Ah Chong Auto",body:"3M window tinting · RM30 off when you show this app",near:"400 m from you",cap:"Sponsored · nearby"},
-  {mk:"KP",title:"Kopitiam Seri Austin",body:"Waiting anyway? Free kopi O with any toast set",near:"210 m from you",cap:"Sponsored · nearby"},
-  {mk:"RT",title:"Road tax in 2 minutes",body:"Quotes from RM90 · sorted before you're back at the car",near:"Online",cap:"Sponsored"}
-];
-function adCard(i){
-  var a=ADS[i%ADS.length];
-  return '<div class="ad"><div class="cap">'+a.cap+'</div><div class="offer"><div class="mk">'+a.mk+
-    '</div><div class="tx">'+a.title+'<em>'+a.body+' · '+a.near+'</em></div></div></div>';
+function metres(lat1,lng1,lat2,lng2){
+  var R=6371000, t=Math.PI/180;
+  var a = Math.sin((lat2-lat1)*t/2), b = Math.sin((lng2-lng1)*t/2);
+  var h = a*a + Math.cos(lat1*t)*Math.cos(lat2*t)*b*b;
+  return Math.round(2*R*Math.asin(Math.sqrt(h)));
+}
+function adDistance(a){
+  if(a.lat==null || a.lng==null || !geo) return null;
+  return metres(geo.lat, geo.lng, a.lat, a.lng);
+}
+function pickAd(slot){
+  var pool = ads.filter(function(a){
+    if(a.slots && a.slots.length && a.slots.indexOf(slot) < 0) return false;
+    var d = adDistance(a);
+    return d === null || d <= (a.radius_m || 3000);
+  });
+  return pool.length ? pool[Math.floor(Math.random()*pool.length)] : null;
+}
+function logAd(id, slot, event){
+  if(!me) return;
+  sb.from("ad_events").insert({ ad_id:id, user_id:me.id, slot:slot, event:event })
+    .then(null, function(){});
+}
+function adBody(a){
+  var d = adDistance(a);
+  var near = d === null ? "" : (d < 1000 ? d+" m from you" : (d/1000).toFixed(1)+" km from you");
+  return '<div class="offer"><div class="mk">'+esc(a.mark||"AD")+'</div>'+
+    '<div class="tx">'+esc(a.headline)+'<em>'+esc(a.body)+(near?" · "+esc(near):"")+'</em></div></div>';
+}
+/* One impression per slot per session — polling must not inflate the invoice. */
+function adCard(slot){
+  var a = adShown[slot];
+  if(!a){
+    a = pickAd(slot);
+    if(!a) return "";
+    adShown[slot] = a;
+    logAd(a.id, slot, "impression");
+  }
+  var inner = adBody(a);
+  var open = a.cta_url ? '<button data-act="ad" data-id="'+esc(a.id)+'" style="all:unset;cursor:pointer;display:block">' : "";
+  return '<div class="ad"><div class="cap">Sponsored'+(adDistance(a)!==null?" · nearby":"")+'</div>'+
+    open + inner + (a.cta_url?"</button>":"") + '</div>';
+}
+function adClick(id){
+  var a = ads.filter(function(x){ return x.id===id; })[0];
+  if(!a) return;
+  logAd(a.id, "click", "click");
+  if(a.cta_url) window.open(a.cta_url, "_blank", "noopener");
 }
 
 /* ================= interstitial ================= */
-var veil=document.getElementById("veil"), ring=document.getElementById("ring"),
-    cd=document.getElementById("cd"), skip=document.getElementById("skip"), tick=null, CIRC=81.7;
+var veil=$("veil"), ring=$("ring"), cd=$("cd"), skip=$("skip"), tick=null, CIRC=81.7;
 function interstitial(done){
-  var a=ADS[Math.floor(Math.random()*ADS.length)];
-  document.getElementById("pLogo").textContent=a.mk;
-  document.getElementById("pTitle").textContent=a.title;
-  document.getElementById("pBody").textContent=a.body;
-  document.getElementById("pNear").textContent=a.near;
-  var left=5;
+  var a = pickAd("interstitial");
+  if(!a) return done();                       /* nothing sold for this slot */
+  logAd(a.id, "interstitial", "impression");
+
+  var d = adDistance(a);
+  $("pLogo").textContent = a.mark || "AD";
+  $("pTitle").textContent = a.headline;
+  $("pBody").textContent = a.body;
+  $("pNear").textContent = d === null ? "Online" : (d<1000 ? d+" m from you" : (d/1000).toFixed(1)+" km from you");
+
+  var left = 5;
   veil.classList.add("on");
-  skip.disabled=true; skip.textContent="Continue in 5s";
-  cd.textContent=left; ring.style.strokeDashoffset=0;
+  skip.disabled = true; skip.textContent = "Continue in 5s";
+  cd.textContent = left; ring.style.strokeDashoffset = 0;
   clearInterval(tick);
-  tick=setInterval(function(){
-    left--; cd.textContent=Math.max(left,0);
-    ring.style.strokeDashoffset=CIRC*((5-left)/5);
+  tick = setInterval(function(){
+    left--; cd.textContent = Math.max(left,0);
+    ring.style.strokeDashoffset = CIRC*((5-left)/5);
     if(left<=0){ clearInterval(tick); skip.disabled=false; skip.textContent="Continue"; cd.textContent="✓"; skip.focus(); }
-  },1000);
-  skip.onclick=function(){ if(skip.disabled) return; clearInterval(tick); veil.classList.remove("on"); done(); };
+  }, 1000);
+  skip.onclick = function(){
+    if(skip.disabled) return;
+    clearInterval(tick); veil.classList.remove("on"); done();
+  };
 }
 
-/* ================= persona / tabs ================= */
-["A","B","C"].forEach(function(u){
-  document.getElementById("u"+u).addEventListener("click",function(){
-    me=u;
-    ["A","B","C"].forEach(function(x){ document.getElementById("u"+x).setAttribute("aria-pressed",String(x===u)); });
-    document.getElementById("traceOut").innerHTML="";
-    render(); toast("Viewing as "+DB.users[u].name);
-  });
-});
-Array.prototype.forEach.call(document.querySelectorAll(".tabs button"),function(b){
-  b.addEventListener("click",function(){
-    var pid=b.dataset.p;
-    Array.prototype.forEach.call(document.querySelectorAll(".tabs button"),function(x){
-      x.setAttribute("aria-selected",String(x.dataset.p===pid)); });
-    Array.prototype.forEach.call(document.querySelectorAll(".panel"),function(p){
-      p.classList.toggle("on",p.id===pid); });
+/* ================= tabs and inputs ================= */
+Array.prototype.forEach.call(document.querySelectorAll(".tabs button"), function(b){
+  b.addEventListener("click", function(){
+    var pid = b.dataset.p;
+    Array.prototype.forEach.call(document.querySelectorAll(".tabs button"), function(x){
+      x.setAttribute("aria-selected", String(x.dataset.p===pid)); });
+    Array.prototype.forEach.call(document.querySelectorAll(".panel"), function(p){
+      p.classList.toggle("on", p.id===pid); });
     window.scrollTo({top:0,behavior:"smooth"});
+    if(pid === "pI") refresh();
   });
 });
-document.getElementById("addSlot").addEventListener("click",function(){
-  var s=document.getElementById("slot2");
-  if(s.hidden){ s.hidden=false; this.textContent="− Only one car"; document.getElementById("v2").focus(); }
-  else { s.hidden=true; document.getElementById("v2").value=""; this.textContent="+ I'm blocking two cars"; }
+$("addSlot").addEventListener("click", function(){
+  var s = $("slot2");
+  if(s.hidden){ s.hidden=false; this.textContent="− Only one car"; $("v2").focus(); }
+  else { s.hidden=true; $("v2").value=""; this.textContent="+ I'm blocking two cars"; }
 });
-Array.prototype.forEach.call(document.querySelectorAll("#etaRow button"),function(b){
-  b.addEventListener("click",function(){
-    eta=+b.dataset.m;
-    Array.prototype.forEach.call(document.querySelectorAll("#etaRow button"),function(x){
-      x.setAttribute("aria-pressed",String(x===b)); });
+Array.prototype.forEach.call(document.querySelectorAll("#etaRow button"), function(b){
+  b.addEventListener("click", function(){
+    eta = +b.dataset.m;
+    Array.prototype.forEach.call(document.querySelectorAll("#etaRow button"), function(x){
+      x.setAttribute("aria-pressed", String(x===b)); });
   });
 });
 
 /* ================= declare ================= */
-document.getElementById("declare").addEventListener("click",function(){
-  var sel=document.querySelector('input[name="mycar"]:checked');
-  if(!sel){ toast("Pick which car you're driving."); return; }
-  var raw=[document.getElementById("v1").value];
-  if(!document.getElementById("slot2").hidden) raw.push(document.getElementById("v2").value);
-  var vs=[];
+$("declare").addEventListener("click", function(){
+  var btn = this;
+  var sel = document.querySelector('input[name="mycar"]:checked');
+  if(!sel) return toast("Add a car to your garage first.");
+
+  var raw = [$("v1").value];
+  if(!$("slot2").hidden) raw.push($("v2").value);
+
+  var mine = cars.map(function(c){ return c.plate_norm; });
+  var vs = [];
   for(var i=0;i<raw.length;i++){
-    var p=nice(raw[i]); if(!p) continue;
-    if(norm(p).length<4){ toast("Check that plate."); return; }
-    if(mineP().indexOf(norm(p))>-1){ toast("That's your own car."); return; }
-    if(vs.map(norm).indexOf(norm(p))<0) vs.push(p);
+    var p = nice(raw[i]);
+    if(!p) continue;
+    if(norm(p).length < 4) return toast("Check that plate.");
+    if(mine.indexOf(norm(p)) > -1) return toast("That's your own car.");
+    if(vs.map(norm).indexOf(norm(p)) < 0) vs.push(p);
   }
-  if(!vs.length){ toast("Enter the plate you're blocking."); return; }
-  interstitial(function(){ commit(sel.value,vs); });
+  if(!vs.length) return toast("Enter the plate you're blocking.");
+
+  interstitial(function(){ commit(sel.value, vs, btn); });
 });
 
-function commit(byPlate,vs){
-  var id=++seq, pinged=0;
-  DB.blocks.push({id:id,byUser:me,byPlate:byPlate,victims:vs,eta:eta,at:clock(),
-    lifted:false,disputed:false,geo:geo?{lat:geo.lat,lng:geo.lng}:null});
-  vs.forEach(function(v){
-    var o=owner(v);
-    if(o){ pinged++;
-      DB.msgs.push({id:++seq,blockId:id,toUser:o,kind:"hot",at:clock(),from:"Blocked in",
-        text:nice(byPlate)+" is parked behind your "+nice(v)+". Driver says back in "+eta+" min."});
-    }
+async function commit(byPlate, vs, btn){
+  busy(btn,true);
+  var r = await sb.rpc("declare_block", {
+    p_blocker_plate: byPlate,
+    p_victims: vs,
+    p_eta: eta,
+    p_lat: geo ? geo.lat : null,
+    p_lng: geo ? geo.lng : null,
+    p_accuracy_m: geo && geo.acc ? geo.acc : null
   });
-  toast(vs.length>1 ? "Blocked "+vs.length+" cars — "+pinged+" notified"
-       : (pinged? nice(vs[0])+"'s owner notified" : nice(vs[0])+" isn't registered — they can still trace you"));
-  document.getElementById("v1").value=""; document.getElementById("v2").value="";
-  render();
+  busy(btn,false,"Declare block");
+  if(r.error) return toast(why(r.error,"Could not declare that block."));
+
+  var n = (r.data && r.data.notified) || 0;
+  toast(vs.length > 1
+    ? "Blocked "+vs.length+" cars — "+n+" notified"
+    : (n ? nice(vs[0])+"'s owner notified"
+         : nice(vs[0])+" isn't registered — they can still trace you"));
+  $("v1").value=""; $("v2").value="";
+  await refresh();
 }
 
-/* ================= actions ================= */
-function find(id){ var b=null; DB.blocks.forEach(function(x){ if(x.id===id) b=x; }); return b; }
-
-function contact(bid,kind){
-  var b=find(bid); if(!b||b.lifted) return;
-  DB.msgs.push({id:++seq,blockId:bid,toUser:b.byUser,kind:(kind==="now"?"hot":"info"),at:clock(),
-    from:"Reply from "+nice(DB.users[me].cars[0].plate),
-    text: kind==="now" ? "Please come now — I need to leave." : "No rush, just letting you know I'm waiting."});
-  toast(kind==="now"?"Urgent ping sent":"Message sent");
-  render();
-}
-
-/* blocker clears — no confirmation needed */
-function lift(bid){
-  var b=find(bid); if(!b||b.lifted) return;
-  b.lifted=true; b.liftedAt=clock(); b.disputed=false;
-  DB.msgs=DB.msgs.filter(function(m){ return m.blockId!==bid; });
-  b.victims.forEach(function(v){
-    var o=owner(v);
-    if(o) DB.msgs.push({id:++seq,blockId:bid,toUser:o,kind:"cool",at:clock(),from:"All clear",
-      text:nice(b.byPlate)+" has moved. You're free to go. Still stuck? Flag it below."});
-  });
+/* ================= clear · flag · contact ================= */
+async function doClear(id, btn){
+  busy(btn,true);
+  var r = await sb.rpc("clear_block", { p_block: id });
+  busy(btn,false,"I've moved — clear it");
+  if(r.error) return toast(why(r.error,"Could not clear that block."));
   toast("Cleared — they've been told");
-  render();
+  await refresh();
 }
 
-/* victim calls the bluff — reopens the block */
-function dispute(bid){
-  var b=find(bid); if(!b) return;
-  b.lifted=false; b.disputed=true;
-  DB.msgs=DB.msgs.filter(function(m){ return m.blockId!==bid; });
-  DB.msgs.push({id:++seq,blockId:bid,toUser:b.byUser,kind:"hot",at:clock(),from:"Still blocked",
-    text:"The driver of "+nice(b.victims[0])+" says "+nice(b.byPlate)+" is still there. Cleared too early — please move now."});
-  b.victims.forEach(function(v){
-    var o=owner(v);
-    if(o&&o!==b.byUser) DB.msgs.push({id:++seq,blockId:bid,toUser:o,kind:"info",at:clock(),from:"Flagged",
-      text:"We've told "+nice(b.byPlate)+" they're still blocking you. Logged against their record."});
-  });
+async function doFlag(id, myp, btn){
+  if(!myp) return toast("Only the blocked driver can flag this.");
+  busy(btn,true);
+  var r = await sb.rpc("flag_block", { p_block: id, p_my_plate: myp });
+  busy(btn,false,"Still blocking me");
+  if(r.error) return toast(why(r.error,"Could not flag that block."));
   toast("Flagged — logged against their record");
-  render();
+  await refresh();
 }
-window.__c=contact; window.__l=lift; window.__d=dispute;
+
+async function doContact(id, myp, urgent, btn){
+  if(!myp) return toast("Trace the block first so we know which car is yours.");
+  busy(btn,true);
+  var r = await sb.rpc("contact_blocker", { p_block: id, p_my_plate: myp, p_urgent: urgent });
+  busy(btn,false, urgent ? "Come now" : "I'm waiting");
+  if(r.error) return toast(why(r.error,"Could not send that."));
+  toast(urgent ? "Urgent ping sent" : "Message sent");
+  await refresh();
+}
+
+document.addEventListener("click", function(ev){
+  var b = ev.target.closest && ev.target.closest("[data-act]");
+  if(!b) return;
+  var id = b.dataset.id, myp = b.dataset.plate || "";
+  switch(b.dataset.act){
+    case "clear": doClear(id, b); break;
+    case "flag":  doFlag(id, myp, b); break;
+    case "now":   doContact(id, myp, true, b); break;
+    case "soft":  doContact(id, myp, false, b); break;
+    case "ad":    adClick(id); break;
+  }
+});
 
 /* ================= trace ================= */
-document.getElementById("trace").addEventListener("click",function(){
-  var bP=nice(document.getElementById("qB").value), mP=nice(document.getElementById("qM").value);
-  var out=document.getElementById("traceOut"), hit=null;
-  DB.blocks.forEach(function(b){
-    if(b.lifted||norm(b.byPlate)!==norm(bP)) return;
-    if(b.victims.map(norm).indexOf(norm(mP))>-1) hit=b;
-  });
-  if(!hit){
-    out.innerHTML='<div class="card"><div class="in"><div class="msg">No live block matches that pair. Either it was never declared, or it\'s already been cleared.</div></div></div>';
+$("trace").addEventListener("click", async function(){
+  var btn = this, out = $("traceOut");
+  var them = $("qB").value, mine = $("qM").value;
+  if(norm(them).length < 4 || norm(mine).length < 4) return toast("Enter both plates in full.");
+
+  busy(btn,true);
+  var r = await sb.rpc("trace_block", { p_blocker_plate: them, p_my_plate: mine });
+  busy(btn,false,"Find the driver");
+
+  if(r.error){ out.innerHTML=""; return toast(why(r.error,"Trace failed.")); }
+
+  if(!r.data || !r.data.found){
+    traced = null;
+    out.innerHTML = '<div class="card"><div class="in"><div class="msg">'+
+      "No live block matches that pair. Either it was never declared, or it's already been cleared."+
+      '</div></div></div>';
     return;
   }
-  out.innerHTML='<div class="card hot"><div class="hazard live"></div><div class="in">'+
-    '<div class="top"><span class="eyebrow">Driver found</span><span class="t">'+hit.at+'</span></div>'+
-    '<div class="msg">Driver of '+esc(nice(hit.byPlate))+' said back in '+hit.eta+' min.</div>'+
-    '<div class="row2"><button class="btn btn-stop" onclick="__c('+hit.id+',\'now\')">Come now</button>'+
-    '<button class="btn btn-flat" onclick="__c('+hit.id+',\'soft\')">I\'m waiting</button></div>'+
-    '</div></div>'+adCard(0);
+
+  traced = { block: r.data.block_id, plate: norm(mine) };
+  out.innerHTML = '<div class="card hot"><div class="hazard live"></div><div class="in">'+
+    '<div class="top"><span class="eyebrow">Driver found</span><span class="t">'+esc(hhmm(r.data.declared_at))+'</span></div>'+
+    '<div class="msg">Driver of '+esc(r.data.plate)+' said back in '+esc(r.data.eta)+' min.</div>'+
+    '<div class="row2">'+
+      '<button class="btn btn-stop" data-act="now"  data-id="'+esc(traced.block)+'" data-plate="'+esc(traced.plate)+'">Come now</button>'+
+      '<button class="btn btn-flat" data-act="soft" data-id="'+esc(traced.block)+'" data-plate="'+esc(traced.plate)+'">I\'m waiting</button>'+
+    '</div></div></div>' + adCard("trace");
 });
 
 /* ================= garage ================= */
-document.getElementById("addCar").addEventListener("click",function(){
-  var el=document.getElementById("newPlate"), p=nice(el.value);
-  if(norm(p).length<4){ toast("That doesn't look like a plate."); return; }
-  if(owner(p)){ toast("Already registered."); return; }
-  DB.users[me].cars.push({plate:p,nick:"Added just now"});
-  el.value=""; render(); toast(nice(p)+" added");
+$("addCar").addEventListener("click", async function(){
+  var el = $("newPlate"), p = nice(el.value);
+  if(norm(p).length < 4) return toast("That doesn't look like a plate.");
+  busy(this,true);
+  var r = await sb.from("cars").insert({ owner_id: me.id, plate: p, nickname: null });
+  busy(this,false,"Add to garage");
+  if(r.error) return toast(why(r.error,"Could not add that car."));
+  el.value = "";
+  toast(nice(p)+" added");
+  await refresh();
 });
 
 /* ================= render ================= */
 function render(){
-  var u=DB.users[me];
-  document.getElementById("gName").textContent=u.name+"'s garage";
+  $("gName").textContent = "Your garage";
 
-  document.getElementById("garage").innerHTML=u.cars.map(function(c){
-    return '<div style="margin-bottom:11px">'+plate(c.plate,c.nick)+'</div>'; }).join("");
+  $("garage").innerHTML = cars.length
+    ? cars.map(function(c){
+        return '<div style="margin-bottom:11px">'+plate(c.plate, c.nickname||"")+'</div>'; }).join("")
+    : '<div class="empty"><b>No cars yet</b><span>Add the plate you drive. Until you do, nobody can warn you that you\'re boxed in.</span></div>';
 
-  document.getElementById("pickCars").innerHTML=u.cars.map(function(c,i){
-    return '<div class="pick"><input type="radio" name="mycar" id="mc'+i+'" value="'+esc(c.plate)+'"'+(i===0?" checked":"")+'>'+
-      '<label for="mc'+i+'">'+plate(c.plate,"",true)+'<div class="nick">'+esc(c.nick)+'</div></label></div>'; }).join("");
+  $("pickCars").innerHTML = cars.length
+    ? cars.map(function(c,i){
+        return '<div class="pick"><input type="radio" name="mycar" id="mc'+i+'" value="'+esc(c.plate)+'"'+
+          (i===0?" checked":"")+'>'+
+          '<label for="mc'+i+'">'+plate(c.plate,"",true)+
+          '<div class="nick">'+esc(c.nickname||"Tap to pick")+'</div></label></div>'; }).join("")
+    : '<div class="empty"><b>Nothing to drive</b><span>Add a car under Garage before you can declare a block.</span></div>';
 
-  var open=DB.blocks.filter(function(b){ return b.byUser===me && !b.lifted; });
-  document.getElementById("mine").innerHTML = open.length
+  $("declare").disabled = !cars.length;
+
+  $("mine").innerHTML = declared.length
     ? '<div style="margin-top:30px"><span class="eyebrow">Blocks you have open</span>'+
-      open.map(function(b){
-        return '<div class="card'+(b.disputed?" hot":"")+'"><div class="hazard live"></div><div class="in">'+
-          '<div class="top"><span class="eyebrow">'+esc(nice(b.byPlate))+' blocking '+b.victims.length+'</span><span class="t">'+b.at+'</span></div>'+
-          '<div class="msg">'+b.victims.map(function(v){ return esc(nice(v)); }).join(" &middot; ")+
-          '<br><span style="color:var(--mute);font-size:13px">Back in '+b.eta+' min'+(b.geo?' · pinned':'')+
-          (b.disputed?' · <b style="color:var(--alert)">flagged still blocking</b>':'')+'</span></div>'+
-          '<button class="btn btn-go" onclick="__l('+b.id+')">I\'ve moved — clear it</button>'+
+      declared.map(function(b){
+        var targets = (b.block_targets||[]).map(function(t){ return esc(t.victim_plate_norm); });
+        return '<div class="card'+(b.status==="disputed"?" hot":"")+'"><div class="hazard live"></div><div class="in">'+
+          '<div class="top"><span class="eyebrow">'+esc(b.blocker_plate_norm)+' blocking '+targets.length+'</span>'+
+          '<span class="t">'+esc(hhmm(b.declared_at))+'</span></div>'+
+          '<div class="msg">'+targets.join(" &middot; ")+
+          '<br><span style="color:var(--mute);font-size:13px">Back in '+esc(b.eta_minutes)+' min'+
+          (b.lat!=null?" · pinned":"")+
+          (b.status==="disputed"?' · <b style="color:var(--alert)">flagged still blocking</b>':"")+
+          '</span></div>'+
+          '<button class="btn btn-go" data-act="clear" data-id="'+esc(b.id)+'">I\'ve moved — clear it</button>'+
           '</div></div>';
       }).join("")+'</div>'
     : "";
 
-  var mail=DB.msgs.filter(function(m){ return m.toUser===me; }).slice().reverse();
-  document.getElementById("inbox").innerHTML = mail.length
-    ? mail.map(function(m,i){
-        var b=find(m.blockId), acts="";
-        if(b && !b.lifted && b.byUser!==me){
-          acts='<div class="row2"><button class="btn btn-stop" onclick="__c('+b.id+',\'now\')">Come now</button>'+
-               '<button class="btn btn-flat" onclick="__c('+b.id+',\'soft\')">I\'m waiting</button></div>';
-        } else if(b && !b.lifted && b.byUser===me){
-          acts='<button class="btn btn-go" onclick="__l('+b.id+')">I\'ve moved — clear it</button>';
-        } else if(b && b.lifted && m.from==="All clear"){
-          acts='<button class="btn btn-flat" onclick="__d('+b.id+')">Still blocking me</button>';
+  $("inbox").innerHTML = inbox.length
+    ? inbox.map(function(m,i){
+        var b = blockIx[m.block_id], myp = myPlate[m.block_id] || "", acts = "";
+        if(b && b.status !== "cleared" && b.status !== "expired" && b.blocker_id !== me.id){
+          acts = '<div class="row2">'+
+            '<button class="btn btn-stop" data-act="now"  data-id="'+esc(b.id)+'" data-plate="'+esc(myp)+'">Come now</button>'+
+            '<button class="btn btn-flat" data-act="soft" data-id="'+esc(b.id)+'" data-plate="'+esc(myp)+'">I\'m waiting</button>'+
+          '</div>';
+        } else if(b && b.status !== "cleared" && b.status !== "expired" && b.blocker_id === me.id){
+          acts = '<button class="btn btn-go" data-act="clear" data-id="'+esc(b.id)+'">I\'ve moved — clear it</button>';
+        } else if(b && b.status === "cleared" && m.from_label === "All clear"){
+          acts = '<button class="btn btn-flat" data-act="flag" data-id="'+esc(b.id)+'" data-plate="'+esc(myp)+'">Still blocking me</button>';
         }
-        return '<div class="card '+(m.kind||"")+'">'+(m.kind==="hot"?'<div class="hazard live"></div>':'')+
-          '<div class="in"><div class="top"><span class="eyebrow">'+esc(m.from)+'</span><span class="t">'+m.at+'</span></div>'+
-          '<div class="msg">'+esc(m.text)+'</div>'+acts+'</div></div>'+(i===0?adCard(1):"");
+        return '<div class="card '+esc(m.kind||"")+'">'+(m.kind==="hot"?'<div class="hazard live"></div>':"")+
+          '<div class="in"><div class="top"><span class="eyebrow">'+esc(m.from_label)+'</span>'+
+          '<span class="t">'+esc(hhmm(m.created_at))+'</span></div>'+
+          '<div class="msg">'+esc(m.body)+'</div>'+acts+'</div></div>' + (i===0?adCard("alert"):"");
       }).join("")
-    : '<div class="empty"><b>All clear</b><span>Nobody is blocking you. That\'s the good outcome.</span></div>'+adCard(2);
+    : '<div class="empty"><b>All clear</b><span>Nobody is blocking you. That\'s the good outcome.</span></div>'+adCard("alert");
 
-  var live=mail.filter(function(m){ return m.kind==="hot"; }).length;
-  var dot=document.getElementById("dot");
-  dot.hidden=(live===0); dot.textContent=live;
-  document.getElementById("hz").classList.toggle("live",live>0||open.length>0);
+  var live = inbox.filter(function(m){ return m.kind === "hot"; }).length;
+  var dot = $("dot");
+  dot.hidden = (live === 0); dot.textContent = live;
+  $("hz").classList.toggle("live", live > 0 || declared.length > 0);
 }
+
+/* ================= start ================= */
+(function start(){
+  if(cfgErr){
+    noteEl.innerHTML = "<b>"+esc(cfgErr)+"</b>";
+  }
+  var saved = readGeo();
+  if(saved && saved.lat != null){ geo = saved; afterGeo(); return; }
+  stage("gGeo");
+})();
+
 })();
 </script>
 </body>

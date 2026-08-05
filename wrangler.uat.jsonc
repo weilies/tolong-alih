@@ -1,9 +1,14 @@
 {
   "name": "tolong-alih-uat",
+  "main": "src/worker.js",
   "compatibility_date": "2026-08-04",
-  "assets": { "directory": "./public" },
+  "assets": { "directory": "./public", "binding": "ASSETS" },
   "vars": {
     "APP_ENV": "uat",
-    "APP_SCHEMA": "app_alih_uat"
+    "APP_SCHEMA": "app_alih_uat",
+    // Publishable key. Safe in the repo — it is handed to every browser that
+    // loads the page. RLS is what actually guards the data.
+    "SUPABASE_URL": "https://llejrncrxjejxvkwqhgj.supabase.co",
+    "SUPABASE_ANON_KEY": "sb_publishable_lDV-sDrcjaPBl2yjZYcYFQ_2T5oj6Qd"
   }
 }
