@@ -57,6 +57,27 @@ switch, so the two do not race each other.
 
 Run the schema migration against `app_alih_prod` before merging to `main`.
 
+## MCP servers
+
+Supabase is a claude.ai connector, already attached — it covers the database,
+migrations, logs and advisors. Google Cloud is declared in `.mcp.json` and
+served by [`@google-cloud/gcloud-mcp`](https://github.com/googleapis/gcloud-mcp),
+which exposes one tool that runs gcloud commands. Set it up once:
+
+```bash
+./scripts/setup-gcloud-mcp.sh    # installs gcloud, signs in, writes the denylist
+```
+
+Restart Claude Code afterwards. The script writes a command denylist to
+`~/.config/gcloud-mcp/acl.json`; the server runs whatever command it is given,
+so that file is the guard rail for irreversible operations.
+
+What it cannot do: create the OAuth client for Sign in with Google. Google has
+no API for that at all — clients created through the IAP API are forced
+internal-only and locked to IAP, with the redirect URI unmodifiable, and that
+API is deprecated. The consent screen and client stay a console job. See
+`supabase/README.md`.
+
 ## Running it locally
 
 ```bash

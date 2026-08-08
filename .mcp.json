@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "gcloud": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@google-cloud/gcloud-mcp@0.5.3",
+        "--config",
+        "${HOME}/.config/gcloud-mcp/acl.json"
+      ]
+    }
+  }
+}
