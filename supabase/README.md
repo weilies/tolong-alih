@@ -42,9 +42,20 @@ sed 's/{{SCHEMA}}/app_alih_prod/g' supabase/migrations/0002_actions.sql \
 
 ## Still to do in the dashboard
 
-1. Settings → API → Exposed schemas: add `app_alih_uat` and `app_alih_prod`.
-   Until this is done every client call fails, and the app will say
-   "Schema app_alih_uat is not exposed in Supabase yet."
+1. ~~Exposed schemas~~ — done, but **not** through the dashboard. It is set
+   directly on the `authenticator` role:
+
+   ```sql
+   alter role authenticator set pgrst.db_schemas =
+     'public, graphql_public, app_alih_uat, app_alih_prod';
+   notify pgrst, 'reload config';
+   ```
+
+   Because of that manual override, the **Exposed schemas** control in the
+   dashboard no longer manages this project — editing it there has no effect.
+   Change the list with the SQL above, or run
+   `alter role authenticator reset pgrst.db_schemas;` to hand control back to
+   the dashboard.
 2. Authentication → Providers: enable Google, with the client ID and secret from
    the Google Cloud console. The authorised redirect URI to give Google is
    `https://llejrncrxjejxvkwqhgj.supabase.co/auth/v1/callback`.
