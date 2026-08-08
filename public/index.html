@@ -290,6 +290,23 @@
     </div>
   </section>
 
+  <!-- ============ GATE 4 · PHONE ============ -->
+  <section class="gate" id="gPhone">
+    <div class="brandline"><div class="mk">⬛</div><b>Tolong <span class="hi">Alih</span></b></div>
+    <div class="sign">
+      <div class="hazard"></div>
+      <div class="pad">
+        <div class="glyph">📞</div>
+        <h1 class="disp">One number needed</h1>
+        <p>When the app can't reach the other driver, someone has to be able to call. Your number is never shown to them — it stays with the platform.</p>
+        <span class="lbl eyebrow">Phone number</span>
+        <input id="phone2" type="tel" placeholder="012-345 6789" autocomplete="tel" inputmode="tel" />
+        <button class="btn btn-hz" id="savePhone">Save and continue</button>
+        <p class="note">Asked once. Google sign-in doesn't hand us a number, so we have to ask for it here.</p>
+      </div>
+    </div>
+  </section>
+
   <!-- ============ APP ============ -->
   <div id="app">
     <div class="topbar">
@@ -465,7 +482,7 @@ function busy(btn,on,label){
 }
 
 function stage(id){
-  ["gGeo","gAuth","gVerify"].forEach(function(g){ $(g).classList.toggle("on", g===id); });
+  ["gGeo","gAuth","gVerify","gPhone"].forEach(function(g){ $(g).classList.toggle("on", g===id); });
   $("app").classList.toggle("on", id==="app");
   window.scrollTo(0,0);
 }
@@ -614,6 +631,28 @@ async function afterGeo(){
 async function boot(session){
   if(!session) return stage("gAuth");
   me = { id: session.user.id, email: session.user.email };
+  await ensureProfile(session);
+
+  /* Google hands back no phone number, so anyone who signed in that way lands
+     here without one. The fallback call path is the whole reason we collect it. */
+  var p = await sb.from("profiles").select("phone").eq("id", me.id).maybeSingle();
+  if(p.error) toast(why(p.error,"Could not read your profile."));
+  if(!p.data || !p.data.phone) return stage("gPhone");
+
+  enterApp();
+}
+
+$("savePhone").addEventListener("click", async function(){
+  var phone = tidyPhone($("phone2").value);
+  if(phone.length < 9) return toast("Enter a Malaysian mobile number.");
+  busy(this,true);
+  var r = await sb.from("profiles").update({ phone: phone }).eq("id", me.id);
+  busy(this,false,"Save and continue");
+  if(r.error) return toast(why(r.error,"Could not save that number."));
+  enterApp();
+});
+
+async function enterApp(){
   $("topName").textContent = me.email;
   $("topLoc").textContent = geo
     ? (geo.inMY?"MY ":"—— ")+geo.lat.toFixed(3)+","+geo.lng.toFixed(3)
@@ -621,7 +660,6 @@ async function boot(session){
   $("buildTag").textContent = (ENV.env||"local")+" · "+ENV.schema;
   stage("app");
   render();
-  await ensureProfile(session);
   await Promise.all([refresh(), loadAds()]);
   render();
   clearInterval(poll);
