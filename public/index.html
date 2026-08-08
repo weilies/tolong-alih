@@ -376,13 +376,25 @@
         <span class="lbl eyebrow">Add a car</span>
         <input id="newPlate" class="plate-in" placeholder="JQY 2841" maxlength="12" autocomplete="off" />
         <button class="btn btn-flat" id="addCar">Add to garage</button>
-        <p class="note">Plates are self-declared — no documents to upload. A plate can only be claimed once, and alerts are tied to your account, so claiming someone else's gets you their alerts and nothing else.</p>
+        <div id="plateTaken" hidden>
+          <div class="card hot" style="margin-top:16px"><div class="in">
+            <div class="top"><span class="eyebrow">Plate already claimed</span></div>
+            <div class="msg">Almost always the previous owner, who never removed the car after
+            selling it. We can move the plate to you.<br><br>
+            Send us a photo of your <b>vehicle registration card (车卡 / geran)</b> showing the
+            plate and your name. We verify, release it from their garage, and email both of you to
+            confirm the transfer — usually same day.</div>
+            <a class="btn btn-hz" id="portPlate" href="/about.html" style="text-decoration:none;text-align:center">Send us the 车卡</a>
+          </div></div>
+        </div>
+        <p class="note">Plates are self-declared — no documents to upload to register. A plate can only be claimed once, and alerts are tied to your account.</p>
       </section>
     </main>
 
     <footer>
       <b>Tolong Alih</b> — declare when you box someone in, clear it when you move.
       Neither driver ever sees the other's number.
+      <a href="/about.html" style="display:inline-block;margin-top:9px;color:var(--signage);font-weight:600">About &amp; contact us</a>
       <span id="buildTag" class="mono" style="display:block;margin-top:8px;font-size:10px"></span>
     </footer>
 
@@ -957,7 +969,20 @@ $("addCar").addEventListener("click", async function(){
   busy(this,true);
   var r = await sb.from("cars").insert({ owner_id: me.id, plate: p, nickname: null });
   busy(this,false,"Add to garage");
-  if(r.error) return toast(why(r.error,"Could not add that car."));
+
+  if(r.error){
+    /* A taken plate is usually a sold car the previous owner never removed, so
+       this needs instructions, not a two-second toast. */
+    if(r.error.code === "23505"){
+      $("portPlate").href = "/about.html#plate-" + encodeURIComponent(norm(p));
+      $("plateTaken").hidden = false;
+      $("plateTaken").scrollIntoView({ behavior:"smooth", block:"center" });
+      return;
+    }
+    return toast(why(r.error,"Could not add that car."));
+  }
+
+  $("plateTaken").hidden = true;
   el.value = "";
   toast(nice(p)+" added");
   await refresh();

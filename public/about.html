@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#16150F" />
+<title>About · Tolong Alih by Next Novas</title>
+<meta name="description" content="Tolong Alih is built by Next Novas. Support for drivers, plate ownership transfers, and advertising for Malaysian local businesses." />
+<meta property="og:title" content="About Tolong Alih — Next Novas" />
+<meta property="og:description" content="Who we are, how to reach support, and how local merchants can advertise." />
+<meta property="og:type" content="website" />
+<meta property="og:locale" content="en_MY" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100,500;100,600;125,700&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --tarmac:#16150F; --hazard:#FFD200; --signage:#0B4DA2; --alert:#E03A17;
+    --clear:#00874E; --signal:#FFFFFF; --fog:#F2F0E9; --edge:#D8D4C6; --mute:#6E6A5E;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  html,body{background:var(--fog);color:var(--tarmac);
+    font-family:'Instrument Sans',system-ui,-apple-system,sans-serif;-webkit-font-smoothing:antialiased}
+  body{min-height:100dvh;display:flex;flex-direction:column;align-items:center}
+  a{color:var(--signage)}
+
+  .hazard{height:9px;width:100%;
+    background:repeating-linear-gradient(45deg,var(--hazard) 0 13px,var(--tarmac) 13px 26px)}
+  .disp{font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 125,'wght' 700;
+    text-transform:uppercase;letter-spacing:-.005em;line-height:.98}
+  .mono{font-family:'JetBrains Mono',monospace}
+  .eyebrow{font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 100,'wght' 600;
+    font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--mute);display:block;margin-bottom:9px}
+
+  .wrap{width:100%;max-width:560px;flex:1;display:flex;flex-direction:column}
+
+  .top{background:var(--tarmac);color:#fff;padding:13px 18px;display:flex;
+    justify-content:space-between;align-items:center;gap:10px}
+  .top .id{display:flex;align-items:center;gap:10px}
+  .top .mk{width:28px;height:28px;background:var(--hazard);flex:none}
+  .top b{font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 125,'wght' 700;
+    font-size:15px;text-transform:uppercase}
+  .top a{color:var(--hazard);font-size:12px;font-weight:600;text-decoration:none;white-space:nowrap}
+
+  main{padding:26px 18px 40px}
+  section{margin-bottom:34px}
+  h1{font-size:31px;margin-bottom:12px}
+  h2{font-size:21px;margin-bottom:11px}
+  p{font-size:15px;line-height:1.6;color:#3B382E;margin-bottom:12px}
+  p.mute{color:var(--mute);font-size:13.5px}
+
+  .card{background:var(--signal);border:3px solid var(--tarmac);padding:19px;box-shadow:5px 5px 0 var(--tarmac)}
+  .card + .card{margin-top:16px}
+
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(128px,1fr));gap:12px;margin-top:6px}
+  .stat{background:var(--tarmac);color:#fff;padding:15px 13px}
+  .stat b{display:block;font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 125,'wght' 700;
+    font-size:29px;line-height:1;color:var(--hazard)}
+  .stat span{display:block;font-size:11px;letter-spacing:.11em;text-transform:uppercase;color:#B5AF9C;margin-top:7px}
+
+  .early{background:var(--hazard);border:3px solid var(--tarmac);padding:17px}
+  .early b{font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 125,'wght' 700;
+    text-transform:uppercase;font-size:16px;display:block;margin-bottom:7px}
+  .early span{font-size:13.5px;line-height:1.55}
+
+  .btn{display:block;text-align:center;padding:15px;border:3px solid var(--tarmac);cursor:pointer;
+    font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 100,'wght' 700;
+    font-size:14px;text-transform:uppercase;letter-spacing:.05em;
+    background:var(--signal);color:var(--tarmac);text-decoration:none;
+    box-shadow:4px 4px 0 var(--tarmac);margin-top:12px}
+  .btn:active{transform:translate(3px,3px);box-shadow:1px 1px 0 var(--tarmac)}
+  .btn-wa{background:#25D366}
+  .btn-hz{background:var(--hazard)}
+
+  ol,ul{margin:0 0 12px 19px}
+  li{font-size:14.5px;line-height:1.6;margin-bottom:8px;color:#3B382E}
+
+  .rate{display:flex;justify-content:space-between;gap:12px;padding:11px 0;border-bottom:2px solid var(--edge)}
+  .rate:last-child{border-bottom:none}
+  .rate b{font-family:'JetBrains Mono',monospace;font-size:14px;white-space:nowrap}
+
+  footer{padding:22px 18px calc(30px + env(safe-area-inset-bottom));
+    color:var(--mute);font-size:12px;line-height:1.7;border-top:3px solid var(--edge)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div class="id"><div class="mk"></div><b>Next Novas</b></div>
+    <a href="/">← Back to app</a>
+  </div>
+  <div class="hazard"></div>
+
+  <main>
+    <section>
+      <h1 class="disp">Double parking, sorted</h1>
+      <p><b>Tolong Alih</b> connects two drivers by plate number when one blocks the other in.
+      The blocker declares the block, the blocked driver is notified instantly, and the block is
+      cleared when the car moves. Neither driver ever sees the other's phone number — everything
+      routes through the platform.</p>
+      <p class="mute">Built and run in Malaysia by Next Novas, a small studio shipping practical
+      tools for everyday Malaysian problems.</p>
+    </section>
+
+    <section id="statsBlock" hidden>
+      <span class="eyebrow">Reach</span>
+      <div class="stats" id="stats"></div>
+      <p class="mute" style="margin-top:12px">Live figures, read straight from the platform when this
+      page loads. No estimates.</p>
+    </section>
+
+    <section>
+      <span class="eyebrow">Drivers</span>
+      <h2 class="disp">Support</h2>
+
+      <div class="card">
+        <h2 class="disp" style="font-size:17px">Someone else has my plate</h2>
+        <p>Plates can only be claimed once. If yours is taken, it is almost always the
+        previous owner who never removed the car after selling it.</p>
+        <p>Send us a photo of your <b>vehicle registration card (车卡 / geran)</b> showing the plate
+        and your name. We verify, release the plate from the old owner's garage, and email both of
+        you to confirm the transfer.</p>
+        <p class="mute">Usually same day. We never publish either party's details to the other.</p>
+        <a class="btn btn-wa" id="waPlate" href="#">WhatsApp us the 车卡</a>
+        <a class="btn" id="mailPlate" href="#">Email instead</a>
+      </div>
+
+      <div class="card">
+        <h2 class="disp" style="font-size:17px">Anything else</h2>
+        <p>Bugs, wrong alerts, a driver behaving badly, or an idea for what we should build next.</p>
+        <a class="btn btn-wa" id="waGeneral" href="#">WhatsApp support</a>
+        <a class="btn" id="mailGeneral" href="#">Email support</a>
+      </div>
+    </section>
+
+    <section>
+      <span class="eyebrow">Merchants</span>
+      <h2 class="disp">Advertise with us</h2>
+      <p>Tolong Alih reaches drivers at a specific moment: standing next to their car, waiting,
+      with nothing to do. That is a good time to hear about the workshop, kopitiam or car wash
+      down the road.</p>
+
+      <div class="card">
+        <h2 class="disp" style="font-size:17px">How it works</h2>
+        <ul>
+          <li><b>Hyperlocal.</b> Your ad only shows to drivers within the radius you choose —
+          typically 3 km, often much less.</li>
+          <li><b>Flat monthly fee.</b> No bidding, no auction, no surprise bill.</li>
+          <li><b>First-party.</b> We sell and serve every ad ourselves. No ad network, no tracking
+          scripts, no third party receiving your customers' data.</li>
+          <li><b>Monthly report.</b> Impressions and clicks, straight from the platform.</li>
+        </ul>
+
+        <span class="eyebrow" style="margin-top:16px">Placements</span>
+        <div class="rate"><span>Alerts feed</span><b>RM250 / month</b></div>
+        <div class="rate"><span>Waiting screen</span><b>RM400 / month</b></div>
+        <div class="rate"><span>Both</span><b>RM550 / month</b></div>
+
+        <a class="btn btn-hz" id="waMerchant" href="#">Talk to us about advertising</a>
+        <a class="btn" id="mailMerchant" href="#">Email the media pack request</a>
+      </div>
+    </section>
+
+    <section>
+      <span class="eyebrow">Privacy</span>
+      <h2 class="disp">What we hold</h2>
+      <p>Your email, phone number and the plates you register. Your phone number exists only so a
+      driver can be reached when the app cannot reach them, and is never shown to another user.
+      Location is checked to confirm you are in Malaysia and to pick nearby offers; coordinates are
+      never shown to other drivers.</p>
+      <p>Ask us and we will export everything we hold on you, or delete your account outright.</p>
+    </section>
+  </main>
+
+  <footer>
+    <b>Next Novas</b> · Tolong Alih<br>
+    <a href="/">Open the app</a>
+    <span id="buildTag" class="mono" style="display:block;margin-top:9px;font-size:10px"></span>
+  </footer>
+</div>
+
+<script src="/config.js"></script>
+<script src="/vendor/supabase-js-2.112.0.js"></script>
+<script>
+(function(){
+"use strict";
+
+/* ---- change these two to the real support channels ---- */
+var SUPPORT = {
+  whatsapp: "60123456789",              /* international format, no + and no spaces */
+  email:    "support@nextnovas.com"
+};
+
+var ENV = window.__ENV || {};
+
+function wa(text){ return "https://wa.me/"+SUPPORT.whatsapp+"?text="+encodeURIComponent(text); }
+function mail(subject, body){
+  return "mailto:"+SUPPORT.email+"?subject="+encodeURIComponent(subject)+
+         "&body="+encodeURIComponent(body);
+}
+
+var PLATE_MSG = "Hi Next Novas, my plate is already registered to someone else on Tolong Alih. "+
+  "My plate number is: \n\nI'm attaching a photo of my vehicle registration card (车卡).";
+var GENERAL_MSG = "Hi Next Novas, about Tolong Alih:\n\n";
+var MERCHANT_MSG = "Hi Next Novas, I'd like to advertise on Tolong Alih.\n\n"+
+  "Business name:\nArea:\nWhat you'd like to promote:";
+
+document.getElementById("waPlate").href      = wa(PLATE_MSG);
+document.getElementById("mailPlate").href    = mail("Plate transfer request — Tolong Alih", PLATE_MSG);
+document.getElementById("waGeneral").href    = wa(GENERAL_MSG);
+document.getElementById("mailGeneral").href  = mail("Tolong Alih support", GENERAL_MSG);
+document.getElementById("waMerchant").href   = wa(MERCHANT_MSG);
+document.getElementById("mailMerchant").href = mail("Advertising on Tolong Alih", MERCHANT_MSG);
+
+document.getElementById("buildTag").textContent = (ENV.env||"local")+" · "+(ENV.schema||"—");
+
+/* Reach figures come from the platform, never from a spreadsheet. Below a
+   threshold the raw numbers would undersell rather than inform, so the section
+   says what is actually true instead: early, and slots are open. */
+(async function stats(){
+  if(!window.supabase || !ENV.supabaseUrl) return;
+  var sb = window.supabase.createClient(ENV.supabaseUrl, ENV.supabaseAnonKey, {
+    db:{ schema: ENV.schema }, auth:{ persistSession:false }
+  });
+  var r = await sb.rpc("public_stats");
+  if(r.error || !r.data) return;
+
+  var d = r.data, block = document.getElementById("statsBlock");
+  var fmt = function(n){
+    n = Number(n)||0;
+    return n >= 1000 ? (n/1000).toFixed(n >= 10000 ? 0 : 1).replace(/\.0$/,"")+"K" : String(n);
+  };
+
+  if((Number(d.mau)||0) < 100){
+    block.innerHTML = '<span class="eyebrow">Reach</span>'+
+      '<div class="early"><b>Just launched</b><span>Tolong Alih is live in Johor and opening to '+
+      'more areas. Founding merchant slots are available now at a fixed rate that will not rise '+
+      'as the driver base grows.</span></div>';
+    block.hidden = false;
+    return;
+  }
+
+  document.getElementById("stats").innerHTML =
+    '<div class="stat"><b>'+fmt(d.mau)+'</b><span>Monthly active drivers</span></div>'+
+    '<div class="stat"><b>'+fmt(d.plates)+'</b><span>Plates registered</span></div>'+
+    '<div class="stat"><b>'+fmt(d.resolved)+'</b><span>Blocks resolved</span></div>';
+  block.hidden = false;
+})();
+
+})();
+</script>
+</body>
+</html>
