@@ -48,6 +48,15 @@ sed 's/{{SCHEMA}}/app_alih_prod/g' supabase/migrations/0002_actions.sql \
 2. Authentication → Providers: enable Google, with the client ID and secret from
    the Google Cloud console. The authorised redirect URI to give Google is
    `https://llejrncrxjejxvkwqhgj.supabase.co/auth/v1/callback`.
+
+   The OAuth client lives in GCP project **`cloud-xp`**, under the **Next Novas**
+   brand — the umbrella consent screen shared by every Next Novas app. Branding,
+   scopes, audience and publishing status are set per *project*, not per client,
+   so anything changed there hits the other apps too. Tolong Alih has its own
+   client ID under Clients; `nextnovas.com` must stay in Authorized domains.
+
+   Google requires a privacy policy URL on a published External app, and it is
+   brand-level. See the PDPA item under "Not yet built" in CLAUDE.md.
 3. Authentication → URL Configuration → Redirect URLs: add
    `https://alih.nextnovas.com`, `https://uat.alih.nextnovas.com`, and
    `http://127.0.0.1:8787` for local work.
