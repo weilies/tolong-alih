@@ -3,6 +3,9 @@
   "main": "src/worker.js",
   "compatibility_date": "2026-08-04",
   "assets": { "directory": "./public", "binding": "ASSETS" },
+  // Binds the hostname and creates its DNS record on deploy. Without this the
+  // worker is only reachable on its workers.dev subdomain.
+  "routes": [{ "pattern": "uat.alih.nextnovas.com", "custom_domain": true }],
   "vars": {
     "APP_ENV": "uat",
     "APP_SCHEMA": "app_alih_uat",
