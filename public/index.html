@@ -569,9 +569,12 @@ $("signup").addEventListener("click", async function(){
   if(phone.length < 9) return toast("Enter the phone number we can fall back to.");
 
   busy(this,true);
+  /* GoTrue config is per Supabase project, and this project is built to host
+     several apps, so the email templates are shared. `app` lets one neutral
+     template name whichever app actually sent the mail, via {{ .Data.app }}. */
   var r = await sb.auth.signUp({
     email: email, password: pw,
-    options:{ data:{ phone: phone }, emailRedirectTo: location.origin }
+    options:{ data:{ phone: phone, app: "Tolong Alih" }, emailRedirectTo: location.origin }
   });
   busy(this,false,"Create account");
   if(r.error) return toast(why(r.error,"Could not create that account."));
