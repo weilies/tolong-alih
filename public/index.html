@@ -101,10 +101,34 @@
   .topbar .nm{font-size:12.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .topbar .loc{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--hazard);white-space:nowrap}
 
-  .out{background:none;border:1px solid #46422F;color:#B5AF9C;cursor:pointer;flex:none;
-    font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 100,'wght' 600;
-    font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;padding:5px 8px}
-  .out:focus-visible{outline:2px solid var(--hazard);outline-offset:2px}
+  .avatar{width:31px;height:31px;flex:none;border:2px solid var(--hazard);background:var(--signage);
+    color:#fff;cursor:pointer;padding:0;overflow:hidden;display:grid;place-items:center;
+    font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 100,'wght' 700;font-size:12px}
+  .avatar img{width:100%;height:100%;object-fit:cover;display:block}
+  .avatar:focus-visible{outline:2px solid var(--hazard);outline-offset:2px}
+  .avatar.big{width:52px;height:52px;font-size:19px;border-width:3px;border-color:var(--tarmac)}
+
+  .sheet{position:fixed;inset:0;z-index:70;background:rgba(22,21,15,.6);
+    display:flex;align-items:flex-start;justify-content:flex-end;padding:56px 12px 0}
+  /* display:flex beats the hidden attribute, and an invisible overlay would
+     otherwise sit over the whole app swallowing every tap. */
+  .sheet[hidden]{display:none}
+  #slot2[hidden],#plateTaken[hidden],#adminLink[hidden],#clearPic[hidden]{display:none}
+  .sheet-in{background:var(--signal);border:3px solid var(--tarmac);box-shadow:6px 6px 0 var(--hazard);
+    padding:16px;width:100%;max-width:290px}
+  .sheet .who{display:flex;gap:12px;align-items:center;margin-bottom:14px}
+  .sheet .who b{display:block;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .sheet .who span{display:block;font-size:11.5px;color:var(--mute);overflow:hidden;
+    text-overflow:ellipsis;white-space:nowrap}
+  .pickpic{display:block;text-align:center;padding:11px;border:2px solid var(--tarmac);
+    cursor:pointer;font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 100,'wght' 700;
+    font-size:12px;text-transform:uppercase;letter-spacing:.05em;margin-top:10px}
+
+  .carrow{display:flex;gap:8px;margin:-4px 0 14px}
+  .carrow button{flex:1;background:var(--signal);border:2px solid var(--tarmac);cursor:pointer;
+    padding:9px;font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 100,'wght' 700;
+    font-size:10.5px;text-transform:uppercase;letter-spacing:.06em}
+  .carrow button.del{background:var(--alert);color:#fff;border-color:var(--alert)}
 
   .wait{display:inline-block;width:13px;height:13px;border:2px solid rgba(22,21,15,.25);
     border-top-color:var(--tarmac);border-radius:99px;animation:spin .7s linear infinite;vertical-align:-2px}
@@ -311,10 +335,29 @@
   <!-- ============ APP ============ -->
   <div id="app">
     <div class="topbar">
-      <div class="id"><div class="mk">⬛</div><span class="nm" id="topName">—</span></div>
+      <div class="id"><div class="mk">⬛</div><span class="nm">Tolong <b style="color:var(--hazard)">Alih</b></span></div>
       <div class="id" style="flex:none">
         <span class="loc" id="topLoc">—</span>
-        <button class="out" id="signout">Sign out</button>
+        <button class="avatar" id="avatarBtn" aria-haspopup="true" aria-expanded="false" aria-label="Your account">
+          <img id="avatarImg" alt="" hidden /><span id="avatarTxt">·</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="sheet" id="sheet" hidden>
+      <div class="sheet-in">
+        <div class="who">
+          <div class="avatar big"><img id="sheetImg" alt="" hidden /><span id="sheetTxt">·</span></div>
+          <div style="min-width:0">
+            <b id="sheetName">—</b>
+            <span id="sheetMail">—</span>
+          </div>
+        </div>
+        <label class="pickpic" for="avatarFile">Change photo</label>
+        <input type="file" id="avatarFile" accept="image/*" hidden />
+        <button class="btn btn-flat" id="clearPic" hidden>Remove photo</button>
+        <a class="btn btn-flat" id="adminLink" href="/admin.html" hidden style="text-decoration:none;text-align:center">Ads console</a>
+        <button class="btn btn-stop" id="signout">Sign out</button>
       </div>
     </div>
     <div class="hazard thin" id="hz"></div>
@@ -396,7 +439,6 @@
       <b>Tolong Alih</b> — declare when you box someone in, clear it when you move.
       Neither driver ever sees the other's number.
       <a href="/about.html" style="display:inline-block;margin-top:9px;color:var(--signage);font-weight:600">About &amp; contact us</a>
-      <span id="buildTag" class="mono" style="display:block;margin-top:8px;font-size:10px"></span>
     </footer>
 
     <nav class="tabs" role="tablist">
@@ -715,7 +757,78 @@ $("signout").addEventListener("click", async function(){
   clearInterval(poll);
   await sb.auth.signOut();
   me = null; cars = []; declared = []; inbox = []; traced = null; adShown = {};
+  $("sheet").hidden = true;
   stage("gAuth");
+});
+
+/* ================= avatar ================= */
+function initials(name, email){
+  var src = (name || (email||"").split("@")[0] || "?").trim();
+  var bits = src.split(/[\s._-]+/).filter(Boolean);
+  return ((bits[0]||"?")[0] + (bits.length>1 ? bits[bits.length-1][0] : "")).toUpperCase();
+}
+
+function paintAvatar(){
+  var url = me && me.avatar, ini = initials(me && me.name, me && me.email);
+  [["avatarImg","avatarTxt"],["sheetImg","sheetTxt"]].forEach(function(pair){
+    var img = $(pair[0]), txt = $(pair[1]);
+    if(url){ img.src = url; img.hidden = false; txt.hidden = true; }
+    else { img.hidden = true; txt.hidden = false; txt.textContent = ini; }
+  });
+  $("clearPic").hidden = !(me && me.customAvatar);
+}
+
+$("avatarBtn").addEventListener("click", function(){
+  var open = $("sheet").hidden;
+  $("sheet").hidden = !open;
+  this.setAttribute("aria-expanded", String(open));
+});
+$("sheet").addEventListener("click", function(ev){
+  if(ev.target === this){ this.hidden = true; $("avatarBtn").setAttribute("aria-expanded","false"); }
+});
+
+/* Downscaled to 128px before it ever leaves the phone — a raw camera photo is
+   megabytes and this lives in a text column. */
+function shrink(file){
+  return new Promise(function(resolve,reject){
+    var fr = new FileReader();
+    fr.onerror = reject;
+    fr.onload = function(){
+      var im = new Image();
+      im.onerror = reject;
+      im.onload = function(){
+        var S = 128, c = document.createElement("canvas");
+        c.width = c.height = S;
+        var side = Math.min(im.width, im.height);
+        c.getContext("2d").drawImage(im, (im.width-side)/2, (im.height-side)/2, side, side, 0, 0, S, S);
+        resolve(c.toDataURL("image/jpeg", 0.82));
+      };
+      im.src = fr.result;
+    };
+    fr.readAsDataURL(file);
+  });
+}
+
+$("avatarFile").addEventListener("change", async function(){
+  var f = this.files && this.files[0];
+  this.value = "";
+  if(!f) return;
+  if(!/^image\//.test(f.type)) return toast("Pick an image file.");
+  var data;
+  try{ data = await shrink(f); }catch(e){ return toast("Could not read that image."); }
+  var r = await sb.from("profiles").update({ avatar_url: data }).eq("id", me.id);
+  if(r.error) return toast(why(r.error,"Could not save that photo."));
+  me.avatar = data; me.customAvatar = true;
+  paintAvatar();
+  toast("Photo updated");
+});
+
+$("clearPic").addEventListener("click", async function(){
+  var r = await sb.from("profiles").update({ avatar_url: null }).eq("id", me.id);
+  if(r.error) return toast(why(r.error,"Could not remove that photo."));
+  me.avatar = me.googleAvatar || null; me.customAvatar = false;
+  paintAvatar();
+  toast("Photo removed");
 });
 
 /* ================= boot ================= */
@@ -728,15 +841,31 @@ async function afterGeo(){
 
 async function boot(session){
   if(!session) return stage("gAuth");
-  me = { id: session.user.id, email: session.user.email };
+  var meta = session.user.user_metadata || {};
+  me = {
+    id: session.user.id,
+    email: session.user.email,
+    name: meta.full_name || meta.name || null,
+    googleAvatar: meta.avatar_url || meta.picture || null
+  };
   await ensureProfile(session);
 
   /* Google hands back no phone number, so anyone who signed in that way lands
      here without one. The fallback call path is the whole reason we collect it. */
-  var p = await sb.from("profiles").select("phone").eq("id", me.id).maybeSingle();
+  var p = await sb.from("profiles")
+    .select("phone,display_name,avatar_url,is_admin").eq("id", me.id).maybeSingle();
   if(p.error) toast(why(p.error,"Could not read your profile."));
-  if(!p.data || !p.data.phone) return stage("gPhone");
 
+  if(p.data){
+    me.name = p.data.display_name || me.name;
+    me.customAvatar = !!p.data.avatar_url;
+    me.avatar = p.data.avatar_url || me.googleAvatar || null;
+    me.isAdmin = !!p.data.is_admin;
+  } else {
+    me.avatar = me.googleAvatar || null;
+  }
+
+  if(!p.data || !p.data.phone) return stage("gPhone");
   enterApp();
 }
 
@@ -751,9 +880,11 @@ $("savePhone").addEventListener("click", async function(){
 });
 
 async function enterApp(){
-  $("topName").textContent = me.email;
   if(geo) paintPlace(); else $("topLoc").textContent = "no fix";
-  $("buildTag").textContent = (ENV.env||"local")+" · "+ENV.schema;
+  $("sheetName").textContent = me.name || (me.email||"").split("@")[0];
+  $("sheetMail").textContent = me.email;
+  $("adminLink").hidden = !me.isAdmin;
+  paintAvatar();
   stage("app");
   render();
   await Promise.all([refresh(), loadAds()]);
@@ -1005,13 +1136,51 @@ document.addEventListener("click", function(ev){
   if(!b) return;
   var id = b.dataset.id, myp = b.dataset.plate || "";
   switch(b.dataset.act){
-    case "clear": doClear(id, b); break;
-    case "flag":  doFlag(id, myp, b); break;
-    case "now":   doContact(id, myp, true, b); break;
-    case "soft":  doContact(id, myp, false, b); break;
-    case "ad":    adClick(id); break;
+    case "clear":  doClear(id, b); break;
+    case "flag":   doFlag(id, myp, b); break;
+    case "now":    doContact(id, myp, true, b); break;
+    case "soft":   doContact(id, myp, false, b); break;
+    case "ad":     adClick(id); break;
+    case "rename": renameCar(id); break;
+    case "rmcar":  removeCar(id); break;
   }
 });
+
+/* ================= garage upkeep ================= */
+function carById(id){ return cars.filter(function(c){ return c.id === id; })[0]; }
+
+async function renameCar(id){
+  var c = carById(id); if(!c) return;
+  var name = prompt("What do you call this car?\n\n"+nice(c.plate), c.nickname || "");
+  if(name === null) return;
+  var r = await sb.from("cars").update({ nickname: name.trim() || null }).eq("id", id);
+  if(r.error) return toast(why(r.error,"Could not rename that car."));
+  toast("Saved");
+  await refresh();
+}
+
+async function removeCar(id){
+  var c = carById(id); if(!c) return;
+
+  /* Removing a plate that is currently boxed in would silently cut the driver
+     off from the alert telling them so. Say it plainly before they confirm. */
+  var open = declared.filter(function(b){
+    return (b.block_targets||[]).some(function(t){ return t.victim_plate_norm === c.plate_norm; });
+  }).length;
+  var boxed = Object.keys(myPlate).filter(function(k){ return myPlate[k] === c.plate_norm; }).length;
+
+  var warn = "Remove "+nice(c.plate)+" from your garage?\n\n"+
+    "You stop receiving alerts for this plate, and it becomes free for someone else to claim.";
+  if(boxed) warn += "\n\nWARNING: this car has "+boxed+" open block(s) against it right now. "+
+    "You will lose those alerts.";
+  if(open)  warn += "\n\nWARNING: you have declared a block naming this plate.";
+  if(!confirm(warn)) return;
+
+  var r = await sb.from("cars").delete().eq("id", id);
+  if(r.error) return toast(why(r.error,"Could not remove that car."));
+  toast(nice(c.plate)+" removed");
+  await refresh();
+}
 
 /* ================= trace ================= */
 $("trace").addEventListener("click", async function(){
@@ -1075,7 +1244,11 @@ function render(){
 
   $("garage").innerHTML = cars.length
     ? cars.map(function(c){
-        return '<div style="margin-bottom:11px">'+plate(c.plate, c.nickname||"")+'</div>'; }).join("")
+        return '<div style="margin-bottom:6px">'+plate(c.plate, c.nickname||"")+'</div>'+
+          '<div class="carrow">'+
+            '<button data-act="rename" data-id="'+esc(c.id)+'">Rename</button>'+
+            '<button class="del" data-act="rmcar" data-id="'+esc(c.id)+'">Remove</button>'+
+          '</div>'; }).join("")
     : '<div class="empty"><b>No cars yet</b><span>Add the plate you drive. Until you do, nobody can warn you that you\'re boxed in.</span></div>';
 
   $("pickCars").innerHTML = cars.length
