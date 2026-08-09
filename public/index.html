@@ -198,8 +198,9 @@
   /* ---------- tabs ---------- */
   .tabs{position:fixed;left:0;right:0;bottom:0;z-index:30;background:var(--tarmac);
     display:flex;max-width:520px;margin:0 auto;padding-bottom:env(safe-area-inset-bottom)}
-  .tabs button{flex:1;background:none;border:none;cursor:pointer;padding:11px 2px 12px;
-    display:flex;flex-direction:column;align-items:center;gap:5px;color:#8A8474;transition:.14s;position:relative}
+  .tabs button,.tabs .tab-link{flex:1;background:none;border:none;cursor:pointer;padding:11px 2px 12px;
+    display:flex;flex-direction:column;align-items:center;gap:5px;color:#8A8474;transition:.14s;
+    position:relative;text-decoration:none}
   .tabs .ic{font-size:17px;line-height:1}
   .tabs .tx{font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 100,'wght' 600;
     font-size:9.5px;letter-spacing:.1em;text-transform:uppercase}
@@ -403,6 +404,7 @@
       <button role="tab" data-p="pI"><span class="ic">🔔</span><span class="tx">Alerts</span><span class="dot" id="dot" hidden>0</span></button>
       <button role="tab" data-p="pS"><span class="ic">🔍</span><span class="tx">Trace</span></button>
       <button role="tab" data-p="pG"><span class="ic">🚗</span><span class="tx">Garage</span></button>
+      <a class="tab-link" href="/about.html"><span class="ic">💬</span><span class="tx">Help</span></a>
     </nav>
   </div>
 </div>
@@ -507,6 +509,44 @@ function inMalaysia(g){ return g.lat>MY.latMin&&g.lat<MY.latMax&&g.lng>MY.lngMin
 function saveGeo(){ try{ sessionStorage.setItem("alih.geo", JSON.stringify(geo)); }catch(e){} }
 function readGeo(){ try{ var s=sessionStorage.getItem("alih.geo"); return s?JSON.parse(s):null; }catch(e){ return null; } }
 
+/* Turn coordinates into something a driver recognises. OpenStreetMap's
+   reverse geocoder is free and needs no key; the result is cached per session
+   because the fix barely moves and their policy asks for restraint. Purely
+   cosmetic — everything still works when it fails. */
+async function describe(g){
+  var key = "alih.place."+g.lat.toFixed(3)+","+g.lng.toFixed(3);
+  try{
+    var hit = sessionStorage.getItem(key);
+    if(hit) return hit;
+  }catch(e){}
+
+  try{
+    var url = "https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=16&addressdetails=1"+
+      "&lat="+encodeURIComponent(g.lat.toFixed(5))+"&lon="+encodeURIComponent(g.lng.toFixed(5));
+    var res = await fetch(url, { headers:{ "Accept":"application/json" } });
+    if(!res.ok) return null;
+    var a = (await res.json()).address || {};
+    var name = [
+      a.suburb || a.neighbourhood || a.village || a.town || a.city_district,
+      a.city || a.town || a.state
+    ].filter(Boolean).filter(function(v,i,arr){ return arr.indexOf(v)===i; }).slice(0,2).join(", ");
+    if(!name) return null;
+    try{ sessionStorage.setItem(key, name); }catch(e){}
+    return name;
+  }catch(e){ return null; }
+}
+
+async function paintPlace(){
+  if(!geo) return;
+  var el = $("topLoc");
+  if(geo.place){ el.textContent = (geo.inMY?"":"—— ")+geo.place; return; }
+  el.textContent = geo.approx
+    ? (geo.inMY?"MY ":"—— ")+(geo.place||"approximate")
+    : (geo.inMY?"MY ":"—— ")+geo.lat.toFixed(3)+","+geo.lng.toFixed(3);
+  var name = await describe(geo);
+  if(name){ geo.place = name; saveGeo(); el.textContent = (geo.inMY?"":"—— ")+name; }
+}
+
 function acceptGeo(g,label){
   geo = g; geo.inMY = inMalaysia(g); saveGeo();
   if(!geo.inMY){
@@ -524,33 +564,76 @@ $("mockGeo").addEventListener("click", function(){
   acceptGeo({lat:1.5127,lng:103.8207,acc:0,mock:true}, "Using Permas Jaya, Johor");
 });
 
-$("askGeo").addEventListener("click", function(){
+/* One shot at a fix, wrapped so it can be retried with different settings. */
+function fix(opts){
+  return new Promise(function(resolve, reject){
+    navigator.geolocation.getCurrentPosition(function(p){
+      resolve({lat:p.coords.latitude, lng:p.coords.longitude, acc:Math.round(p.coords.accuracy)});
+    }, reject, opts);
+  });
+}
+
+/* Cloudflare resolved the country from the IP before the page even loaded, so
+   a car park with no GPS is still a usable answer. Country is what the gate
+   actually needs — precision was never the point. */
+function ipFallback(){
+  var ip = ENV.ip || {};
+  if(ip.country !== "MY") return null;
+  return {
+    lat: 4.2105, lng: 101.9758,      /* centre of Peninsular Malaysia */
+    acc: null, approx: true,
+    place: [ip.city, ip.region].filter(Boolean)[0] || "Malaysia"
+  };
+}
+
+$("askGeo").addEventListener("click", async function(){
   var btn = this;
   if(!navigator.geolocation || !window.isSecureContext){
     noteEl.textContent = "This browser can't give a location here. Set it manually to keep going.";
     return;
   }
+
+  /* A previously denied permission never prompts again — saying so beats
+     spinning for eight seconds and blaming the GPS. */
+  try{
+    if(navigator.permissions){
+      var st = await navigator.permissions.query({name:"geolocation"});
+      if(st.state === "denied"){
+        noteEl.innerHTML = "Location is blocked for this site. Tap the <b>padlock</b> in the address "+
+          "bar, turn Location on, then reload. On Android also check Settings, Apps, Chrome, "+
+          "Permissions. Or set your location manually below.";
+        return;
+      }
+    }
+  }catch(e){}
+
   btn.disabled = true; btn.textContent = "Locating…";
 
-  var settled = false;
-  var bail = setTimeout(function(){
-    if(settled) return; settled = true;
-    btn.disabled = false; btn.textContent = "Try again";
-    noteEl.textContent = "No response from the browser. Set your location manually to keep going.";
-  }, 7000);
-
-  navigator.geolocation.getCurrentPosition(function(p){
-    if(settled) return; settled = true; clearTimeout(bail);
-    acceptGeo({lat:p.coords.latitude, lng:p.coords.longitude, acc:Math.round(p.coords.accuracy)});
-  }, function(err){
-    if(settled) return; settled = true; clearTimeout(bail);
-    btn.disabled = false; btn.textContent = "Try again";
-    noteEl.textContent = (err && err.code===1
-      ? "Permission denied."
-      : err && err.code===2
-        ? "No position available — common indoors or in a car park."
-        : "Timed out waiting for GPS.") + " Set your location manually to keep going.";
-  }, {enableHighAccuracy:true, timeout:6000, maximumAge:60000});
+  /* High accuracy fails a lot indoors and in car parks — exactly where a
+     blocked driver stands. Fall back to a coarse fix before giving up. */
+  var g = null;
+  try{ g = await fix({enableHighAccuracy:true, timeout:8000, maximumAge:60000}); }
+  catch(e1){
+    btn.textContent = "Still trying…";
+    try{ g = await fix({enableHighAccuracy:false, timeout:15000, maximumAge:300000}); }
+    catch(e2){
+      g = ipFallback();
+      if(g){
+        btn.disabled = false; btn.textContent = "Turn on location";
+        acceptGeo(g, "Located by network — "+g.place);
+        return;
+      }
+      btn.disabled = false; btn.textContent = "Try again";
+      noteEl.textContent = (e2 && e2.code===1
+        ? "Permission denied."
+        : e2 && e2.code===2
+          ? "No position available — common indoors or in a car park."
+          : "Timed out waiting for GPS.") + " Set your location manually to keep going.";
+      return;
+    }
+  }
+  btn.disabled = false; btn.textContent = "Turn on location";
+  acceptGeo(g);
 });
 
 /* ================= gate 2: auth ================= */
@@ -669,9 +752,7 @@ $("savePhone").addEventListener("click", async function(){
 
 async function enterApp(){
   $("topName").textContent = me.email;
-  $("topLoc").textContent = geo
-    ? (geo.inMY?"MY ":"—— ")+geo.lat.toFixed(3)+","+geo.lng.toFixed(3)
-    : "no fix";
+  if(geo) paintPlace(); else $("topLoc").textContent = "no fix";
   $("buildTag").textContent = (ENV.env||"local")+" · "+ENV.schema;
   stage("app");
   render();

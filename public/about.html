@@ -185,17 +185,24 @@
 (function(){
 "use strict";
 
-/* ---- change these two to the real support channels ---- */
+/* Support channels. Both are assembled at runtime rather than written into the
+   markup: address harvesters scrape static HTML and almost never execute
+   scripts, so this keeps a personal number out of the crawled page. It is a
+   speed bump, not armour — a determined scraper running a browser still gets
+   it. Move to a WhatsApp Business number when the volume justifies one. */
 var SUPPORT = {
-  whatsapp: "60123456789",              /* international format, no + and no spaces */
-  email:    "support@nextnovas.com"
+  wa:   [60,11,6568,1162],
+  user: ["support"],
+  host: ["nextnovas","com"]
 };
+function waNumber(){ return SUPPORT.wa.join(""); }
+function address(){ return SUPPORT.user[0]+String.fromCharCode(64)+SUPPORT.host.join("."); }
 
 var ENV = window.__ENV || {};
 
-function wa(text){ return "https://wa.me/"+SUPPORT.whatsapp+"?text="+encodeURIComponent(text); }
+function wa(text){ return "https://wa.me/"+waNumber()+"?text="+encodeURIComponent(text); }
 function mail(subject, body){
-  return "mailto:"+SUPPORT.email+"?subject="+encodeURIComponent(subject)+
+  return "mailto:"+address()+"?subject="+encodeURIComponent(subject)+
          "&body="+encodeURIComponent(body);
 }
 

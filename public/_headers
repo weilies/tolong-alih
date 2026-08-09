@@ -4,7 +4,7 @@
   X-Content-Type-Options: nosniff
   Cross-Origin-Opener-Policy: same-origin
   Strict-Transport-Security: max-age=31536000; includeSubDomains
-  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://llejrncrxjejxvkwqhgj.supabase.co wss://llejrncrxjejxvkwqhgj.supabase.co; frame-ancestors 'none'; base-uri 'none'; form-action 'self'; object-src 'none'
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://llejrncrxjejxvkwqhgj.supabase.co wss://llejrncrxjejxvkwqhgj.supabase.co https://nominatim.openstreetmap.org; frame-ancestors 'none'; base-uri 'none'; form-action 'self'; object-src 'none'
 
 # Env config is per-worker and must never be cached at the edge.
 /config.js
