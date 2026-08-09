@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#16150F" />
+<meta name="robots" content="noindex, nofollow" />
+<title>Ads console · Tolong Alih</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100,600;125,700&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root{--tarmac:#16150F;--hazard:#FFD200;--signage:#0B4DA2;--alert:#E03A17;
+    --clear:#00874E;--signal:#FFFFFF;--fog:#F2F0E9;--edge:#D8D4C6;--mute:#6E6A5E}
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{background:var(--fog);color:var(--tarmac);
+    font-family:'Instrument Sans',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+  body{min-height:100dvh;display:flex;flex-direction:column;align-items:center}
+  button,input,select,textarea{font-family:inherit;font-size:100%}
+  .hazard{height:7px;width:100%;
+    background:repeating-linear-gradient(45deg,var(--hazard) 0 13px,var(--tarmac) 13px 26px)}
+  .disp{font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 125,'wght' 700;
+    text-transform:uppercase;line-height:1}
+  .mono{font-family:'JetBrains Mono',monospace}
+  .eyebrow{font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 100,'wght' 600;
+    font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--mute);
+    display:block;margin:18px 0 7px}
+  .wrap{width:100%;max-width:760px;flex:1;display:flex;flex-direction:column}
+  .top{background:var(--tarmac);color:#fff;padding:12px 16px;display:flex;
+    justify-content:space-between;align-items:center;gap:10px}
+  .top b{font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 125,'wght' 700;font-size:14px;text-transform:uppercase}
+  .top a,.top button{color:var(--hazard);background:none;border:1px solid #46422F;
+    font-size:11px;padding:5px 9px;text-decoration:none;cursor:pointer}
+  main{padding:20px 16px 50px}
+  h1{font-size:24px;margin-bottom:6px}
+  .sub{color:var(--mute);font-size:13px;margin-bottom:4px;line-height:1.55}
+  .card{background:var(--signal);border:3px solid var(--tarmac);padding:15px;margin-top:14px}
+  .card.off{opacity:.62}
+  .row{display:flex;gap:10px;flex-wrap:wrap}
+  .row > *{flex:1;min-width:130px}
+  label{display:block;font-size:11px;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--mute);margin:11px 0 5px;font-weight:600}
+  input,select,textarea{width:100%;background:var(--signal);border:2px solid var(--tarmac);
+    color:var(--tarmac);padding:10px;font-size:15px}
+  textarea{min-height:66px;resize:vertical}
+  input:focus,select:focus,textarea:focus{outline:none;box-shadow:inset 0 0 0 3px var(--hazard)}
+  .btn{display:block;width:100%;margin-top:12px;padding:13px;border:3px solid var(--tarmac);
+    cursor:pointer;font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 100,'wght' 700;
+    font-size:13px;text-transform:uppercase;letter-spacing:.05em;background:var(--signal);
+    box-shadow:3px 3px 0 var(--tarmac)}
+  .btn:active{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--tarmac)}
+  .btn-hz{background:var(--hazard)}
+  .btn-stop{background:var(--alert);color:#fff}
+  .btn-sm{width:auto;flex:1;padding:9px 12px;font-size:11px;box-shadow:none;border-width:2px;margin-top:0}
+  .hd{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:8px}
+  .hd b{font-size:16px;font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 125,'wght' 700;text-transform:uppercase}
+  .pill{font-family:'JetBrains Mono',monospace;font-size:10px;padding:3px 7px;border:2px solid var(--tarmac);white-space:nowrap}
+  .pill.live{background:var(--clear);color:#fff;border-color:var(--clear)}
+  .pill.paused{background:var(--edge)}
+  .nums{display:flex;gap:14px;margin:10px 0;flex-wrap:wrap}
+  .num b{display:block;font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 125,'wght' 700;font-size:20px}
+  .num span{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--mute)}
+  .empty{border:3px dashed var(--edge);padding:26px;text-align:center;background:var(--signal);margin-top:14px}
+  .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:24px;background:var(--tarmac);
+    color:#fff;padding:11px 17px;font-weight:600;font-size:13px;z-index:60;border:2px solid var(--hazard);
+    opacity:0;pointer-events:none;transition:opacity .18s;max-width:92vw;text-align:center}
+  .toast.on{opacity:1}
+  .gate{padding:50px 20px;text-align:center}
+  table{width:100%;border-collapse:collapse;margin-top:10px;font-size:13px}
+  th,td{text-align:left;padding:8px 6px;border-bottom:2px solid var(--edge)}
+  th{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--mute)}
+  td.n{font-family:'JetBrains Mono',monospace;text-align:right}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <b>Ads console</b>
+    <div style="display:flex;gap:8px;align-items:center">
+      <span class="mono" id="who" style="font-size:10px;color:#B5AF9C"></span>
+      <a href="/">App</a>
+    </div>
+  </div>
+  <div class="hazard"></div>
+
+  <div class="gate" id="gate"><p class="sub">Checking your access…</p></div>
+
+  <main id="main" hidden>
+    <h1 class="disp">Inventory</h1>
+    <p class="sub">Ads are direct-sold and served first-party. Rotation is weighted random,
+    filtered by distance, slot and date window.</p>
+
+    <span class="eyebrow">This month</span>
+    <div id="report"></div>
+
+    <span class="eyebrow">Ads</span>
+    <div id="list"></div>
+
+    <span class="eyebrow" id="formTitle">New ad</span>
+    <div class="card">
+      <div class="row">
+        <div><label for="f_merchant">Merchant</label><input id="f_merchant" placeholder="Ah Chong Auto" /></div>
+        <div><label for="f_mark">Badge</label><input id="f_mark" maxlength="3" placeholder="AC" /></div>
+      </div>
+      <label for="f_headline">Headline</label>
+      <input id="f_headline" placeholder="3M window tinting" />
+      <label for="f_body">Body</label>
+      <textarea id="f_body" placeholder="RM30 off when you show this app"></textarea>
+      <label for="f_cta">Link (optional)</label>
+      <input id="f_cta" type="url" placeholder="https://…" />
+      <div class="row">
+        <div><label for="f_lat">Latitude</label><input id="f_lat" type="number" step="any" placeholder="1.5127" /></div>
+        <div><label for="f_lng">Longitude</label><input id="f_lng" type="number" step="any" placeholder="103.8207" /></div>
+        <div><label for="f_radius">Radius (m)</label><input id="f_radius" type="number" value="3000" /></div>
+      </div>
+      <div class="row">
+        <div><label for="f_slots">Slots</label>
+          <select id="f_slots" multiple size="3">
+            <option value="alert" selected>Alerts feed</option>
+            <option value="interstitial" selected>Waiting screen</option>
+            <option value="trace">Trace result</option>
+          </select></div>
+        <div><label for="f_starts">Starts</label><input id="f_starts" type="date" /></div>
+        <div><label for="f_ends">Ends</label><input id="f_ends" type="date" /></div>
+      </div>
+      <div class="row">
+        <div><label for="f_rate">Monthly fee (RM)</label><input id="f_rate" type="number" value="250" /></div>
+        <div><label for="f_cap">Daily cap</label><input id="f_cap" type="number" value="1000" /></div>
+        <div><label for="f_contact">Contact phone</label><input id="f_contact" placeholder="012-345 6789" /></div>
+      </div>
+      <button class="btn btn-hz" id="save">Save ad</button>
+      <button class="btn" id="cancel" hidden>Cancel edit</button>
+    </div>
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="/config.js"></script>
+<script src="/vendor/supabase-js-2.112.0.js"></script>
+<script>
+(function(){
+"use strict";
+
+var ENV = window.__ENV || {};
+var sb = window.supabase.createClient(ENV.supabaseUrl, ENV.supabaseAnonKey, {
+  db:{ schema: ENV.schema },
+  auth:{ persistSession:true, autoRefreshToken:true, detectSessionInUrl:true, flowType:"pkce" }
+});
+
+var editing = null;
+function $(id){ return document.getElementById(id); }
+function esc(s){ return String(s==null?"":s).replace(/[&<>"']/g,function(c){
+  return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); }
+function toast(t){ var e=$("toast"); e.textContent=t; e.classList.add("on");
+  clearTimeout(e._x); e._x=setTimeout(function(){ e.classList.remove("on"); },2600); }
+function why(e,f){ return (e && (e.message||e.error_description)) || f; }
+function ymd(d){ return new Date(d).toISOString().slice(0,10); }
+function ringgit(sen){ return "RM"+((Number(sen)||0)/100).toFixed(0); }
+
+(async function start(){
+  var s = await sb.auth.getSession();
+  if(!s.data || !s.data.session){
+    $("gate").innerHTML = '<p class="sub">Sign in through the app first, then come back.</p>'+
+      '<a class="btn btn-hz" href="/" style="text-decoration:none;text-align:center">Open the app</a>';
+    return;
+  }
+  var uid = s.data.session.user.id;
+  $("who").textContent = s.data.session.user.email;
+
+  var p = await sb.from("profiles").select("is_admin").eq("id", uid).maybeSingle();
+  if(p.error || !p.data || !p.data.is_admin){
+    $("gate").innerHTML = '<p class="sub">This account is not an admin.</p>';
+    return;
+  }
+  $("gate").hidden = true; $("main").hidden = false;
+  $("f_starts").value = ymd(Date.now());
+  $("f_ends").value = ymd(Date.now() + 90*864e5);
+  await Promise.all([loadAds(), loadReport()]);
+})();
+
+async function loadReport(){
+  var r = await sb.rpc("ad_report");
+  var el = $("report");
+  if(r.error){ el.innerHTML = '<p class="sub">'+esc(why(r.error,"Could not load the report."))+'</p>'; return; }
+  var rows = r.data || [];
+  if(!rows.length){ el.innerHTML = '<p class="sub">No impressions recorded yet.</p>'; return; }
+  el.innerHTML = '<table><thead><tr><th>Merchant</th><th>Period</th>'+
+    '<th style="text-align:right">Impr.</th><th style="text-align:right">Clicks</th>'+
+    '<th style="text-align:right">CTR</th><th style="text-align:right">Fee</th></tr></thead><tbody>'+
+    rows.map(function(x){
+      return '<tr><td>'+esc(x.merchant)+'</td><td class="mono" style="font-size:11px">'+
+        esc(String(x.period||"").slice(0,7))+'</td>'+
+        '<td class="n">'+(x.impressions||0)+'</td><td class="n">'+(x.clicks||0)+'</td>'+
+        '<td class="n">'+(x.ctr_pct==null?"—":Number(x.ctr_pct).toFixed(2)+"%")+'</td>'+
+        '<td class="n">'+ringgit(x.rate_sen)+'</td></tr>';
+    }).join("")+'</tbody></table>';
+}
+
+async function loadAds(){
+  var r = await sb.from("ads").select("*").order("created_at",{ascending:false});
+  var el = $("list");
+  if(r.error){ el.innerHTML = '<p class="sub">'+esc(why(r.error,"Could not load ads."))+'</p>'; return; }
+  var rows = r.data || [];
+  if(!rows.length){
+    el.innerHTML = '<div class="empty"><b class="disp">No ads yet</b><p class="sub">Add the first one below.</p></div>';
+    return;
+  }
+  var now = Date.now();
+  el.innerHTML = rows.map(function(a){
+    var live = a.active && new Date(a.starts_at) <= now && new Date(a.ends_at) >= now;
+    return '<div class="card'+(live?"":" off")+'">'+
+      '<div class="hd"><b>'+esc(a.merchant)+'</b>'+
+      '<span class="pill '+(live?"live":"paused")+'">'+(live?"LIVE":(a.active?"SCHEDULED":"PAUSED"))+'</span></div>'+
+      '<div style="font-size:14px;font-weight:600">'+esc(a.headline)+'</div>'+
+      '<div class="sub" style="margin:5px 0 0">'+esc(a.body)+'</div>'+
+      '<div class="nums">'+
+        '<div class="num"><b>'+ringgit(a.rate_sen)+'</b><span>per month</span></div>'+
+        '<div class="num"><b>'+(a.radius_m||0)+'m</b><span>radius</span></div>'+
+        '<div class="num"><b>'+((a.slots||[]).length)+'</b><span>slots</span></div>'+
+        '<div class="num"><b class="mono" style="font-size:12px">'+esc(ymd(a.ends_at))+'</b><span>ends</span></div>'+
+      '</div>'+
+      '<div class="row">'+
+        '<button class="btn btn-sm" data-act="edit" data-id="'+esc(a.id)+'">Edit</button>'+
+        '<button class="btn btn-sm" data-act="toggle" data-id="'+esc(a.id)+'">'+(a.active?"Pause":"Resume")+'</button>'+
+        '<button class="btn btn-sm btn-stop" data-act="del" data-id="'+esc(a.id)+'">Delete</button>'+
+      '</div></div>';
+  }).join("");
+}
+
+function fill(a){
+  editing = a ? a.id : null;
+  $("formTitle").textContent = a ? "Editing "+a.merchant : "New ad";
+  $("cancel").hidden = !a;
+  $("f_merchant").value = a ? a.merchant : "";
+  $("f_mark").value     = a ? (a.mark||"") : "";
+  $("f_headline").value = a ? a.headline : "";
+  $("f_body").value     = a ? a.body : "";
+  $("f_cta").value      = a && a.cta_url ? a.cta_url : "";
+  $("f_lat").value      = a && a.lat != null ? a.lat : "";
+  $("f_lng").value      = a && a.lng != null ? a.lng : "";
+  $("f_radius").value   = a ? a.radius_m : 3000;
+  $("f_starts").value   = ymd(a ? a.starts_at : Date.now());
+  $("f_ends").value     = ymd(a ? a.ends_at : Date.now()+90*864e5);
+  $("f_rate").value     = a ? Math.round((a.rate_sen||0)/100) : 250;
+  $("f_cap").value      = a ? a.daily_cap : 1000;
+  $("f_contact").value  = a && a.contact_phone ? a.contact_phone : "";
+  var slots = a ? (a.slots||[]) : ["alert","interstitial"];
+  Array.prototype.forEach.call($("f_slots").options, function(o){ o.selected = slots.indexOf(o.value) > -1; });
+  window.scrollTo({top:document.body.scrollHeight,behavior:"smooth"});
+}
+
+$("cancel").addEventListener("click", function(){ fill(null); });
+
+$("save").addEventListener("click", async function(){
+  var slots = Array.prototype.filter.call($("f_slots").options, function(o){ return o.selected; })
+                   .map(function(o){ return o.value; });
+  var row = {
+    merchant: $("f_merchant").value.trim(),
+    mark:     ($("f_mark").value.trim() || "AD").toUpperCase(),
+    headline: $("f_headline").value.trim(),
+    body:     $("f_body").value.trim(),
+    cta_url:  $("f_cta").value.trim() || null,
+    lat:      $("f_lat").value === "" ? null : Number($("f_lat").value),
+    lng:      $("f_lng").value === "" ? null : Number($("f_lng").value),
+    radius_m: Number($("f_radius").value) || 3000,
+    slots:    slots.length ? slots : ["alert"],
+    daily_cap: Number($("f_cap").value) || 1000,
+    starts_at: new Date($("f_starts").value).toISOString(),
+    ends_at:   new Date($("f_ends").value).toISOString(),
+    rate_sen:  Math.round((Number($("f_rate").value) || 0) * 100),
+    contact_phone: $("f_contact").value.trim() || null,
+    active: true
+  };
+  if(!row.merchant || !row.headline || !row.body) return toast("Merchant, headline and body are required.");
+  if(new Date(row.ends_at) <= new Date(row.starts_at)) return toast("End date must be after the start date.");
+
+  this.disabled = true;
+  var r = editing
+    ? await sb.from("ads").update(row).eq("id", editing)
+    : await sb.from("ads").insert(row);
+  this.disabled = false;
+  if(r.error) return toast(why(r.error,"Could not save that ad."));
+  toast(editing ? "Ad updated" : "Ad created");
+  fill(null);
+  await Promise.all([loadAds(), loadReport()]);
+});
+
+document.addEventListener("click", async function(ev){
+  var b = ev.target.closest && ev.target.closest("[data-act]");
+  if(!b) return;
+  var id = b.dataset.id;
+
+  if(b.dataset.act === "edit"){
+    var r = await sb.from("ads").select("*").eq("id", id).maybeSingle();
+    if(r.error || !r.data) return toast("Could not open that ad.");
+    return fill(r.data);
+  }
+
+  if(b.dataset.act === "toggle"){
+    var cur = await sb.from("ads").select("active").eq("id", id).maybeSingle();
+    if(cur.error || !cur.data) return toast("Could not read that ad.");
+    var t = await sb.from("ads").update({ active: !cur.data.active }).eq("id", id);
+    if(t.error) return toast(why(t.error,"Could not change that ad."));
+    toast(cur.data.active ? "Paused" : "Resumed");
+    return loadAds();
+  }
+
+  if(b.dataset.act === "del"){
+    /* Deleting an ad cascades to its ad_events, which is what the monthly
+       invoice is built from. Pausing keeps the history. */
+    if(!confirm("Delete this ad permanently?\n\nIts impression and click history goes too, "+
+                "and that history is what the monthly invoice is based on. Pause it instead "+
+                "if the campaign has simply ended.")) return;
+    var d = await sb.from("ads").delete().eq("id", id);
+    if(d.error) return toast(why(d.error,"Could not delete that ad."));
+    toast("Deleted");
+    return Promise.all([loadAds(), loadReport()]);
+  }
+});
+
+})();
+</script>
+</body>
+</html>
