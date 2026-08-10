@@ -101,6 +101,14 @@
   .topbar .nm{font-size:12.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .topbar .loc{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--hazard);white-space:nowrap}
 
+  .lang{position:fixed;top:9px;right:10px;z-index:90;cursor:pointer;
+    background:var(--tarmac);color:var(--hazard);border:2px solid var(--hazard);
+    font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 100,'wght' 700;
+    font-size:11px;letter-spacing:.1em;padding:5px 9px}
+  .lang:focus-visible{outline:2px solid var(--signage);outline-offset:2px}
+  /* keep the avatar clear of the fixed language pill */
+  .topbar > .id:last-child{padding-right:42px}
+
   .avatar{width:31px;height:31px;flex:none;border:2px solid var(--hazard);background:var(--signage);
     color:#fff;cursor:pointer;padding:0;overflow:hidden;display:grid;place-items:center;
     font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 100,'wght' 700;font-size:12px}
@@ -248,6 +256,7 @@
 </style>
 </head>
 <body>
+<button class="lang" id="langBtn" lang="ms">BM</button>
 <div class="wrap">
 
   <!-- ============ GATE 1 · LOCATION ============ -->
@@ -515,9 +524,166 @@ function esc(s){ return String(s==null?"":s).replace(/[&<>"']/g,function(c){
   return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); }
 function plate(p,cap,sm){ return '<div class="plate'+(sm?" sm":"")+'"><b>'+esc(nice(p))+'</b>'+
   (cap?'<small>'+esc(cap)+'</small>':'')+'</div>'; }
-function toast(t){ var e=document.getElementById("toast"); e.textContent=t; e.classList.add("on");
+function toast(t){ var e=document.getElementById("toast"); e.textContent=tr(t); e.classList.add("on");
   clearTimeout(e._x); e._x=setTimeout(function(){ e.classList.remove("on"); },2700); }
 function $(id){ return document.getElementById(id); }
+
+/* ================= language =================
+   Keyed on the English source rather than data-i18n attributes: the markup
+   stays readable, and the same dictionary covers strings this script builds at
+   runtime. Message bodies come from the database already worded, so those stay
+   as the server wrote them. */
+var MS = {
+  /* gate 1 */
+  "Location required":"Lokasi diperlukan",
+  "Tolong Alih works off where you're standing. Your position confirms you're in Malaysia and pulls in offers from shops within walking distance while you wait.":"Tolong Alih bergantung pada lokasi anda berdiri. Kedudukan anda mengesahkan anda berada di Malaysia dan membawa tawaran kedai berdekatan sementara anda menunggu.",
+  "Turn on location":"Hidupkan lokasi",
+  "Set location manually":"Tetapkan lokasi sendiri",
+  "Locating…":"Mencari lokasi…",
+  "Still trying…":"Masih mencuba…",
+  "Try again":"Cuba lagi",
+  "Checked once when you open the app. Your coordinates are never shown to other drivers.":"Disemak sekali sahaja apabila anda buka aplikasi. Koordinat anda tidak pernah ditunjukkan kepada pemandu lain.",
+  /* gate 2 */
+  "Sign in":"Log masuk",
+  "An account ties a plate to a real person. Without it, anyone could claim your plate and read your alerts.":"Akaun mengikat plat kepada orang sebenar. Tanpanya, sesiapa sahaja boleh menuntut plat anda dan membaca amaran anda.",
+  "Continue with Google":"Teruskan dengan Google",
+  "or":"atau",
+  "Email":"E-mel",
+  "Password":"Kata laluan",
+  "At least 8 characters":"Sekurang-kurangnya 8 aksara",
+  "— new accounts only":"— akaun baharu sahaja",
+  "Create account":"Buka akaun",
+  "I already have an account":"Saya sudah ada akaun",
+  "Your number is the fallback if the app can't reach the other driver. It is never shown to them. By continuing you agree we may store your plate numbers and contact details to run the service. You can delete both at any time.":"Nombor anda ialah simpanan jika aplikasi gagal menghubungi pemandu lain. Ia tidak pernah ditunjukkan kepada mereka. Dengan meneruskan, anda bersetuju kami menyimpan nombor plat dan butiran hubungan anda untuk menjalankan perkhidmatan ini. Anda boleh memadam kedua-duanya bila-bila masa.",
+  /* gate 3 */
+  "Check your email":"Semak e-mel anda",
+  "Verification code":"Kod pengesahan",
+  "Verify and continue":"Sahkan dan teruskan",
+  "Send it again":"Hantar sekali lagi",
+  "The email also carries a link — tapping that works just as well as typing the code.":"E-mel itu turut membawa pautan — menekannya sama berkesan dengan menaip kod.",
+  /* gate 4 */
+  "One number needed":"Satu nombor diperlukan",
+  "When the app can't reach the other driver, someone has to be able to call. Your number is never shown to them — it stays with the platform.":"Apabila aplikasi gagal menghubungi pemandu lain, seseorang perlu boleh menelefon. Nombor anda tidak pernah ditunjukkan kepada mereka — ia kekal dengan platform.",
+  "Phone number":"Nombor telefon",
+  "Save and continue":"Simpan dan teruskan",
+  "Asked once. Google sign-in doesn't hand us a number, so we have to ask for it here.":"Ditanya sekali sahaja. Log masuk Google tidak memberi kami nombor, jadi kami perlu bertanya di sini.",
+  /* account sheet */
+  "Change photo":"Tukar gambar",
+  "Remove photo":"Buang gambar",
+  "Ads console":"Konsol iklan",
+  "Sign out":"Log keluar",
+  /* declare */
+  "Declare a block":"Isytihar halangan",
+  "Two taps and a plate. The driver you've boxed in is pinged straight away.":"Dua ketukan dan satu plat. Pemandu yang anda halang akan dimaklumkan serta-merta.",
+  "Driving now":"Sedang memandu",
+  "Plate I'm blocking":"Plat yang saya halang",
+  "Second plate":"Plat kedua",
+  "+ I'm blocking two cars":"+ Saya halang dua kereta",
+  "− Only one car":"− Satu kereta sahaja",
+  "Back in":"Kembali dalam",
+  "1 hr":"1 jam",
+  "Declare block":"Isytihar halangan",
+  "Your number stays hidden. Clear the block when you drive off — if you clear it early, the other driver can flag that you're still there.":"Nombor anda kekal tersembunyi. Lepaskan halangan apabila anda beredar — jika anda lepaskan terlalu awal, pemandu lain boleh menanda bahawa anda masih di situ.",
+  "Blocks you have open":"Halangan anda yang terbuka",
+  "I've moved — clear it":"Saya dah alih — lepaskan",
+  /* alerts */
+  "Alerts":"Amaran",
+  "Blocks declared on your plates, and replies to the ones you declared.":"Halangan yang diisytihar pada plat anda, dan balasan kepada yang anda isytihar.",
+  "All clear":"Semua selesai",
+  "Nobody is blocking you. That's the good outcome.":"Tiada sesiapa menghalang anda. Itu keputusan yang baik.",
+  "Come now":"Datang sekarang",
+  "I'm waiting":"Saya menunggu",
+  "Still blocking me":"Masih menghalang saya",
+  /* trace */
+  "Trace":"Jejak",
+  "Boxed in with no alert? Enter both plates. Needing the pair is what keeps Tolong Alih from becoming a plate-lookup tool.":"Terhalang tanpa amaran? Masukkan kedua-dua plat. Keperluan dua plat inilah yang menghalang Tolong Alih daripada menjadi alat carian plat.",
+  "Plate blocking me":"Plat yang menghalang saya",
+  "My plate":"Plat saya",
+  "Find the driver":"Cari pemandu",
+  "Driver found":"Pemandu dijumpai",
+  /* garage */
+  "Garage":"Garaj",
+  "Your garage":"Garaj anda",
+  "Every car you drive. Registering is what lets drivers reach you — and what warns you when you're the one boxed in.":"Setiap kereta yang anda pandu. Pendaftaran inilah yang membolehkan pemandu menghubungi anda — dan yang memberi amaran apabila anda pula yang terhalang.",
+  "No cars yet":"Belum ada kereta",
+  "Add the plate you drive. Until you do, nobody can warn you that you're boxed in.":"Tambah plat yang anda pandu. Sehingga anda berbuat demikian, tiada sesiapa boleh memberi amaran bahawa anda terhalang.",
+  "Nothing to drive":"Tiada kereta",
+  "Add a car under Garage before you can declare a block.":"Tambah kereta di Garaj sebelum anda boleh mengisytihar halangan.",
+  "Add a car":"Tambah kereta",
+  "Add to garage":"Tambah ke garaj",
+  "Rename":"Namakan",
+  "Remove":"Buang",
+  "Tap to pick":"Ketuk untuk pilih",
+  "Plates are self-declared — no documents to upload to register. A plate can only be claimed once, and alerts are tied to your account.":"Plat diisytihar sendiri — tiada dokumen untuk dimuat naik. Satu plat hanya boleh dituntut sekali, dan amaran terikat kepada akaun anda.",
+  "Plate already claimed":"Plat sudah dituntut",
+  "Send us the 车卡":"Hantar 车卡 kepada kami",
+  /* tabs and chrome */
+  "Declare":"Isytihar",
+  "Help":"Bantuan",
+  "Sponsored":"Tajaan",
+  "Sponsor message":"Mesej penaja",
+  "Continue":"Teruskan",
+  "About & contact us":"Tentang & hubungi kami",
+  /* toasts */
+  "Location confirmed — Malaysia":"Lokasi disahkan — Malaysia",
+  "Signed in with Google":"Log masuk dengan Google",
+  "Email verified":"E-mel disahkan",
+  "Photo updated":"Gambar dikemas kini",
+  "Photo removed":"Gambar dibuang",
+  "Saved":"Disimpan",
+  "Cleared — they've been told":"Dilepaskan — mereka telah dimaklumkan",
+  "Flagged — logged against their record":"Ditanda — direkod terhadap mereka",
+  "Urgent ping sent":"Panggilan segera dihantar",
+  "Message sent":"Mesej dihantar",
+  "Pick which car you're driving.":"Pilih kereta yang anda pandu.",
+  "Add a car to your garage first.":"Tambah kereta ke garaj anda dahulu.",
+  "Check that plate.":"Semak plat itu.",
+  "That's your own car.":"Itu kereta anda sendiri.",
+  "Enter the plate you're blocking.":"Masukkan plat yang anda halang.",
+  "Enter both plates in full.":"Masukkan kedua-dua plat sepenuhnya.",
+  "That doesn't look like a plate.":"Itu tidak kelihatan seperti plat.",
+  "Enter a valid email address.":"Masukkan alamat e-mel yang sah.",
+  "Password needs at least 8 characters.":"Kata laluan perlu sekurang-kurangnya 8 aksara.",
+  "Enter the phone number we can fall back to.":"Masukkan nombor telefon simpanan.",
+  "Enter a Malaysian mobile number.":"Masukkan nombor telefon bimbit Malaysia.",
+  "Enter your email and password.":"Masukkan e-mel dan kata laluan anda.",
+  "Enter the six-digit code.":"Masukkan kod enam digit.",
+  "No connection. Try again.":"Tiada sambungan. Cuba lagi.",
+  "Pick an image file.":"Pilih fail imej.",
+  "No live block matches that pair. Either it was never declared, or it's already been cleared.":"Tiada halangan aktif sepadan dengan pasangan plat itu. Sama ada ia tidak pernah diisytihar, atau ia sudah dilepaskan."
+};
+
+var LANG = "en";
+try{ LANG = localStorage.getItem("alih.lang") || "en"; }catch(e){}
+var ORIG = new Map();
+
+function tr(s){ return (LANG === "ms" && MS[s]) ? MS[s] : s; }
+
+function applyLang(){
+  var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), nodes = [], n;
+  while((n = w.nextNode())) nodes.push(n);
+  nodes.forEach(function(node){
+    if(!ORIG.has(node)) ORIG.set(node, node.nodeValue);
+    var en = ORIG.get(node), key = en.trim();
+    if(!key) return;
+    node.nodeValue = (LANG === "ms" && MS[key]) ? en.replace(key, MS[key]) : en;
+  });
+  Array.prototype.forEach.call(document.querySelectorAll("[placeholder]"), function(el){
+    if(el._ph == null) el._ph = el.getAttribute("placeholder");
+    el.setAttribute("placeholder", (LANG === "ms" && MS[el._ph]) ? MS[el._ph] : el._ph);
+  });
+  document.documentElement.lang = LANG;
+  var b = $("langBtn");
+  b.textContent = LANG === "ms" ? "EN" : "BM";
+  b.setAttribute("lang", LANG === "ms" ? "en" : "ms");
+  b.setAttribute("aria-label", LANG === "ms" ? "Switch to English" : "Tukar ke Bahasa Malaysia");
+}
+
+$("langBtn").addEventListener("click", function(){
+  LANG = LANG === "ms" ? "en" : "ms";
+  try{ localStorage.setItem("alih.lang", LANG); }catch(e){}
+  applyLang();
+});
 
 /* Turn a Supabase/Postgres error into something a driver can act on. */
 function why(e, fallback){
@@ -1302,10 +1468,14 @@ function render(){
   var dot = $("dot");
   dot.hidden = (live === 0); dot.textContent = live;
   $("hz").classList.toggle("live", live > 0 || declared.length > 0);
+
+  /* render() replaces whole subtrees, so the freshly built nodes need a pass. */
+  applyLang();
 }
 
 /* ================= start ================= */
 (function start(){
+  applyLang();
   if(cfgErr){
     noteEl.innerHTML = "<b>"+esc(cfgErr)+"</b>";
   }
