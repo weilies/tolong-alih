@@ -99,7 +99,9 @@
     <span class="eyebrow" id="formTitle">New ad</span>
     <div class="card">
       <div class="row">
-        <div><label for="f_merchant">Merchant</label><input id="f_merchant" placeholder="Ah Chong Auto" /></div>
+        <div><label for="f_advertiser">Advertiser</label>
+          <select id="f_advertiser"><option value="">— new advertiser —</option></select></div>
+        <div><label for="f_merchant">Name shown to drivers</label><input id="f_merchant" placeholder="Ah Chong Auto" /></div>
         <div><label for="f_mark">Badge</label><input id="f_mark" maxlength="3" placeholder="AC" /></div>
       </div>
       <label for="f_headline">Headline</label>
@@ -176,8 +178,29 @@ function ringgit(sen){ return "RM"+((Number(sen)||0)/100).toFixed(0); }
   $("gate").hidden = true; $("main").hidden = false;
   $("f_starts").value = ymd(Date.now());
   $("f_ends").value = ymd(Date.now() + 90*864e5);
-  await Promise.all([loadAds(), loadReport()]);
+  await Promise.all([loadAdvertisers(), loadAds(), loadReport()]);
 })();
+
+var advertisers = [];
+async function loadAdvertisers(){
+  var r = await sb.from("advertisers").select("id,name").order("name");
+  advertisers = r.data || [];
+  $("f_advertiser").innerHTML = '<option value="">— new advertiser —</option>'+
+    advertisers.map(function(v){ return '<option value="'+esc(v.id)+'">'+esc(v.name)+'</option>'; }).join("");
+}
+
+/* One client can run several campaigns, so the advertiser is the thing that
+   gets invoiced and the ad is just one of its campaigns. Picking an existing
+   advertiser fills the display name; leaving it blank creates one from what is
+   typed. */
+async function advertiserFor(name){
+  var hit = advertisers.filter(function(v){ return v.name.toLowerCase() === name.toLowerCase(); })[0];
+  if(hit) return hit.id;
+  var r = await sb.from("advertisers").insert({ name: name }).select("id").maybeSingle();
+  if(r.error || !r.data) return null;
+  await loadAdvertisers();
+  return r.data.id;
+}
 
 async function loadReport(){
   var r = await sb.rpc("ad_report");
@@ -198,7 +221,7 @@ async function loadReport(){
 }
 
 async function loadAds(){
-  var r = await sb.from("ads").select("*").order("created_at",{ascending:false});
+  var r = await sb.from("ads").select("*,advertisers(name)").order("created_at",{ascending:false});
   var el = $("list");
   if(r.error){ el.innerHTML = '<p class="sub">'+esc(why(r.error,"Could not load ads."))+'</p>'; return; }
   var rows = r.data || [];
@@ -232,6 +255,7 @@ function fill(a){
   editing = a ? a.id : null;
   $("formTitle").textContent = a ? "Editing "+a.merchant : "New ad";
   $("cancel").hidden = !a;
+  $("f_advertiser").value = a && a.advertiser_id ? a.advertiser_id : "";
   $("f_merchant").value = a ? a.merchant : "";
   $("f_mark").value     = a ? (a.mark||"") : "";
   $("f_headline").value = a ? a.headline : "";
@@ -252,9 +276,15 @@ function fill(a){
 
 $("cancel").addEventListener("click", function(){ fill(null); });
 
+$("f_advertiser").addEventListener("change", function(){
+  var hit = advertisers.filter(function(v){ return v.id === this.value; }.bind(this))[0];
+  if(hit) $("f_merchant").value = hit.name;
+});
+
 $("save").addEventListener("click", async function(){
   var slots = Array.prototype.filter.call($("f_slots").options, function(o){ return o.selected; })
                    .map(function(o){ return o.value; });
+  var picked = $("f_advertiser").value;
   var row = {
     merchant: $("f_merchant").value.trim(),
     mark:     ($("f_mark").value.trim() || "AD").toUpperCase(),
@@ -272,10 +302,11 @@ $("save").addEventListener("click", async function(){
     contact_phone: $("f_contact").value.trim() || null,
     active: true
   };
-  if(!row.merchant || !row.headline || !row.body) return toast("Merchant, headline and body are required.");
+  if(!row.merchant || !row.headline || !row.body) return toast("Name, headline and body are required.");
   if(new Date(row.ends_at) <= new Date(row.starts_at)) return toast("End date must be after the start date.");
 
   this.disabled = true;
+  row.advertiser_id = picked || await advertiserFor(row.merchant);
   var r = editing
     ? await sb.from("ads").update(row).eq("id", editing)
     : await sb.from("ads").insert(row);
@@ -283,7 +314,7 @@ $("save").addEventListener("click", async function(){
   if(r.error) return toast(why(r.error,"Could not save that ad."));
   toast(editing ? "Ad updated" : "Ad created");
   fill(null);
-  await Promise.all([loadAds(), loadReport()]);
+  await Promise.all([loadAdvertisers(), loadAds(), loadReport()]);
 });
 
 document.addEventListener("click", async function(ev){

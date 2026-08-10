@@ -189,6 +189,21 @@
   .row2{display:flex;gap:10px}
   .row2 .btn{flex:1}
 
+  .thread{margin:2px 0 12px}
+  .line{margin-bottom:8px;padding:9px 11px;background:var(--fog);border-left:3px solid var(--edge)}
+  .line.mine{background:#EAF2FF;border-left-color:var(--signage)}
+  .line .who{display:block;font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 100,'wght' 600;
+    font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--mute);margin-bottom:4px}
+  .line .txt{display:block;font-size:14px;line-height:1.5}
+  .line .at{display:block;font-family:'JetBrains Mono',monospace;font-size:9.5px;color:var(--mute);
+    margin-top:5px;text-align:right}
+  .say{display:flex;gap:8px;margin-top:10px}
+  .sayin{flex:1;border:2px solid var(--tarmac);padding:11px;font-size:15px;min-width:0}
+  .saybtn{flex:none;background:var(--hazard);border:2px solid var(--tarmac);cursor:pointer;
+    padding:0 15px;font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 100,'wght' 700;
+    font-size:12px;text-transform:uppercase;letter-spacing:.05em}
+  .saybtn:disabled{opacity:.4}
+
   .chips{display:flex;gap:8px;flex-wrap:wrap}
   .chips button{flex:1;min-width:70px;background:var(--signal);border:3px solid var(--edge);color:var(--tarmac);
     padding:12px 3px;font-size:14px;font-weight:700;cursor:pointer;font-family:'JetBrains Mono',monospace;transition:.14s}
@@ -669,6 +684,11 @@ var MS = {
   "Enter your email and password.":"Masukkan e-mel dan kata laluan anda.",
   "Enter the six-digit code.":"Masukkan kod enam digit.",
   "No connection. Try again.":"Tiada sambungan. Cuba lagi.",
+  "Type a message":"Taip mesej",
+  "Send":"Hantar",
+  "Type something first.":"Taip sesuatu dahulu.",
+  "blocking you":"menghalang anda",
+  "Could not send that.":"Tidak dapat menghantar.",
   "Pick an image file.":"Pilih fail imej.",
   "No live block matches that pair. Either it was never declared, or it's already been cleared.":"Tiada halangan aktif sepadan dengan pasangan plat itu. Sama ada ia tidak pernah diisytihar, atau ia sudah dilepaskan."
 };
@@ -1120,8 +1140,11 @@ async function refresh(){
     .order("declared_at", {ascending:false});
   declared = b.data || []; err = err || b.error;
 
-  var m = await sb.from("messages").select("id,block_id,from_label,kind,body,created_at")
-    .eq("to_user", me.id).order("created_at", {ascending:false}).limit(60);
+  /* RLS now lets both parties read a block's whole thread, so drop the
+     to_user filter — otherwise every reply you sent is invisible to you. */
+  var m = await sb.from("messages")
+    .select("id,block_id,from_label,kind,body,created_at,from_user,is_typed")
+    .order("created_at", {ascending:false}).limit(200);
   inbox = m.data || []; err = err || m.error;
 
   blockIx = {}; myPlate = {};
@@ -1169,10 +1192,11 @@ function pickAd(slot){
   });
   return pool.length ? pool[Math.floor(Math.random()*pool.length)] : null;
 }
+/* Counting lives in the database now: the client can ask for an event to be
+   recorded, but not decide that it counts. */
 function logAd(id, slot, event){
   if(!me) return;
-  sb.from("ad_events").insert({ ad_id:id, user_id:me.id, slot:slot, event:event })
-    .then(null, function(){});
+  sb.rpc("log_ad_event", { p_ad:id, p_slot:slot, p_event:event }).then(null, function(){});
 }
 function adBody(a){
   var d = adDistance(a);
@@ -1382,9 +1406,33 @@ document.addEventListener("click", function(ev){
     case "now":    doContact(id, myp, true, b); break;
     case "soft":   doContact(id, myp, false, b); break;
     case "ad":     adClick(id); break;
+    case "say":    doSay(id, myp, b); break;
     case "rename": renameCar(id); break;
     case "rmcar":  removeCar(id); break;
   }
+});
+
+async function doSay(id, myp, btn){
+  var box = document.querySelector('.sayin[data-say="'+id+'"]');
+  if(!box) return;
+  var body = box.value.trim();
+  if(!body) return toast("Type something first.");
+  busy(btn,true);
+  var r = await sb.rpc("say", { p_block:id, p_my_plate:myp, p_body:body });
+  busy(btn,false,"Send");
+  if(r.error) return toast(why(r.error,"Could not send that."));
+  box.value = "";
+  await refresh();
+}
+
+/* Enter sends, so the driver never hunts for the button one-handed. */
+document.addEventListener("keydown", function(ev){
+  if(ev.key !== "Enter") return;
+  var box = ev.target;
+  if(!box.classList || !box.classList.contains("sayin")) return;
+  ev.preventDefault();
+  var btn = box.parentNode.querySelector(".saybtn");
+  doSay(box.dataset.say, box.dataset.plate || "", btn);
 });
 
 /* ================= garage upkeep ================= */
@@ -1519,23 +1567,60 @@ function render(){
       }).join("")+'</div>'
     : "";
 
-  $("inbox").innerHTML = inbox.length
-    ? inbox.map(function(m,i){
-        var b = blockIx[m.block_id], myp = myPlate[m.block_id] || "", acts = "";
-        if(b && b.status !== "cleared" && b.status !== "expired" && b.blocker_id !== me.id){
+  /* One card per block rather than per message: a driver is having one
+     conversation about one car, not reading a mailbox. */
+  var threads = {}, order = [];
+  inbox.slice().reverse().forEach(function(m){
+    if(!m.block_id) return;
+    if(!threads[m.block_id]){ threads[m.block_id] = []; order.push(m.block_id); }
+    threads[m.block_id].push(m);
+  });
+  order.reverse();
+
+  $("inbox").innerHTML = order.length
+    ? order.map(function(bid, i){
+        var msgs = threads[bid], b = blockIx[bid], myp = myPlate[bid] || "";
+        var last = msgs[msgs.length-1];
+        var live = b && b.status !== "cleared" && b.status !== "expired";
+        var theirs = b && b.blocker_id !== me.id;
+        var acts = "";
+
+        if(live && theirs){
           acts = '<div class="row2">'+
-            '<button class="btn btn-stop" data-act="now"  data-id="'+esc(b.id)+'" data-plate="'+esc(myp)+'">Come now</button>'+
-            '<button class="btn btn-flat" data-act="soft" data-id="'+esc(b.id)+'" data-plate="'+esc(myp)+'">I\'m waiting</button>'+
+            '<button class="btn btn-stop" data-act="now"  data-id="'+esc(bid)+'" data-plate="'+esc(myp)+'">Come now</button>'+
+            '<button class="btn btn-flat" data-act="soft" data-id="'+esc(bid)+'" data-plate="'+esc(myp)+'">I\'m waiting</button>'+
           '</div>';
-        } else if(b && b.status !== "cleared" && b.status !== "expired" && b.blocker_id === me.id){
-          acts = '<button class="btn btn-go" data-act="clear" data-id="'+esc(b.id)+'">I\'ve moved — clear it</button>';
-        } else if(b && b.status === "cleared" && m.from_label === "All clear"){
-          acts = '<button class="btn btn-flat" data-act="flag" data-id="'+esc(b.id)+'" data-plate="'+esc(myp)+'">Still blocking me</button>';
+        } else if(live && !theirs){
+          acts = '<button class="btn btn-go" data-act="clear" data-id="'+esc(bid)+'">I\'ve moved — clear it</button>';
+        } else if(b && b.status === "cleared" && last.from_label === "All clear"){
+          acts = '<button class="btn btn-flat" data-act="flag" data-id="'+esc(bid)+'" data-plate="'+esc(myp)+'">Still blocking me</button>';
         }
-        return '<div class="card '+esc(m.kind||"")+'">'+(m.kind==="hot"?'<div class="hazard live"></div>':"")+
-          '<div class="in"><div class="top"><span class="eyebrow">'+esc(m.from_label)+'</span>'+
-          '<span class="t">'+esc(hhmm(m.created_at))+'</span></div>'+
-          '<div class="msg">'+esc(m.body)+'</div>'+acts+'</div></div>' + (i===0?adCard("alert"):"");
+
+        var lines = msgs.map(function(m){
+          var mine = m.from_user === me.id;
+          return '<div class="line'+(mine?" mine":"")+'">'+
+            (m.is_typed ? "" : '<span class="who">'+esc(m.from_label)+'</span>')+
+            '<span class="txt">'+esc(m.body)+'</span>'+
+            '<span class="at">'+esc(hhmm(m.created_at))+'</span></div>';
+        }).join("");
+
+        var composer = live
+          ? '<div class="say">'+
+              '<input class="sayin" data-say="'+esc(bid)+'" data-plate="'+esc(myp)+'" maxlength="300" '+
+              'placeholder="Type a message" autocomplete="off" />'+
+              '<button class="saybtn" data-act="say" data-id="'+esc(bid)+'" data-plate="'+esc(myp)+'">Send</button>'+
+            '</div>'
+          : "";
+
+        return '<div class="card '+esc(last.kind||"")+'">'+
+          (last.kind==="hot" && live ? '<div class="hazard live"></div>' : "")+
+          '<div class="in">'+
+            '<div class="top"><span class="eyebrow">'+
+              esc(b ? (theirs ? b.blocker_plate_norm+" blocking you" : "You blocked "+(myp||"someone")) : last.from_label)+
+            '</span><span class="t">'+esc(hhmm(last.created_at))+'</span></div>'+
+            '<div class="thread">'+lines+'</div>'+
+            acts + composer +
+          '</div></div>' + (i===0 ? adCard("alert") : "");
       }).join("")
     : '<div class="empty"><b>All clear</b><span>Nobody is blocking you. That\'s the good outcome.</span></div>'+adCard("alert");
 
