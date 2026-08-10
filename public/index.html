@@ -657,20 +657,29 @@ var LANG = "en";
 try{ LANG = localStorage.getItem("alih.lang") || "en"; }catch(e){}
 var ORIG = new Map();
 
-function tr(s){ return (LANG === "ms" && MS[s]) ? MS[s] : s; }
+/* Markup wraps across lines, so a node's text carries newlines and indentation
+   that the dictionary keys do not. Both sides collapse to single spaces for the
+   lookup, and the node's own leading and trailing whitespace is put back. */
+var FLAT = {};
+Object.keys(MS).forEach(function(k){ FLAT[k.replace(/\s+/g," ").trim()] = MS[k]; });
+function flat(s){ return String(s == null ? "" : s).replace(/\s+/g," ").trim(); }
+
+function tr(s){ var h = (LANG === "ms") ? FLAT[flat(s)] : null; return h || s; }
 
 function applyLang(){
   var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), nodes = [], n;
   while((n = w.nextNode())) nodes.push(n);
   nodes.forEach(function(node){
     if(!ORIG.has(node)) ORIG.set(node, node.nodeValue);
-    var en = ORIG.get(node), key = en.trim();
+    var raw = ORIG.get(node), key = flat(raw);
     if(!key) return;
-    node.nodeValue = (LANG === "ms" && MS[key]) ? en.replace(key, MS[key]) : en;
+    var hit = (LANG === "ms") ? FLAT[key] : null;
+    node.nodeValue = hit ? (raw.match(/^\s*/)[0] + hit + raw.match(/\s*$/)[0]) : raw;
   });
   Array.prototype.forEach.call(document.querySelectorAll("[placeholder]"), function(el){
     if(el._ph == null) el._ph = el.getAttribute("placeholder");
-    el.setAttribute("placeholder", (LANG === "ms" && MS[el._ph]) ? MS[el._ph] : el._ph);
+    var ph = (LANG === "ms") ? FLAT[flat(el._ph)] : null;
+    el.setAttribute("placeholder", ph || el._ph);
   });
   document.documentElement.lang = LANG;
   var b = $("langBtn");

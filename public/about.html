@@ -28,12 +28,19 @@
   .mono{font-family:'JetBrains Mono',monospace}
   .wrap{width:100%;max-width:560px;flex:1;display:flex;flex-direction:column}
 
-  .top{background:var(--tarmac);color:#fff;padding:13px 18px;display:flex;
+  .top{background:var(--tarmac);color:#fff;padding:11px 16px;display:flex;
     justify-content:space-between;align-items:center;gap:10px}
-  .top .id{display:flex;align-items:center;gap:10px}
-  .top .mk{width:26px;height:26px;background:var(--hazard);flex:none}
-  .top b{font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 125,'wght' 700;font-size:14px;text-transform:uppercase}
-  .top a{color:var(--hazard);font-size:12px;font-weight:600;text-decoration:none;white-space:nowrap}
+  .top .id{display:flex;align-items:center;gap:9px;min-width:0}
+  .top .mk{width:26px;height:26px;background:var(--hazard);color:var(--tarmac);
+    display:grid;place-items:center;font-size:13px;flex:none}
+  .top .nm{font-size:12.5px;font-weight:600;white-space:nowrap}
+  .top a{color:var(--hazard);font-size:12px;font-weight:600;text-decoration:none;
+    white-space:nowrap;padding-right:42px}
+  .lang{position:fixed;top:9px;right:10px;z-index:90;cursor:pointer;
+    background:var(--tarmac);color:var(--hazard);border:2px solid var(--hazard);
+    font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 100,'wght' 700;
+    font-size:11px;letter-spacing:.1em;padding:5px 9px}
+  .lang:focus-visible{outline:2px solid var(--signage);outline-offset:2px}
 
   main{padding:24px 18px 34px}
   .lede{font-size:15px;line-height:1.6;color:#3B382E;margin-bottom:22px}
@@ -84,9 +91,10 @@
 </style>
 </head>
 <body>
+<button class="lang" id="langBtn" lang="ms">BM</button>
 <div class="wrap">
   <div class="top">
-    <div class="id"><div class="mk"></div><b>Next Novas</b></div>
+    <div class="id"><div class="mk">⬛</div><span class="nm">Tolong <b style="color:var(--hazard)">Alih</b></span></div>
     <a href="/">← Back to app</a>
   </div>
   <div class="hazard"></div>
@@ -128,13 +136,15 @@
           <li><b>Monthly report.</b> Impressions and clicks, straight from the platform.</li>
         </ul>
 
-        <h3>Placements</h3>
-        <div class="rate"><span>Alerts feed</span><b>RM250 / month</b></div>
-        <div class="rate"><span>Waiting screen</span><b>RM400 / month</b></div>
-        <div class="rate"><span>Both</span><b>RM550 / month</b></div>
+        <h3>Founding rates</h3>
+        <p class="mute">Launch pricing while the driver base is still small. Whoever signs now keeps
+        this rate as it grows.</p>
+        <div class="rate"><span>Alerts feed</span><b>RM25 / month</b></div>
+        <div class="rate"><span>Waiting screen</span><b>RM40 / month</b></div>
+        <div class="rate"><span>Both</span><b>RM55 / month</b></div>
 
-        <a class="btn btn-hz" id="waMerchant" href="#">Talk to us about advertising</a>
-        <a class="btn" id="mailMerchant" href="#">Request the media pack</a>
+        <a class="btn btn-hz" id="waMerchant" href="#">WhatsApp us — book a slot</a>
+        <a class="btn" id="mailMerchant" href="#">Email us — send me the details</a>
       </div>
     </details>
 
@@ -153,19 +163,33 @@
         <p class="mute">Ask and we will export everything we hold on you, or delete your account
         outright.</p>
 
-        <h3>How the four words work</h3>
+        <h3>The four words</h3>
+        <p>Every action in Tolong Alih is one of four. We use the same word everywhere so nobody
+        has to guess what a button does.</p>
         <ul>
-          <li><b>Declare</b> — you tell us you have blocked someone in.</li>
-          <li><b>Clear</b> — you have moved. No confirmation needed; they may be streets away.</li>
-          <li><b>Flag</b> — they said they moved and they have not.</li>
-          <li><b>Trace</b> — you are blocked in but not registered. Enter both plates to find them.</li>
+          <li><b>Declare</b> — you have double-parked and boxed someone in. Pick the car you are
+          driving, type the plate you are blocking, say how long you will be. If that plate is
+          registered, its owner is alerted within seconds. If it is not, nothing is wasted: they
+          can still find you by tracing.</li>
+          <li><b>Clear</b> — you have moved your car. Tap it and the other driver is told they are
+          free. We never ask them to confirm, because they might be a street away having lunch and
+          waiting for their tap would leave you stuck.</li>
+          <li><b>Flag</b> — the opposite case. They marked it cleared, you walk out, the car is
+          still there. Flag reopens the block, tells them to move, and records it against them.
+          Repeat offenders are how we find people abusing this.</li>
+          <li><b>Trace</b> — you are boxed in and got no alert, because your plate is not
+          registered. Enter their plate and yours, and if a matching block is open we connect you.
+          Both plates are required on purpose: it means the only person who can look up a car is
+          someone genuinely standing behind it, so this can never become a plate-lookup service.</li>
         </ul>
       </div>
     </details>
   </main>
 
   <footer>
-    <b>Next Novas</b> · Tolong Alih · <a href="/">Open the app</a>
+    <b>Tolong Alih</b> by Next Novas — declare when you box someone in, clear it when you move.
+    Neither driver ever sees the other's number.
+    <a href="/" style="display:inline-block;margin-top:9px;font-weight:600">Open the app</a>
   </footer>
 </div>
 
@@ -197,6 +221,95 @@ document.getElementById("waGeneral").href    = wa(GENERAL);
 document.getElementById("mailGeneral").href  = mail("Tolong Alih support", GENERAL);
 document.getElementById("waMerchant").href   = wa(MERCHANT);
 document.getElementById("mailMerchant").href = mail("Advertising on Tolong Alih", MERCHANT);
+
+
+/* ================= language =================
+   Same approach as the app: keyed on the English source, originals kept per
+   node so switching back is exact. The choice is shared with the app through
+   the same localStorage key. */
+var MS = {
+  "connects two drivers by plate number when one blocks the other in. Neither ever sees the other's phone number.":"menghubungkan dua pemandu melalui nombor plat apabila seorang menghalang yang lain. Kedua-duanya tidak pernah melihat nombor telefon satu sama lain.",
+  "by Next Novas — declare when you box someone in, clear it when you move. Neither driver ever sees the other's number.":"oleh Next Novas — isytihar apabila anda menghalang seseorang, lepaskan apabila anda beredar. Kedua-dua pemandu tidak pernah melihat nombor satu sama lain.",
+  "Support":"Bantuan",
+  "Someone else has my plate":"Orang lain ada plat saya",
+  "Almost always the previous owner, who never removed the car after selling it.":"Hampir selalu pemilik terdahulu, yang tidak membuang kereta itu selepas menjualnya.",
+  "Send us a photo of your":"Hantar kepada kami gambar",
+  "vehicle registration card (车卡 / geran)":"kad pendaftaran kenderaan (车卡 / geran)",
+  "showing the plate and your name. We verify, release it from their garage, and email you both. Usually same day.":"yang menunjukkan plat dan nama anda. Kami sahkan, lepaskan daripada garaj mereka, dan e-mel kepada anda berdua. Biasanya hari yang sama.",
+  "WhatsApp us the 车卡":"WhatsApp 车卡 kepada kami",
+  "Email instead":"E-mel sahaja",
+  "Anything else":"Perkara lain",
+  "Bugs, wrong alerts, a driver behaving badly, or an idea for what we build next.":"Pepijat, amaran salah, pemandu yang berkelakuan buruk, atau idea untuk apa kami bina seterusnya.",
+  "WhatsApp support":"WhatsApp bantuan",
+  "Email support":"E-mel bantuan",
+  "Advertise with us":"Beriklan dengan kami",
+  "Tolong Alih reaches drivers standing next to their car, waiting, with nothing to do.\n        A good moment to hear about the workshop or kopitiam down the road.":"Tolong Alih menjangkau pemandu yang sedang berdiri di sebelah kereta, menunggu, tanpa apa-apa untuk dibuat. Masa yang baik untuk mendengar tentang bengkel atau kopitiam berdekatan.",
+  "How it works":"Cara ia berfungsi",
+  "Hyperlocal.":"Sangat setempat.",
+  "Shown only to drivers inside the radius you choose.":"Ditunjukkan hanya kepada pemandu dalam radius yang anda pilih.",
+  "Flat monthly fee.":"Bayaran bulanan tetap.",
+  "No bidding, no surprise bill.":"Tiada bidaan, tiada bil mengejut.",
+  "First-party.":"Milik kami sendiri.",
+  "We serve every ad ourselves — no ad network, no tracking scripts.":"Kami menyiarkan setiap iklan sendiri — tiada rangkaian iklan, tiada skrip penjejakan.",
+  "Monthly report.":"Laporan bulanan.",
+  "Impressions and clicks, straight from the platform.":"Tayangan dan klik, terus daripada platform.",
+  "Founding rates":"Harga pengasas",
+  "Launch pricing while the driver base is still small. Whoever signs now keeps\n        this rate as it grows.":"Harga pelancaran sementara jumlah pemandu masih kecil. Sesiapa yang menyertai sekarang kekal dengan harga ini apabila ia berkembang.",
+  "Alerts feed":"Suapan amaran",
+  "Waiting screen":"Skrin menunggu",
+  "Both":"Kedua-duanya",
+  "WhatsApp us — book a slot":"WhatsApp kami — tempah slot",
+  "Email us — send me the details":"E-mel kami — hantar butiran",
+  "Others":"Lain-lain",
+  "Who we are":"Siapa kami",
+  "Next Novas is a small Malaysian studio building practical tools for everyday problems\n        here. Tolong Alih is one of them.":"Next Novas ialah studio kecil Malaysia yang membina alat praktikal untuk masalah harian di sini. Tolong Alih ialah salah satunya.",
+  "Your data":"Data anda",
+  "The four words":"Empat perkataan",
+  "Every action in Tolong Alih is one of four. We use the same word everywhere so nobody\n        has to guess what a button does.":"Setiap tindakan dalam Tolong Alih ialah satu daripada empat. Kami guna perkataan yang sama di mana-mana supaya tiada sesiapa perlu meneka fungsi butang.",
+  "Just launched":"Baru dilancarkan",
+  "Open the app":"Buka aplikasi",
+  "← Back to app":"← Kembali ke aplikasi"
+};
+
+var LANG = "en";
+try{ LANG = localStorage.getItem("alih.lang") || "en"; }catch(e){}
+var ORIG = new Map();
+
+/* Markup wraps across lines, so a node's text carries newlines and indentation
+   that the dictionary keys do not. Both sides collapse to single spaces for the
+   lookup, and the node's own leading and trailing whitespace is put back. */
+var FLAT = {};
+Object.keys(MS).forEach(function(k){ FLAT[k.replace(/\s+/g," ").trim()] = MS[k]; });
+function flat(s){ return s.replace(/\s+/g," ").trim(); }
+
+function applyLang(){
+  var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), nodes = [], n;
+  while((n = w.nextNode())) nodes.push(n);
+  nodes.forEach(function(node){
+    if(!ORIG.has(node)) ORIG.set(node, node.nodeValue);
+    var raw = ORIG.get(node), key = flat(raw);
+    if(!key) return;
+    var hit = (LANG === "ms") ? FLAT[key] : null;
+    if(hit){
+      node.nodeValue = raw.match(/^\s*/)[0] + hit + raw.match(/\s*$/)[0];
+    } else {
+      node.nodeValue = raw;
+    }
+  });
+  document.documentElement.lang = LANG;
+  var b = document.getElementById("langBtn");
+  b.textContent = LANG === "ms" ? "EN" : "BM";
+  b.setAttribute("lang", LANG === "ms" ? "en" : "ms");
+  b.setAttribute("aria-label", LANG === "ms" ? "Switch to English" : "Tukar ke Bahasa Malaysia");
+}
+
+document.getElementById("langBtn").addEventListener("click", function(){
+  LANG = LANG === "ms" ? "en" : "ms";
+  try{ localStorage.setItem("alih.lang", LANG); }catch(e){}
+  applyLang();
+});
+
+applyLang();
 
 /* Keep the +/- marker honest when a section is toggled. */
 Array.prototype.forEach.call(document.querySelectorAll("details"), function(d){
