@@ -34,8 +34,21 @@
   .top .mk{width:26px;height:26px;background:var(--hazard);color:var(--tarmac);
     display:grid;place-items:center;font-size:13px;flex:none}
   .top .nm{font-size:12.5px;font-weight:600;white-space:nowrap}
-  .top a{color:var(--hazard);font-size:12px;font-weight:600;text-decoration:none;
-    white-space:nowrap;padding-right:42px}
+  .top a{color:var(--hazard);font-size:12px;font-weight:600;text-decoration:none;white-space:nowrap}
+  .avatar{width:31px;height:31px;flex:none;border:2px solid var(--hazard);background:var(--signage);
+    color:#fff;cursor:pointer;padding:0;overflow:hidden;display:grid;place-items:center;
+    font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 100,'wght' 700;font-size:12px}
+  .avatar img{width:100%;height:100%;object-fit:cover;display:block}
+  .avatar.big{width:52px;height:52px;font-size:19px;border-width:3px;border-color:var(--tarmac)}
+  .sheet{position:fixed;inset:0;z-index:70;background:rgba(22,21,15,.6);
+    display:flex;align-items:flex-start;justify-content:flex-end;padding:56px 12px 0}
+  .sheet[hidden]{display:none}
+  .sheet-in{background:var(--signal);border:3px solid var(--tarmac);box-shadow:6px 6px 0 var(--hazard);
+    padding:16px;width:100%;max-width:290px}
+  .sheet .who{display:flex;gap:12px;align-items:center;margin-bottom:6px}
+  .sheet .who b{display:block;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .sheet .who span{display:block;font-size:11.5px;color:var(--mute);overflow:hidden;
+    text-overflow:ellipsis;white-space:nowrap}
   .lang{position:fixed;top:9px;right:10px;z-index:90;cursor:pointer;
     background:var(--tarmac);color:var(--hazard);border:2px solid var(--hazard);
     font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 100,'wght' 700;
@@ -91,11 +104,26 @@
 </style>
 </head>
 <body>
-<button class="lang" id="langBtn" lang="ms">BM</button>
 <div class="wrap">
   <div class="top">
-    <div class="id"><div class="mk">⬛</div><span class="nm">Tolong <b style="color:var(--hazard)">Alih</b></span></div>
-    <a href="/">← Back to app</a>
+    <div class="id"><div class="mk">🚗</div><span class="nm">Tolong <b style="color:var(--hazard)">Alih</b></span></div>
+    <div class="id" style="flex:none">
+      <a href="/">Home</a>
+      <button class="avatar" id="avatarBtn" aria-haspopup="true" aria-expanded="false" aria-label="Your account">
+        <img id="avatarImg" alt="" hidden /><span id="avatarTxt">·</span>
+      </button>
+    </div>
+  </div>
+
+  <div class="sheet" id="sheet" hidden>
+    <div class="sheet-in">
+      <div class="who">
+        <div class="avatar big"><img id="sheetImg" alt="" hidden /><span id="sheetTxt">·</span></div>
+        <div style="min-width:0"><b id="sheetName">Not signed in</b><span id="sheetMail">Tolong Alih</span></div>
+      </div>
+      <button class="btn" id="langRow">Bahasa Malaysia</button>
+      <a class="btn btn-hz" href="/" style="text-decoration:none">Open the app</a>
+    </div>
   </div>
   <div class="hazard"></div>
 
@@ -267,6 +295,16 @@ var MS = {
   "The four words":"Empat perkataan",
   "Every action in Tolong Alih is one of four. We use the same word everywhere so nobody\n        has to guess what a button does.":"Setiap tindakan dalam Tolong Alih ialah satu daripada empat. Kami guna perkataan yang sama di mana-mana supaya tiada sesiapa perlu meneka fungsi butang.",
   "Just launched":"Baru dilancarkan",
+  "Declare":"Isytihar",
+  "Clear":"Lepas",
+  "Flag":"Tanda",
+  "Trace":"Jejak",
+  "— you have double-parked and boxed someone in. Pick the car you are driving, type the plate you are blocking, say how long you will be. If that plate is registered, its owner is alerted within seconds. If it is not, nothing is wasted: they can still find you by tracing.":"— anda telah letak kereta dua baris dan menghalang seseorang. Pilih kereta yang anda pandu, taip plat yang anda halang, nyatakan berapa lama. Jika plat itu berdaftar, pemiliknya dimaklumkan dalam beberapa saat. Jika tidak, tiada apa yang sia-sia: mereka masih boleh menjejaki anda.",
+  "— you have moved your car. Tap it and the other driver is told they are free. We never ask them to confirm, because they might be a street away having lunch and waiting for their tap would leave you stuck.":"— anda telah alihkan kereta. Ketuk dan pemandu lain diberitahu mereka bebas. Kami tidak pernah minta mereka sahkan, kerana mereka mungkin sedang makan di jalan sebelah dan menunggu ketukan mereka akan buat anda terperangkap.",
+  "— the opposite case. They marked it cleared, you walk out, the car is still there. Flag reopens the block, tells them to move, and records it against them. Repeat offenders are how we find people abusing this.":"— keadaan sebaliknya. Mereka tanda sudah lepas, anda keluar, kereta masih di situ. Tanda membuka semula halangan, suruh mereka beredar, dan merekodkannya terhadap mereka. Pesalah berulang inilah cara kami mengesan penyalahgunaan.",
+  "— you are boxed in and got no alert, because your plate is not registered. Enter their plate and yours, and if a matching block is open we connect you. Both plates are required on purpose: it means the only person who can look up a car is someone genuinely standing behind it, so this can never become a plate-lookup service.":"— anda terhalang dan tidak menerima amaran, kerana plat anda tidak berdaftar. Masukkan plat mereka dan plat anda, dan jika ada halangan yang sepadan kami hubungkan anda. Kedua-dua plat diperlukan dengan sengaja: ini bermakna satu-satunya orang yang boleh mencari kereta ialah orang yang benar-benar berdiri di belakangnya, jadi ini tidak akan menjadi perkhidmatan carian plat.",
+  "Home":"Utama",
+  "Not signed in":"Belum log masuk",
   "Open the app":"Buka aplikasi",
   "← Back to app":"← Kembali ke aplikasi"
 };
@@ -297,16 +335,25 @@ function applyLang(){
     }
   });
   document.documentElement.lang = LANG;
-  var b = document.getElementById("langBtn");
-  b.textContent = LANG === "ms" ? "EN" : "BM";
+  var b = document.getElementById("langRow");
+  b.textContent = LANG === "ms" ? "English" : "Bahasa Malaysia";
   b.setAttribute("lang", LANG === "ms" ? "en" : "ms");
-  b.setAttribute("aria-label", LANG === "ms" ? "Switch to English" : "Tukar ke Bahasa Malaysia");
 }
 
-document.getElementById("langBtn").addEventListener("click", function(){
+document.getElementById("langRow").addEventListener("click", function(){
   LANG = LANG === "ms" ? "en" : "ms";
   try{ localStorage.setItem("alih.lang", LANG); }catch(e){}
   applyLang();
+});
+
+document.getElementById("avatarBtn").addEventListener("click", function(){
+  var open = document.getElementById("sheet").hidden;
+  document.getElementById("sheet").hidden = !open;
+  this.setAttribute("aria-expanded", String(open));
+});
+document.getElementById("sheet").addEventListener("click", function(ev){
+  if(ev.target === this){ this.hidden = true;
+    document.getElementById("avatarBtn").setAttribute("aria-expanded","false"); }
 });
 
 applyLang();

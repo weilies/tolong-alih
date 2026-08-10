@@ -101,6 +101,15 @@
   .topbar .nm{font-size:12.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .topbar .loc{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--hazard);white-space:nowrap}
 
+  .avwrap{position:relative;flex:none}
+  .avx{position:absolute;top:-7px;right:-7px;width:21px;height:21px;border-radius:99px;
+    background:var(--alert);color:#fff;border:2px solid var(--signal);cursor:pointer;
+    font-size:13px;line-height:1;display:grid;place-items:center;padding:0}
+  .avx[hidden]{display:none}
+  .avx:focus-visible{outline:2px solid var(--tarmac);outline-offset:2px}
+  /* the pill is the only way to switch language before signing in; once the app
+     shell is up the control lives in the account sheet instead */
+  #app.on ~ .lang, body.inapp .lang{display:none}
   .lang{position:fixed;top:9px;right:10px;z-index:90;cursor:pointer;
     background:var(--tarmac);color:var(--hazard);border:2px solid var(--hazard);
     font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 100,'wght' 700;
@@ -208,6 +217,12 @@
   /* ---------- interstitial ---------- */
   .veil{position:fixed;inset:0;z-index:80;background:rgba(22,21,15,.94);display:none;align-items:center;justify-content:center;padding:20px}
   .veil.on{display:flex}
+  .veil .ring b{transition:transform .3s cubic-bezier(.2,1.6,.4,1),color .3s}
+  .veil.done .ring b{transform:scale(1.35);color:var(--hazard)}
+  .veil.done .promo{animation:pop .32s cubic-bezier(.2,1.5,.4,1)}
+  @keyframes pop{from{transform:scale(.985)}to{transform:none}}
+  @media (prefers-reduced-motion:reduce){.veil.done .promo{animation:none}
+    .veil .ring b{transition:none}}
   .promo{width:100%;max-width:390px;background:var(--signal);border:3px solid var(--tarmac);box-shadow:8px 8px 0 var(--hazard)}
   .promo .hd{background:var(--tarmac);color:#fff;padding:9px 14px;display:flex;justify-content:space-between;align-items:center}
   .promo .hd .eyebrow{color:var(--hazard)}
@@ -261,7 +276,7 @@
 
   <!-- ============ GATE 1 · LOCATION ============ -->
   <section class="gate on" id="gGeo">
-    <div class="brandline"><div class="mk">⬛</div><b>Tolong <span class="hi">Alih</span></b></div>
+    <div class="brandline"><div class="mk">🚗</div><b>Tolong <span class="hi">Alih</span></b></div>
     <div class="sign">
       <div class="hazard"></div>
       <div class="pad">
@@ -277,7 +292,7 @@
 
   <!-- ============ GATE 2 · AUTH ============ -->
   <section class="gate" id="gAuth">
-    <div class="brandline"><div class="mk">⬛</div><b>Tolong <span class="hi">Alih</span></b></div>
+    <div class="brandline"><div class="mk">🚗</div><b>Tolong <span class="hi">Alih</span></b></div>
     <div class="sign">
       <div class="hazard"></div>
       <div class="pad">
@@ -308,7 +323,7 @@
 
   <!-- ============ GATE 3 · VERIFY ============ -->
   <section class="gate" id="gVerify">
-    <div class="brandline"><div class="mk">⬛</div><b>Tolong <span class="hi">Alih</span></b></div>
+    <div class="brandline"><div class="mk">🚗</div><b>Tolong <span class="hi">Alih</span></b></div>
     <div class="sign">
       <div class="hazard live"></div>
       <div class="pad">
@@ -326,7 +341,7 @@
 
   <!-- ============ GATE 4 · PHONE ============ -->
   <section class="gate" id="gPhone">
-    <div class="brandline"><div class="mk">⬛</div><b>Tolong <span class="hi">Alih</span></b></div>
+    <div class="brandline"><div class="mk">🚗</div><b>Tolong <span class="hi">Alih</span></b></div>
     <div class="sign">
       <div class="hazard"></div>
       <div class="pad">
@@ -344,7 +359,7 @@
   <!-- ============ APP ============ -->
   <div id="app">
     <div class="topbar">
-      <div class="id"><div class="mk">⬛</div><span class="nm">Tolong <b style="color:var(--hazard)">Alih</b></span></div>
+      <div class="id"><div class="mk">🚗</div><span class="nm">Tolong <b style="color:var(--hazard)">Alih</b></span></div>
       <div class="id" style="flex:none">
         <span class="loc" id="topLoc">—</span>
         <button class="avatar" id="avatarBtn" aria-haspopup="true" aria-expanded="false" aria-label="Your account">
@@ -356,7 +371,10 @@
     <div class="sheet" id="sheet" hidden>
       <div class="sheet-in">
         <div class="who">
-          <div class="avatar big"><img id="sheetImg" alt="" hidden /><span id="sheetTxt">·</span></div>
+          <div class="avwrap">
+            <div class="avatar big"><img id="sheetImg" alt="" hidden /><span id="sheetTxt">·</span></div>
+            <button class="avx" id="clearPic" hidden aria-label="Remove photo" title="Remove photo">×</button>
+          </div>
           <div style="min-width:0">
             <b id="sheetName">—</b>
             <span id="sheetMail">—</span>
@@ -364,7 +382,7 @@
         </div>
         <label class="pickpic" for="avatarFile">Change photo</label>
         <input type="file" id="avatarFile" accept="image/*" hidden />
-        <button class="btn btn-flat" id="clearPic" hidden>Remove photo</button>
+        <button class="btn btn-flat" id="langRow">Bahasa Malaysia</button>
         <a class="btn btn-flat" id="adminLink" href="/admin.html" hidden style="text-decoration:none;text-align:center">Ads console</a>
         <button class="btn btn-stop" id="signout">Sign out</button>
       </div>
@@ -623,6 +641,8 @@ var MS = {
   "Sponsored":"Tajaan",
   "Sponsor message":"Mesej penaja",
   "Continue":"Teruskan",
+  "Continue in":"Teruskan dalam",
+  "Remove photo":"Buang gambar",
   "About & contact us":"Tentang & hubungi kami",
   /* toasts */
   "Location confirmed — Malaysia":"Lokasi disahkan — Malaysia",
@@ -682,17 +702,20 @@ function applyLang(){
     el.setAttribute("placeholder", ph || el._ph);
   });
   document.documentElement.lang = LANG;
+  $("langRow").textContent = LANG === "ms" ? "English" : "Bahasa Malaysia";
   var b = $("langBtn");
   b.textContent = LANG === "ms" ? "EN" : "BM";
   b.setAttribute("lang", LANG === "ms" ? "en" : "ms");
   b.setAttribute("aria-label", LANG === "ms" ? "Switch to English" : "Tukar ke Bahasa Malaysia");
 }
 
-$("langBtn").addEventListener("click", function(){
+function toggleLang(){
   LANG = LANG === "ms" ? "en" : "ms";
   try{ localStorage.setItem("alih.lang", LANG); }catch(e){}
   applyLang();
-});
+}
+$("langBtn").addEventListener("click", toggleLang);
+$("langRow").addEventListener("click", toggleLang);
 
 /* Turn a Supabase/Postgres error into something a driver can act on. */
 function why(e, fallback){
@@ -715,6 +738,7 @@ function busy(btn,on,label){
 function stage(id){
   ["gGeo","gAuth","gVerify","gPhone"].forEach(function(g){ $(g).classList.toggle("on", g===id); });
   $("app").classList.toggle("on", id==="app");
+  document.body.classList.toggle("inapp", id === "app");
   window.scrollTo(0,0);
 }
 
@@ -1178,7 +1202,33 @@ function adClick(id){
 }
 
 /* ================= interstitial ================= */
+/* Two rising notes when the countdown clears, so a driver looking away knows
+   they may leave. Synthesised rather than shipped as a file, and wrapped
+   because a browser that has not seen a gesture yet will refuse to play. */
+function chime(){
+  try{
+    var AC = window.AudioContext || window.webkitAudioContext;
+    if(!AC) return;
+    var ac = new AC();
+    [[880,0],[1318.5,0.12]].forEach(function(n){
+      var o = ac.createOscillator(), g = ac.createGain();
+      o.type = "sine"; o.frequency.value = n[0];
+      o.connect(g); g.connect(ac.destination);
+      var t = ac.currentTime + n[1];
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(0.22, t + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.28);
+      o.start(t); o.stop(t + 0.3);
+    });
+    setTimeout(function(){ ac.close(); }, 900);
+  }catch(e){}
+}
+
 var veil=$("veil"), ring=$("ring"), cd=$("cd"), skip=$("skip"), tick=null, CIRC=81.7;
+/* Chrome and Safari show their own wording here; the string only has to be
+   non-empty for the prompt to appear at all. */
+function holdOn(ev){ ev.preventDefault(); ev.returnValue = ""; return ""; }
+
 function interstitial(done){
   var a = pickAd("interstitial");
   if(!a) return done();                       /* nothing sold for this slot */
@@ -1192,18 +1242,34 @@ function interstitial(done){
 
   var left = 5;
   veil.classList.add("on");
-  skip.disabled = true; skip.textContent = "Continue in 5s";
+  skip.disabled = true; skip.textContent = tr("Continue in")+" 5s";
+  veil.classList.remove("done");
   cd.textContent = left; ring.style.strokeDashoffset = 0;
   clearInterval(tick);
   tick = setInterval(function(){
-    left--; cd.textContent = Math.max(left,0);
+    left--;
+    cd.textContent = Math.max(left,0);
     ring.style.strokeDashoffset = CIRC*((5-left)/5);
-    if(left<=0){ clearInterval(tick); skip.disabled=false; skip.textContent="Continue"; cd.textContent="✓"; skip.focus(); }
+    if(left > 0){
+      skip.textContent = tr("Continue in")+" "+left+"s";
+      return;
+    }
+    clearInterval(tick);
+    skip.disabled = false;
+    skip.textContent = tr("Continue");
+    cd.textContent = "✓";
+    veil.classList.add("done");
+    chime();
+    skip.focus();
   }, 1000);
   skip.onclick = function(){
     if(skip.disabled) return;
-    clearInterval(tick); veil.classList.remove("on"); done();
+    clearInterval(tick);
+    window.removeEventListener("beforeunload", holdOn);
+    veil.classList.remove("on");
+    done();
   };
+  window.addEventListener("beforeunload", holdOn);
 }
 
 /* ================= tabs and inputs ================= */
