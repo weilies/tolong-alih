@@ -5,7 +5,17 @@ Supabase project `llejrncrxjejxvkwqhgj` (Semaian).
 - `0001_init.sql` — templated core schema. `{{SCHEMA}}` is replaced with
   `app_alih_uat` or `app_alih_prod` before running.
 - `0002_actions.sql` — the four verbs as `security definer` functions, plus
-  trace rate limiting. **Applied to `app_alih_uat` only.**
+  trace rate limiting.
+- `0003_rls_recursion.sql` — breaks the mutual recursion between the blocks and
+  block_targets policies, which made every read of either table fail 42P17.
+- `0004_public_stats.sql` — aggregate counters for the Help page.
+- `0005_ad_admin.sql` — locks the ad performance report to admins.
+- `0006_profile_avatar.sql` — profile photo.
+- `0007_advertisers.sql` — advertiser accounts, and ad events behind a function
+  that de-duplicates and rate limits instead of trusting the client.
+- `0008_block_chat.sql` — both drivers can type on an open block.
+
+**All applied to `app_alih_uat` and `app_alih_prod`.**
 - Applied migrations also include `platform_registry`, `alih_uat_init`,
   `alih_prod_init`, `alih_ads_pricing_and_phone`. Pull the current state with
   `supabase db pull` once the CLI is linked.
@@ -31,14 +41,17 @@ exactly what trace establishes, so a traced driver can act without registering.
 `trace_block` caps a user at 10 traces an hour, recorded in `trace_attempts`.
 Without that, trace is plate enumeration with extra steps.
 
-## Applying 0002 to production
+## Applying a new migration to production
 
-Not yet applied. Do this before merging to `main`:
+Every migration through 0008 is live in both schemas. For the next one:
 
 ```bash
-sed 's/{{SCHEMA}}/app_alih_prod/g' supabase/migrations/0002_actions.sql \
+sed 's/{{SCHEMA}}/app_alih_prod/g' supabase/migrations/00NN_name.sql \
   | psql "$SUPABASE_DB_URL"
 ```
+
+Run it against `app_alih_prod` before merging to `main`, or the deploy will ship
+a client calling functions that are not there yet.
 
 ## Still to do in the dashboard
 
