@@ -11,9 +11,11 @@ Live: https://alih.nextnovas.com · UAT: https://uat.alih.nextnovas.com
 public/index.html   the whole driver app, single file, no build step
 public/admin.html   ads management (to build)
 public/_headers     geolocation permission policy, CSP, cache rules
-public/vendor/      supabase-js, vendored so the app has no runtime CDN
-src/worker.js       serves /config.js from wrangler vars; assets do the rest
-supabase/           migrations
+public/vendor/      neon-js, vendored so the app has no runtime CDN
+src/worker.js       /config.js from wrangler vars, and same-origin proxies to
+                    Neon Auth (/api/auth) and the Data API (/api/rest)
+db/                 Neon schema and setup — db/README.md
+supabase/           legacy migrations; production runs on these until cutover
 wrangler.jsonc      production worker
 wrangler.uat.jsonc  UAT worker
 CLAUDE.md           context for Claude Code — read this first
@@ -22,12 +24,12 @@ CLAUDE.md           context for Claude Code — read this first
 ## How the app knows which environment it is in
 
 `public/index.html` is a static file with no build step, so there is nowhere to
-bake `APP_SCHEMA` in. `src/worker.js` serves `/config.js` from the wrangler
-`vars` of whichever worker is running, and the page reads `window.__ENV`. That
-is the only reason a worker script exists — everything else is static assets.
+bake per-environment values in. `src/worker.js` serves `/config.js` from the
+wrangler `vars` of whichever worker is running, and the page reads
+`window.__ENV`. It also proxies Neon Auth and the Data API from the app's own
+origin, so the session cookie is first-party (see the file header).
 
-Change an environment's schema or Supabase project in `wrangler*.jsonc`, nowhere
-else.
+Change an environment's Neon endpoints in `wrangler*.jsonc`, nowhere else.
 
 ## Deploying
 
@@ -55,12 +57,14 @@ If you would rather have Cloudflare pull from GitHub directly (Workers → the
 worker → Settings → Build), that works too — but delete this workflow if you
 switch, so the two do not race each other.
 
-Run the schema migration against `app_alih_prod` before merging to `main`.
+Apply `db/schema.sql` to the Neon `main` branch before merging to `main`.
 
 ## MCP servers
 
-Supabase is a claude.ai connector, already attached — it covers the database,
-migrations, logs and advisors. Google Cloud is declared in `.mcp.json` and
+Neon is a claude.ai connector — it covers the database, branches, Neon Auth
+and the Data API. The Neon org is Vercel-managed, so new *projects* are created
+from the Vercel dashboard (Storage); everything else works through MCP.
+Google Cloud is declared in `.mcp.json` and
 served by [`@google-cloud/gcloud-mcp`](https://github.com/googleapis/gcloud-mcp),
 which exposes one tool that runs gcloud commands. Set it up once:
 
@@ -76,7 +80,7 @@ What it cannot do: create the OAuth client for Sign in with Google. Google has
 no API for that at all — clients created through the IAP API are forced
 internal-only and locked to IAP, with the redirect URI unmodifiable, and that
 API is deprecated. The consent screen and client stay a console job. See
-`supabase/README.md`.
+`db/README.md`.
 
 ## Running it locally
 
@@ -85,5 +89,5 @@ npx wrangler dev -c wrangler.uat.jsonc
 ```
 
 Serves on http://127.0.0.1:8787 against the UAT schema, with `_headers` and
-`/config.js` applied. Add that origin to Supabase → Authentication → URL
-Configuration → Redirect URLs first, or sign-in will bounce.
+`/config.js` applied. Neon Auth allows localhost origins, so sign-in works
+without extra config.

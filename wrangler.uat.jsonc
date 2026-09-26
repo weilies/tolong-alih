@@ -8,10 +8,9 @@
   "routes": [{ "pattern": "uat.alih.nextnovas.com", "custom_domain": true }],
   "vars": {
     "APP_ENV": "uat",
-    "APP_SCHEMA": "app_alih_uat",
-    // Publishable key. Safe in the repo — it is handed to every browser that
-    // loads the page. RLS is what actually guards the data.
-    "SUPABASE_URL": "https://llejrncrxjejxvkwqhgj.supabase.co",
-    "SUPABASE_ANON_KEY": "sb_publishable_lDV-sDrcjaPBl2yjZYcYFQ_2T5oj6Qd"
+    // Neon project `tolong-alih`, branch `uat`. Neither is a secret: the worker
+    // proxies both from /api/auth and /api/rest, and RLS guards the data.
+    "NEON_AUTH_URL": "__NEON_UAT_AUTH_URL__",
+    "NEON_DATA_API_URL": "__NEON_UAT_DATA_API_URL__"
   }
 }

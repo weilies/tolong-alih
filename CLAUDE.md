@@ -20,13 +20,17 @@ Solo project. Prefer boring, cheap, few dependencies. TypeScript/JavaScript.
 
 - **Frontend**: single static HTML file, no framework, no build step. `public/index.html`.
 - **Host**: Cloudflare Workers static assets. Two workers, one repo.
-- **Backend**: Supabase (Postgres + Auth). Project `Semaian`, ref `llejrncrxjejxvkwqhgj`, ap-southeast-1.
+- **Backend**: Neon — Postgres, Neon Auth (managed Better Auth) and the Data API
+  (PostgREST). Project `tolong-alih`, aws-ap-southeast-1. See `db/README.md`.
+  *Migration in progress*: UAT is on Neon; production still runs on Supabase
+  (project `Semaian`, ref `llejrncrxjejxvkwqhgj`) until `db/schema.sql` is
+  applied to the Neon `main` branch and `develop` merges to `main`.
 
 ## Environments
 
 | | UAT | Production |
 |---|---|---|
-| Schema | `app_alih_uat` | `app_alih_prod` |
+| Neon branch | `uat` | `main` |
 | Worker | `tolong-alih-uat` | `tolong-alih` |
 | Domain | uat.alih.nextnovas.com | alih.nextnovas.com |
 | Branch | `develop` | `main` |
@@ -36,34 +40,33 @@ Pushing to the branch deploys it (`.github/workflows/deploy.yml`, needs
 `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` as repo secrets).
 Manual deploy for UAT: `npx wrangler deploy -c wrangler.uat.jsonc`
 
-`src/worker.js` exists for one reason: a static file has nowhere to bake
-`APP_SCHEMA` in, so the worker serves `/config.js` from its wrangler `vars` and
-the page reads `window.__ENV`. Per-env config belongs in `wrangler*.jsonc` and
-nowhere else.
+`src/worker.js` serves `/config.js` from its wrangler `vars` (the page reads
+`window.__ENV`), and proxies Neon Auth at `/api/auth/*` and the Data API at
+`/api/rest/*`. The auth proxy is load-bearing: Neon Auth's session is a cookie,
+and set by `*.neon.tech` it is third-party, which iOS Safari drops. Per-env
+config belongs in `wrangler*.jsonc` and nowhere else.
 
 ## Database
 
-One Supabase project hosts several small apps. `platform` schema is the control plane:
-`platform.apps`, `platform.app_envs`, `platform.provision_env(slug, env)`,
-`platform.inventory`. Every app+env gets schema `app_<slug>_<env>`.
-`auth.users` is shared across apps; isolation is schema + RLS.
+A dedicated Neon project; each Neon branch is one environment, all in `public`.
+`db/schema.sql` is the whole schema, idempotent — apply it per branch.
 
-Tables per env: `profiles`, `cars`, `blocks`, `block_targets`, `messages`,
-`push_subs`, `ads`, `ad_events`, `trace_attempts`. View: `ad_performance`.
-All have RLS enabled.
+Tables: `profiles`, `cars`, `blocks`, `block_targets`, `messages`,
+`advertisers`, `ads`, `ad_events`, `trace_attempts`. View: `ad_performance`.
+All have RLS enabled; grants are column-scoped (a driver cannot set
+`profiles.is_admin` or `cars.verified`). User ids are text from
+`auth.user_id()`.
 
-**Client must set the schema**:
-`createClient(url, anonKey, { db: { schema: window.__ENV.schema } })`
+Client: `window.neon.createClient({ auth:{ url, adapter: SupabaseAuthAdapter() },
+dataApi:{ url } })` — the adapter keeps `sb.auth.*` Supabase-shaped.
 
 **The four verbs are RPCs, not table writes** — `declare_block`, `clear_block`,
 `flag_block`, `contact_blocker`, `trace_block`, all `security definer`
-(`0002_actions.sql`). RLS cannot express flag (victim updates the blocker's row)
+(`db/schema.sql`). RLS cannot express flag (victim updates the blocker's row)
 or trace (victim is unregistered by definition), and letting the client write
 `messages` directly meant anyone could forge one. Add new cross-party actions as
 RPCs too; do not loosen a policy to make a write work.
 
-`0002_actions.sql` is applied to `app_alih_uat` only — run it against
-`app_alih_prod` before merging to `main`.
 
 ## Decisions already made — do not relitigate
 
@@ -80,17 +83,18 @@ RPCs too; do not loosen a policy to make a write work.
 
 ## Build order (highest value first)
 
-1. ~~**Wire Supabase auth**~~ — done. Google OAuth + email/password with
+1. ~~**Wire auth**~~ — done (now Neon Auth). Google OAuth + email/password with
    six-digit verification; phone captured at signup into `profiles.phone`.
 2. ~~**Replace the in-memory `DB` object**~~ — done. All four verbs, garage,
    inbox and ads read from Postgres. Alerts refresh on a 45s poll and on tab
    focus; Web Push replaces that.
-3. **Web Push** — service worker, VAPID keys, Supabase Edge Function that fires
-   on block declare. This is what makes the product work. iOS Safari needs the
+3. **Web Push** — service worker, VAPID keys, a push sender that fires on block
+   declare (Neon has no Edge Functions; a Cloudflare Worker fits). This is what makes the product work. iOS Safari needs the
    site added to home screen first.
 4. **`public/admin.html`** — ads CRUD, gated on `profiles.is_admin`.
    Read `ad_performance` for the monthly invoice numbers.
-5. **pg_cron** to run `expire_blocks()` every 10 minutes per schema.
+5. ~~**pg_cron** for `expire_blocks()`~~ — replaced by lazy expiry inside
+   `declare_block` and `trace_block` (no cron on a scale-to-zero compute).
 
 ## Not yet built
 

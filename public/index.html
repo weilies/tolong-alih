@@ -516,7 +516,7 @@
 <div class="toast" id="toast"></div>
 
 <script src="/config.js"></script>
-<script src="/vendor/supabase-js-2.112.0.js"></script>
+<script src="/vendor/neon-js-0.7.0-beta.js"></script>
 <script>
 (function(){
 "use strict";
@@ -527,17 +527,21 @@
 var ENV = window.__ENV || {};
 var sb = null, cfgErr = null;
 try{
-  if(!window.supabase) throw new Error("The Supabase client failed to load.");
-  if(!ENV.supabaseUrl || !ENV.supabaseAnonKey || !ENV.schema)
+  if(!window.neon) throw new Error("The Neon client failed to load.");
+  if(!ENV.authUrl || !ENV.dataApiUrl)
     throw new Error("No /config.js — is this being served by the worker?");
-  sb = window.supabase.createClient(ENV.supabaseUrl, ENV.supabaseAnonKey, {
-    db:{ schema: ENV.schema },
-    auth:{ persistSession:true, autoRefreshToken:true, detectSessionInUrl:true, flowType:"pkce" }
+  /* Neon Auth behind a Supabase-shaped adapter, so sb.auth.* and sb.from/rpc
+     read the same as they did on Supabase. Both URLs are same-origin worker
+     proxies — see src/worker.js for why. */
+  sb = window.neon.createClient({
+    auth:{ url: ENV.authUrl, adapter: window.neon.SupabaseAuthAdapter() },
+    dataApi:{ url: ENV.dataApiUrl }
   });
 }catch(e){ cfgErr = e.message; }
 
 /* ================= state ================= */
 var me       = null;   /* { id, email } */
+var pending  = null;   /* { email, pw, phone } between signup and first session */
 var cars     = [];     /* my garage */
 var declared = [];     /* blocks I opened that are still live */
 var inbox    = [];     /* messages addressed to me */
@@ -737,13 +741,11 @@ function toggleLang(){
 $("langBtn").addEventListener("click", toggleLang);
 $("langRow").addEventListener("click", toggleLang);
 
-/* Turn a Supabase/Postgres error into something a driver can act on. */
+/* Turn an auth/Postgres error into something a driver can act on. */
 function why(e, fallback){
   if(!e) return fallback;
   var m = e.message || e.error_description || "";
-  if(e.code === "PGRST106" || /schema must be one of/i.test(m))
-    return "Schema "+ENV.schema+" is not exposed in Supabase yet.";
-  if(e.code === "PGRST202") return "The database is missing 0002_actions.sql.";
+  if(e.code === "PGRST202") return "The database is missing db/schema.sql.";
   if(e.code === "23505") return "That plate is already registered.";
   if(/Failed to fetch|NetworkError|Load failed/i.test(m)) return "No connection. Try again.";
   return m || fallback;
@@ -925,17 +927,18 @@ $("signup").addEventListener("click", async function(){
   if(phone.length < 9) return toast("Enter the phone number we can fall back to.");
 
   busy(this,true);
-  /* GoTrue config is per Supabase project, and this project is built to host
-     several apps, so the email templates are shared. `app` lets one neutral
-     template name whichever app actually sent the mail, via {{ .Data.app }}. */
+  /* Neon Auth keeps no custom user fields, so the phone waits here until the
+     profile row exists — ensureProfile() picks it up. The password is held
+     only so a verify that does not auto sign in can finish the job. */
+  pending = { email: email, pw: pw, phone: phone };
   var r = await sb.auth.signUp({
-    email: email, password: pw,
-    options:{ data:{ phone: phone, app: "Tolong Alih" }, emailRedirectTo: location.origin }
+    email: email, password: pw, options:{ emailRedirectTo: location.origin }
   });
   busy(this,false,"Create account");
-  if(r.error) return toast(why(r.error,"Could not create that account."));
-
-  if(r.data.session) return boot(r.data.session);   /* verification switched off */
+  if(r.data && r.data.session) return boot(r.data.session);   /* verification switched off */
+  /* With verification on, the account exists but has no session yet. */
+  if(r.error && r.error.code !== "session_not_found")
+    return toast(why(r.error,"Could not create that account."));
   $("mailTo").textContent = email;
   stage("gVerify");
 });
@@ -947,6 +950,12 @@ $("signin").addEventListener("click", async function(){
   busy(this,true);
   var r = await sb.auth.signInWithPassword({ email: email, password: pw });
   busy(this,false,"I already have an account");
+  if(r.error && r.error.code === "email_not_confirmed"){
+    pending = { email: email, pw: pw, phone: pending && pending.phone };
+    await sb.auth.resend({ type:"signup", email: email });
+    $("mailTo").textContent = email;
+    return stage("gVerify");
+  }
   if(r.error) return toast(why(r.error,"Those details did not match."));
   boot(r.data.session);
 });
@@ -958,10 +967,13 @@ $("verify").addEventListener("click", async function(){
   if(token.length !== 6) return toast("Enter the six-digit code.");
   busy(this,true);
   var r = await sb.auth.verifyOtp({ email: email, token: token, type:"signup" });
-  if(r.error) r = await sb.auth.verifyOtp({ email: email, token: token, type:"email" });
+  if(!r.error && !r.data.session && pending && pending.email === email)
+    r = await sb.auth.signInWithPassword({ email: email, password: pending.pw });
   busy(this,false,"Verify and continue");
   if(r.error) return toast(why(r.error,"That code did not work."));
   toast("Email verified");
+  if(pending) pending.pw = null;
+  if(!r.data.session){ stage("gAuth"); return toast("Verified — sign in to continue."); }
   boot(r.data.session);
 });
 
@@ -1064,8 +1076,8 @@ async function boot(session){
   me = {
     id: session.user.id,
     email: session.user.email,
-    name: meta.full_name || meta.name || null,
-    googleAvatar: meta.avatar_url || meta.picture || null
+    name: meta.displayName || null,
+    googleAvatar: meta.profileImageUrl || null
   };
   await ensureProfile(session);
 
@@ -1118,10 +1130,10 @@ document.addEventListener("visibilitychange", function(){ if(!document.hidden &&
 async function ensureProfile(session){
   var u = session.user, meta = u.user_metadata || {};
   var row = { id: u.id };
-  var name = meta.full_name || meta.name;
-  if(name) row.display_name = name;
-  if(meta.phone) row.phone = tidyPhone(meta.phone);
+  if(meta.displayName) row.display_name = meta.displayName;
+  if(pending && pending.phone && pending.email === u.email) row.phone = pending.phone;
   var r = await sb.from("profiles").upsert(row, { onConflict:"id" });
+  if(!r.error) pending = null;
   if(r.error) toast(why(r.error,"Could not save your profile."));
 }
 

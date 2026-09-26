@@ -1,5 +1,9 @@
 # Schema
 
+> **Legacy.** Production still runs on this Supabase schema until the Neon
+> cutover (see `db/README.md`). UAT has moved to Neon. Do not add migrations
+> here — change `db/schema.sql` instead.
+
 Supabase project `llejrncrxjejxvkwqhgj` (Semaian).
 
 - `0001_init.sql` — templated core schema. `{{SCHEMA}}` is replaced with
