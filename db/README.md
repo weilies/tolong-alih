@@ -1,11 +1,13 @@
 # Database — Neon
 
-Neon project **`tolong-alih`** (aws-ap-southeast-1), database `neondb`.
+Neon project **`tolong-alih`** (`wispy-union-37910963`, aws-ap-southeast-1),
+database `neondb`. Created through the Vercel Storage integration — the Neon
+org is Vercel-managed, so that is the only way to create a project.
 
-| Neon branch | Environment | Worker |
-|---|---|---|
-| `uat` | UAT | `tolong-alih-uat` |
-| `main` | production | `tolong-alih` |
+| Neon branch | Branch id | Environment | Worker |
+|---|---|---|---|
+| `uat` | `br-flat-lake-b33jhfl5` | UAT | `tolong-alih-uat` |
+| `main` | `br-snowy-dream-b3myqcc8` | production | `tolong-alih` |
 
 Branches are the environment boundary, so everything lives in `public` — the
 `app_alih_<env>` schemas were a Supabase-era workaround for sharing one project
@@ -43,11 +45,18 @@ Design notes live in the file header. The short version:
 - Exposed schema: `public`
 - Anonymous role: `anonymous` — only `public_stats()` is granted to it, for the
   About page, which calls it with no session.
+- Provisioned **without** Neon's default grants (they grant full CRUD on every
+  table; `schema.sql` grants per column instead). A side effect: the API roles
+  get no USAGE on schema `auth`, which Neon's `cloud_admin` owns and we cannot
+  grant. Policies therefore call `public.uid()`, a definer wrapper around
+  `auth.user_id()`, never `auth.user_id()` directly.
 
 ## Neon Auth settings (per branch)
 
 - Email + password, verify on sign-up with a six-digit **OTP**, verification
-  required, auto sign-in after verification.
+  required, auto sign-in after verification. Console-only (Auth → Settings);
+  the MCP cannot set it. Until it is on, signup signs straight in — the client
+  handles both.
 - Google, shared credentials for now. Before production traffic, switch to the
   Tolong Alih OAuth client in GCP project `cloud-xp` (Next Novas brand) and give
   Google the Neon Auth callback URL shown in the Neon console.

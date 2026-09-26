@@ -10,7 +10,7 @@
     "APP_ENV": "uat",
     // Neon project `tolong-alih`, branch `uat`. Neither is a secret: the worker
     // proxies both from /api/auth and /api/rest, and RLS guards the data.
-    "NEON_AUTH_URL": "__NEON_UAT_AUTH_URL__",
-    "NEON_DATA_API_URL": "__NEON_UAT_DATA_API_URL__"
+    "NEON_AUTH_URL": "https://ep-fancy-wildflower-b3dc9f55.neonauth.c-4.ap-southeast-1.aws.neon.tech/neondb/auth",
+    "NEON_DATA_API_URL": "https://ep-fancy-wildflower-b3dc9f55.apirest.c-4.ap-southeast-1.aws.neon.tech/neondb/rest/v1"
   }
 }

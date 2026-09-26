@@ -173,6 +173,16 @@ as $$
   )
 $$;
 
+-- The caller's user id, for policies. Policies run as the calling role, and on
+-- a branch whose Data API was provisioned without Neon's default grants,
+-- anonymous/authenticated have no USAGE on schema auth (owned by Neon's
+-- cloud_admin, so we cannot grant it). As definer this runs as the owner, who
+-- can; the JWT claims it reads are per-session, so the answer is the same.
+create or replace function uid()
+returns text language sql stable security definer
+set search_path = ''
+as $$ select auth.user_id() $$;
+
 -- Policy helpers run as owner so blocks <-> block_targets policies do not
 -- recurse into each other (42P17, see supabase/migrations/0003).
 create or replace function i_declared(p_block uuid)
@@ -221,27 +231,27 @@ alter table trace_attempts enable row level security;   -- no policies: function
 
 drop policy if exists own_profile on profiles;
 create policy own_profile on profiles for all
-  using (id = auth.user_id()) with check (id = auth.user_id());
+  using (id = (select uid())) with check (id = (select uid()));
 
 drop policy if exists own_cars on cars;
 create policy own_cars on cars for all
-  using (owner_id = auth.user_id()) with check (owner_id = auth.user_id());
+  using (owner_id = (select uid())) with check (owner_id = (select uid()));
 
 drop policy if exists read_blocks on blocks;
 create policy read_blocks on blocks for select
-  using (blocker_id = auth.user_id() or i_am_blocked(id));
+  using (blocker_id = (select uid()) or i_am_blocked(id));
 
 drop policy if exists read_targets on block_targets;
 create policy read_targets on block_targets for select using (
   i_declared(block_id)
   or exists (select 1 from cars c
               where c.plate_norm = block_targets.victim_plate_norm
-                and c.owner_id = auth.user_id())
+                and c.owner_id = (select uid()))
 );
 
 drop policy if exists my_messages on messages;
 create policy my_messages on messages for select using (
-  to_user = auth.user_id() or from_user = auth.user_id()
+  to_user = (select uid()) or from_user = (select uid())
   or i_declared(block_id) or i_am_blocked(block_id)
 );
 
@@ -714,6 +724,7 @@ grant execute on function
   log_ad_event(uuid, text, text),
   ad_report(),
   -- Policy helpers: RLS evaluates them as the caller.
+  uid(),
   i_declared(uuid),
   i_am_blocked(uuid),
   is_admin(),
