@@ -1142,36 +1142,42 @@ async function refresh(){
   if(!me) return;
   var err = null;
 
-  var g = await sb.from("cars").select("id,plate,plate_norm,nickname")
-    .eq("owner_id", me.id).order("created_at");
+  /* Independent reads go out together: each is a round trip to Singapore,
+     and in series they were most of the wait after a declare. */
+  var res = await Promise.all([
+    sb.from("cars").select("id,plate,plate_norm,nickname")
+      .eq("owner_id", me.id).order("created_at"),
+    sb.from("blocks")
+      .select("id,blocker_plate_norm,eta_minutes,status,declared_at,lat,block_targets(victim_plate_norm)")
+      .eq("blocker_id", me.id).in("status", ["open","disputed"])
+      .order("declared_at", {ascending:false}),
+    /* RLS now lets both parties read a block's whole thread, so drop the
+       to_user filter — otherwise every reply you sent is invisible to you. */
+    sb.from("messages")
+      .select("id,block_id,from_label,kind,body,created_at,from_user,is_typed")
+      .order("created_at", {ascending:false}).limit(200)
+  ]);
+  var g = res[0], b = res[1], m = res[2];
   cars = g.data || []; err = err || g.error;
-
-  var b = await sb.from("blocks")
-    .select("id,blocker_plate_norm,eta_minutes,status,declared_at,lat,block_targets(victim_plate_norm)")
-    .eq("blocker_id", me.id).in("status", ["open","disputed"])
-    .order("declared_at", {ascending:false});
   declared = b.data || []; err = err || b.error;
-
-  /* RLS now lets both parties read a block's whole thread, so drop the
-     to_user filter — otherwise every reply you sent is invisible to you. */
-  var m = await sb.from("messages")
-    .select("id,block_id,from_label,kind,body,created_at,from_user,is_typed")
-    .order("created_at", {ascending:false}).limit(200);
   inbox = m.data || []; err = err || m.error;
 
-  blockIx = {}; myPlate = {};
+  var ix = {}, mp = {};
   var ids = inbox.map(function(x){ return x.block_id; }).filter(Boolean);
   if(ids.length){
-    var r = await sb.from("blocks").select("id,blocker_id,status,blocker_plate_norm").in("id", ids);
-    (r.data||[]).forEach(function(x){ blockIx[x.id] = x; });
+    var both = await Promise.all([
+      sb.from("blocks").select("id,blocker_id,status,blocker_plate_norm").in("id", ids),
+      sb.from("block_targets").select("block_id,victim_plate_norm").in("block_id", ids)
+    ]);
+    (both[0].data||[]).forEach(function(x){ ix[x.id] = x; });
 
     /* read_targets only returns rows I am party to; keep the ones that are mine */
     var mine = cars.map(function(c){ return c.plate_norm; });
-    var t = await sb.from("block_targets").select("block_id,victim_plate_norm").in("block_id", ids);
-    (t.data||[]).forEach(function(x){
-      if(mine.indexOf(x.victim_plate_norm) > -1) myPlate[x.block_id] = x.victim_plate_norm;
+    (both[1].data||[]).forEach(function(x){
+      if(mine.indexOf(x.victim_plate_norm) > -1) mp[x.block_id] = x.victim_plate_norm;
     });
   }
+  blockIx = ix; myPlate = mp;
 
   if(err) toast(why(err,"Could not reach the database."));
   render();
@@ -1375,7 +1381,17 @@ async function commit(byPlate, vs, btn){
     : (n ? nice(vs[0])+"'s owner notified"
          : nice(vs[0])+" isn't registered — they can still trace you"));
   $("v1").value=""; $("v2").value="";
-  await refresh();
+
+  /* Show the block now; the server copy replaces it when refresh lands. */
+  if(r.data && r.data.block_id){
+    declared.unshift({
+      id: r.data.block_id, blocker_plate_norm: norm(byPlate), eta_minutes: eta,
+      status: "open", declared_at: new Date().toISOString(), lat: geo ? geo.lat : null,
+      block_targets: vs.map(function(p){ return { victim_plate_norm: norm(p) }; })
+    });
+    render();
+  }
+  refresh();
 }
 
 /* ================= clear · flag · contact ================= */
