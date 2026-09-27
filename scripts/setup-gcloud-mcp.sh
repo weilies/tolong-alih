@@ -1,17 +1,17 @@
 #!/usr/bin/env bash
 #
 # One-shot setup for the gcloud MCP server, so Claude can drive Google Cloud in
-# the same session it already drives Supabase.
+# the same session it already drives Neon.
 #
 # Run once on your own machine, from the repo root:
 #
 #   ./scripts/setup-gcloud-mcp.sh
 #
 # Then restart Claude Code. The server is declared in .mcp.json and starts
-# automatically; the Supabase MCP is a claude.ai connector and is unaffected.
+# automatically; the Neon MCP is a claude.ai connector and is unaffected.
 #
 # What it does NOT do: create the Google OAuth client for Sign in with Google.
-# No Google API can. See supabase/README.md.
+# No Google API can. See db/README.md.
 
 set -euo pipefail
 

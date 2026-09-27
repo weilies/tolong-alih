@@ -8,10 +8,9 @@
   "routes": [{ "pattern": "alih.nextnovas.com", "custom_domain": true }],
   "vars": {
     "APP_ENV": "production",
-    "APP_SCHEMA": "app_alih_prod",
-    // Publishable key. Safe in the repo — it is handed to every browser that
-    // loads the page. RLS is what actually guards the data.
-    "SUPABASE_URL": "https://llejrncrxjejxvkwqhgj.supabase.co",
-    "SUPABASE_ANON_KEY": "sb_publishable_lDV-sDrcjaPBl2yjZYcYFQ_2T5oj6Qd"
+    // Neon project `tolong-alih`, branch `main`. Neither is a secret: the worker
+    // proxies both from /api/auth and /api/rest, and RLS guards the data.
+    "NEON_AUTH_URL": "https://ep-winter-mouse-b3lrpiom.neonauth.c-4.ap-southeast-1.aws.neon.tech/neondb/auth",
+    "NEON_DATA_API_URL": "https://ep-winter-mouse-b3lrpiom.apirest.c-4.ap-southeast-1.aws.neon.tech/neondb/rest/v1"
   }
 }

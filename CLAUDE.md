@@ -22,9 +22,11 @@ Solo project. Prefer boring, cheap, few dependencies. TypeScript/JavaScript.
 - **Host**: Cloudflare Workers static assets. Two workers, one repo.
 - **Backend**: Neon — Postgres, Neon Auth (managed Better Auth) and the Data API
   (PostgREST). Project `tolong-alih`, aws-ap-southeast-1. See `db/README.md`.
-  *Migration in progress*: UAT is on Neon; production still runs on Supabase
-  (project `Semaian`, ref `llejrncrxjejxvkwqhgj`) until `db/schema.sql` is
-  applied to the Neon `main` branch and `develop` merges to `main`.
+  Moved off Supabase in September 2026; nothing in this repo talks to it any
+  more. The old migrations are in git history before that move.
+- **Platform map**: every Next Novas app, env, host, DB and auth lives in
+  `nextnovas/docs/architecture.md`. Change the stack here → update it there in
+  the same piece of work.
 
 ## Environments
 

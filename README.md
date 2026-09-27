@@ -15,7 +15,6 @@ public/vendor/      neon-js, vendored so the app has no runtime CDN
 src/worker.js       /config.js from wrangler vars, and same-origin proxies to
                     Neon Auth (/api/auth) and the Data API (/api/rest)
 db/                 Neon schema and setup — db/README.md
-supabase/           legacy migrations; production runs on these until cutover
 wrangler.jsonc      production worker
 wrangler.uat.jsonc  UAT worker
 CLAUDE.md           context for Claude Code — read this first

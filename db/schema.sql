@@ -4,8 +4,8 @@
 -- production. Branches are the environment boundary now, so everything lives in
 -- `public` — no more app_alih_<env> schemas.
 --
--- Ported from supabase/migrations/0001–0008 (kept for history until production
--- moves too). What changed in the port:
+-- Ported from the Supabase migrations 0001–0008 (deleted with the move; see git
+-- history before September 2026). What changed in the port:
 --
 --   * auth.uid() -> auth.user_id(). Neon Auth ids arrive as text in the JWT, so
 --     every user column is text and there is no FK to a users table.
@@ -184,7 +184,7 @@ set search_path = ''
 as $$ select auth.user_id() $$;
 
 -- Policy helpers run as owner so blocks <-> block_targets policies do not
--- recurse into each other (42P17, see supabase/migrations/0003).
+-- recurse into each other (42P17 infinite recursion).
 create or replace function i_declared(p_block uuid)
 returns boolean language sql stable security definer
 set search_path = public
@@ -267,7 +267,7 @@ create policy admin_advertisers on advertisers for all using (is_admin()) with c
 
 -- ================= the verbs =================
 -- Security definer, pinned search_path, and every one re-checks the caller.
--- Rationale for RPC-over-table-writes: supabase/README.md.
+-- Rationale for RPC-over-table-writes: db/README.md.
 
 create or replace function declare_block(
   p_blocker_plate text,

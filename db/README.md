@@ -9,9 +9,9 @@ org is Vercel-managed, so that is the only way to create a project.
 | `uat` | `br-flat-lake-b33jhfl5` | UAT | `tolong-alih-uat` |
 | `main` | `br-snowy-dream-b3myqcc8` | production | `tolong-alih` |
 
-Branches are the environment boundary, so everything lives in `public` — the
-`app_alih_<env>` schemas were a Supabase-era workaround for sharing one project
-between apps and environments.
+Branches are the environment boundary, so everything lives in `public`. (On
+Supabase, one shared project hosted both environments as `app_alih_uat` /
+`app_alih_prod` schemas; that ended with the move to Neon.)
 
 Each branch has its own Neon Auth (Better Auth) and its own Data API. Users,
 sessions and sign-in config do not cross branches.
@@ -31,13 +31,32 @@ client calling functions that are not there yet.
 Design notes live in the file header. The short version:
 
 - The verbs (`declare_block`, `clear_block`, `flag_block`, `contact_blocker`,
-  `trace_block`, `say`) are `security definer` RPCs. RLS cannot express flag or
-  trace — see `supabase/README.md` for the full reasoning, which still holds.
+  `trace_block`, `say`) are `security definer` RPCs — see below.
 - Grants are column-scoped: a driver cannot set `profiles.is_admin` or
   `cars.verified`, and has select only on `blocks`, `block_targets`, `messages`.
 - `auth.user_id()` (pg_session_jwt) replaces `auth.uid()`. User ids are text.
 - No pg_cron on a scale-to-zero compute; `declare_block` and `trace_block`
   expire stale blocks before they read.
+
+## Why the verbs are functions and not table writes
+
+RLS alone cannot express three of the four verbs:
+
+- **flag** — the blocked driver has to reopen someone else's block, but only
+  the blocker may update a block, and that has to stay so.
+- **trace** — the whole point is that the blocked driver is *not* registered
+  against the block, so no read policy can ever match them.
+- **declare / clear** — both write messages to the other party. Allowing that
+  from the client means a `messages` insert policy of `with check (true)`, and
+  then any signed-in user can forge a message to anyone, from any label.
+
+So the verbs run as definer, pinned to `public`, and re-check the caller. Being
+party to a block means knowing its uuid *and* one of its plates — exactly what
+trace establishes, so a traced driver can act without registering.
+
+`trace_block` caps a user at 10 traces an hour (`trace_attempts`). Without that,
+trace is plate enumeration with extra steps. Add new cross-party actions as
+RPCs too; do not loosen a policy to make a write work.
 
 ## Data API settings (per branch)
 
