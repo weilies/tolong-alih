@@ -262,6 +262,13 @@
     font-family:'JetBrains Mono',monospace;font-size:11px;padding:5px 11px}
   .promo .ft{padding:0 20px 20px}
 
+  /* ---------- push pre-prompt ---------- */
+  .ask .bd{text-align:left}
+  .ask .lg{margin:0 0 14px}
+  .steps{margin:12px 0 0 20px;font-size:14px;line-height:1.55}
+  .steps li{margin-top:6px}
+  .ask .ft .btn + .btn{margin-top:10px}
+
   /* ---------- tabs ---------- */
   .tabs{position:fixed;left:0;right:0;bottom:0;z-index:30;background:var(--tarmac);
     display:flex;max-width:520px;margin:0 auto;padding-bottom:env(safe-area-inset-bottom)}
@@ -522,6 +529,18 @@
   </div>
 </div>
 
+<div class="veil ask" id="pushAsk" role="dialog" aria-modal="true" aria-labelledby="askH">
+  <div class="promo">
+    <div class="hazard"></div>
+    <div class="bd">
+      <div class="lg">🔔</div>
+      <h3 class="disp" id="askH">Know the moment you're blocked in</h3>
+      <div id="askBody"></div>
+    </div>
+    <div class="ft" id="askFt"></div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script src="/config.js"></script>
@@ -630,6 +649,18 @@ var MS = {
   "No alerts in this browser":"Tiada amaran dalam pelayar ini",
   "This browser can't show notifications. Open Tolong Alih in Chrome, or on iPhone in Safari, to get alerts.":"Pelayar ini tidak boleh memaparkan pemberitahuan. Buka Tolong Alih dalam Chrome, atau Safari pada iPhone, untuk mendapat amaran.",
   "Alerts on":"Amaran dihidupkan",
+  "Know the moment you're blocked in":"Tahu serta-merta apabila anda terhalang",
+  "Tolong Alih sends a notification when someone blocks your car, and when the other driver replies — even with your phone locked.":"Tolong Alih menghantar pemberitahuan apabila seseorang menghalang kereta anda, dan apabila pemandu lain membalas — walaupun telefon anda dikunci.",
+  "Your phone will ask next. Tap Allow.":"Telefon anda akan bertanya selepas ini. Ketuk Benarkan.",
+  "Allow alerts":"Benarkan amaran",
+  "Not now":"Bukan sekarang",
+  "Got it":"Faham",
+  "On iPhone, alerts only work from the home screen app. Four taps, once:":"Pada iPhone, amaran hanya berfungsi daripada aplikasi di skrin utama. Empat ketukan, sekali sahaja:",
+  "Without alerts you won't know when your car is blocked or the other driver replies. You'd have to keep this page open.":"Tanpa amaran anda tidak akan tahu apabila kereta anda dihalang atau pemandu lain membalas. Anda perlu sentiasa membuka halaman ini.",
+  "Alerts are off — you won't know when your car is blocked":"Amaran dimatikan — anda tidak akan tahu apabila kereta anda dihalang",
+  "To turn them back on:":"Untuk menghidupkannya semula:",
+  "Alerts blocked — you won't be told when you're blocked in.":"Amaran disekat — anda tidak akan dimaklumkan apabila anda terhalang.",
+  "Add Tolong Alih to your home screen for alerts":"Tambah Tolong Alih ke skrin utama untuk amaran",
   "Could not turn on alerts.":"Tidak dapat menghidupkan amaran.",
   "Test coming in 10 seconds — lock your phone now":"Ujian tiba dalam 10 saat — kunci telefon anda sekarang",
   "No device has alerts on yet.":"Belum ada peranti yang menghidupkan amaran.",
@@ -1143,7 +1174,7 @@ async function enterApp(){
   paintAvatar();
   stage("app");
   render();
-  pushSync();
+  pushSync(true);
   if(/[?&]tab=alerts\b/.test(location.search)) openTab("pI");
   await Promise.all([refresh(), loadAds()]);
   render();
@@ -1189,28 +1220,74 @@ function pushState(){
   return Notification.permission;                 /* default | granted | denied */
 }
 
+var OS = IOS ? "ios" : /Android/i.test(navigator.userAgent) ? "android" : "desktop";
+var WARN = "Without alerts you won't know when your car is blocked or the other driver replies. You'd have to keep this page open.";
+
+function li(a){ return '<ol class="steps">'+a.map(function(x){ return "<li>"+x+"</li>"; }).join("")+"</ol>"; }
+var IOS_STEPS = li([
+  "Tap <b>Share</b> ⬆ at the bottom of Safari",
+  "Scroll down, tap <b>Add to Home Screen</b>, then <b>Add</b>",
+  "Open <b>Tolong Alih</b> from your home screen",
+  "Tap <b>Allow alerts</b>, then <b>Allow</b>"
+]);
+/* Once denied, only the browser's own settings can undo it — say where. */
+var UNBLOCK = {
+  android: li(["Tap the icon left of the web address (or ⋮ → <b>Settings</b> → <b>Site settings</b>)",
+               "Tap <b>Notifications</b> → <b>Allow</b>", "Reload this page"]),
+  ios:     li(["Open the <b>Settings</b> app", "Tap <b>Notifications</b> → <b>Tolong Alih</b>",
+               "Turn on <b>Allow Notifications</b>"]),
+  desktop: li(["Click the icon left of the web address", "Set <b>Notifications</b> to <b>Allow</b>", "Reload this page"])
+};
+
+/* The red banner that stays until alerts are on. */
 function paintPush(){
   var st = pushState(), card = $("pushCard");
   $("pushTest").hidden = st !== "granted";
-  var copy = {
-    "default": ["hot", "Alerts are off",
-      "Turn on alerts so your phone rings when someone blocks your car — even when it's locked.",
-      '<button class="btn btn-hz" id="pushOn">Turn on alerts</button>'],
-    "ios": ["info", "Alerts on this iPhone",
-      "iPhone only delivers alerts to apps on the home screen. Tap Share, then Add to Home Screen, then open Tolong Alih from that icon and turn alerts on there.", ""],
-    "denied": ["info", "Alerts are blocked",
-      "This browser is set to block notifications from Tolong Alih. Allow them in the browser's site settings, then reload.", ""],
-    "none": ["info", "No alerts in this browser",
-      "This browser can't show notifications. Open Tolong Alih in Chrome, or on iPhone in Safari, to get alerts.", ""]
+  var body = {
+    "default": [WARN, '<button class="btn btn-hz" id="pushOn">Allow alerts</button>'],
+    "denied":  ["<p>To turn them back on:</p>" + UNBLOCK[OS], ""],
+    "ios":     ["<p>"+WARN+"</p>" + IOS_STEPS, ""],
+    "none":    ["This browser can't show notifications. Open Tolong Alih in Chrome, or on iPhone in Safari, to get alerts.", ""]
   }[st];
-  card.hidden = !copy;
-  if(!copy) return;
-  card.innerHTML = '<div class="card '+copy[0]+'" style="margin:0 0 18px"><div class="in">'+
-    '<div class="top"><span class="eyebrow">'+copy[1]+'</span></div>'+
-    '<div class="msg">'+copy[2]+'</div>'+copy[3]+'</div></div>';
+  card.hidden = !body;
+  if(!body) return;
+  var head = st === "ios" ? "Add Tolong Alih to your home screen for alerts"
+                          : "Alerts are off — you won't know when your car is blocked";
+  card.innerHTML = '<div class="card hot" style="margin:0 0 18px"><div class="in">'+
+    '<div class="top"><span class="eyebrow">'+head+'</span></div>'+
+    '<div class="msg">'+body[0]+'</div>'+body[1]+'</div></div>';
   var on = $("pushOn");
   if(on) on.addEventListener("click", pushEnable);
   applyLang();
+}
+
+/* Our own ask, before the browser's. Its Allow is the tap the browser needs
+   to show the real prompt; its Not now costs nothing, so we can ask again
+   tomorrow. A browser "Block" is final until the driver changes settings. */
+var ASK_KEY = "alih.pushAsked";
+function askPush(force){
+  var st = pushState();
+  if(st !== "default" && st !== "ios") return;
+  if(!force){
+    try{ if(Date.now() - (+localStorage.getItem(ASK_KEY) || 0) < 864e5) return; }catch(e){}
+  }
+  if(st === "ios"){
+    $("askBody").innerHTML = '<p>On iPhone, alerts only work from the home screen app. Four taps, once:</p>' + IOS_STEPS;
+    $("askFt").innerHTML = '<button class="btn btn-hz" id="askNo">Got it</button>';
+  } else {
+    $("askBody").innerHTML = "<p>Tolong Alih sends a notification when someone blocks your car, and when the other driver replies — even with your phone locked.</p>"+
+      "<p><b>Your phone will ask next. Tap Allow.</b></p>";
+    $("askFt").innerHTML = '<button class="btn btn-hz" id="askYes">Allow alerts</button>'+
+      '<button class="btn btn-flat" id="askNo">Not now</button>';
+    $("askYes").addEventListener("click", function(){ closeAsk(); pushEnable.call(this); });
+  }
+  $("askNo").addEventListener("click", function(){ closeAsk(); if(st === "default") toast(WARN); });
+  $("pushAsk").classList.add("on");
+  applyLang();
+}
+function closeAsk(){
+  $("pushAsk").classList.remove("on");
+  try{ localStorage.setItem(ASK_KEY, String(Date.now())); }catch(e){}
 }
 
 async function pushSubscribe(){
@@ -1229,20 +1306,22 @@ async function pushSubscribe(){
 /* Asking has to come from a tap — iOS ignores it otherwise, and Chrome
    quietly demotes sites that prompt on load. */
 async function pushEnable(){
-  var btn = this;
+  var btn = this && this.id === "pushOn" ? this : null;
   busy(btn,true);
   try{
     var p = await Notification.requestPermission();
     if(p === "granted"){ await pushSubscribe(); toast("Alerts on"); }
+    else toast("Alerts blocked — you won't be told when you're blocked in.");
   }catch(e){ toast(why(e,"Could not turn on alerts.")); }
-  busy(btn,false,"Turn on alerts");
+  if(btn && btn.id === "pushOn") busy(btn,false,"Allow alerts");
   paintPush();
 }
 
 /* Every load: browsers rotate and drop subscriptions, and a phone may have
    been signed into another account since. Re-sending is cheap and idempotent. */
-function pushSync(){
+function pushSync(ask){
   paintPush();
+  if(ask) askPush(false);
   if(pushState() === "granted") pushSubscribe().catch(function(){});
 }
 
