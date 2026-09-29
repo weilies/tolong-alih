@@ -12,9 +12,8 @@
     // proxies both from /api/auth and /api/rest, and RLS guards the data.
     "NEON_AUTH_URL": "https://ep-fancy-wildflower-b3dc9f55.neonauth.c-4.ap-southeast-1.aws.neon.tech/neondb/auth",
     "NEON_DATA_API_URL": "https://ep-fancy-wildflower-b3dc9f55.apirest.c-4.ap-southeast-1.aws.neon.tech/neondb/rest/v1",
-    // Web Push (src/push.js). The public half only; VAPID_PRIVATE_KEY is a
-    // wrangler secret. Push stays hidden in the app until both are set.
-    "VAPID_PUBLIC_KEY": "BKB9qkXmojmwMm6ZNhLBeLhiaU0b0KIAbndw7VhEkgtx6qkWE_MkjsRVHVhxDM4CUGYgOPgIAzDDm3d-33VxkJs",
+    // Web Push (src/push.js). VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY are worker
+    // secrets, made once by the deploy workflow. Push stays hidden until set.
     "VAPID_SUBJECT": "https://alih.nextnovas.com"
   }
 }

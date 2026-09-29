@@ -84,23 +84,23 @@ RPCs too; do not loosen a policy to make a write work.
 
 ## Web Push (per environment)
 
-The worker sends pushes itself (`src/push.js`). Each environment needs its own
-VAPID pair — `node scripts/vapid.mjs` — and three things set from it:
+The worker sends pushes itself (`src/push.js`) with a VAPID key pair held as
+two worker secrets, `VAPID_PUBLIC_KEY` and `VAPID_PRIVATE_KEY`. The deploy
+workflow makes them on a worker's first deploy and prints one line:
 
-1. `VAPID_PUBLIC_KEY` in that env's `wrangler*.jsonc` vars.
-2. The private half as a worker secret:
-   `npx wrangler secret put VAPID_PRIVATE_KEY -c wrangler.uat.jsonc`
-3. The drain key's hash in the branch, so `push_drain` knows the worker:
+    push_config.key_hash = <64 hex>
 
-   ```sql
-   -- key = hex(sha256('tolong-alih push:' || VAPID_PRIVATE_KEY)), as drainKey() computes
-   insert into push_config (id, key_hash) values (1, encode(sha256(convert_to('<key>', 'UTF8')), 'hex'))
-   on conflict (id) do update set key_hash = excluded.key_hash;
-   ```
+Put that in the branch so `push_drain` recognises the worker:
 
-Until the secret exists `/config.js` sends `vapidPublicKey: null` and the app
-shows no push prompt. Rotating the pair strands every subscription; drivers
-re-subscribe on their next visit.
+```sql
+insert into push_config (id, key_hash) values (1, '<64 hex>')
+on conflict (id) do update set key_hash = excluded.key_hash;
+```
+
+Until the secrets exist `/config.js` sends `vapidPublicKey: null` and the app
+shows no push prompt; until the hash is in, verbs send nothing (the test button
+still works). To rotate, delete both secrets and redeploy — every driver
+re-subscribes on their next visit.
 
 ## Making yourself admin
 

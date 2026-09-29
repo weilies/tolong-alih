@@ -31,6 +31,7 @@ const REST_REQUEST_HEADERS = [
 ];
 const REST_RESPONSE_HEADERS = ["content-type", "content-range", "preference-applied", "location"];
 // The verbs that leave a message for the other driver: each one is a push.
+const TEST_DELAY_MS = 10000;
 const PUSH_VERBS = new Set(["declare_block", "clear_block", "flag_block", "contact_blocker", "say"]);
 
 function pick(from, names, into = new Headers()) {
@@ -130,7 +131,7 @@ async function drainPush(env) {
   if (gone.length) await rpc(env, "push_gone", { p_key: key, p_endpoints: gone });
 }
 
-async function pushTest(request, env) {
+async function pushTest(request, env, ctx) {
   const json = (status, body) => new Response(JSON.stringify(body), {
     status, headers: { "content-type": "application/json", "cache-control": "no-store" },
   });
@@ -140,12 +141,15 @@ async function pushTest(request, env) {
   const res = await rpc(env, "push_mine", {}, request.headers.get("authorization"));
   if (!res.ok) return json(res.status, { error: "Sign in first." });
   const rows = await res.json();
-  const { sent, gone } = await deliver(env, rows, () => ({
-    title: "Test alert", body: "Alerts are on. This is what a block on your plate looks like.",
-    tag: "test", kind: "info", url: "/",
+  // Sent after a pause, so a driver testing alone has time to lock the phone.
+  ctx.waitUntil(new Promise((r) => setTimeout(r, TEST_DELAY_MS)).then(async () => {
+    const { gone } = await deliver(env, rows, () => ({
+      title: "Blocked in (test)", body: "TEST 999 is parked behind your car. This is what a real alert looks like.",
+      tag: "test", kind: "hot", url: "/",
+    }));
+    if (gone.length) await rpc(env, "push_gone", { p_key: await drainKey(env), p_endpoints: gone });
   }));
-  if (gone.length) await rpc(env, "push_gone", { p_key: await drainKey(env), p_endpoints: gone });
-  return json(200, { devices: rows.length, sent });
+  return json(200, { devices: rows.length, delay: TEST_DELAY_MS / 1000 });
 }
 
 async function proxyRest(request, env, ctx, path) {
@@ -180,7 +184,7 @@ export default {
       return proxyRest(request, env, ctx, url.pathname.slice("/api/rest/".length));
     }
     if (url.pathname === "/api/push/test") {
-      return pushTest(request, env);
+      return pushTest(request, env, ctx);
     }
 
     if (url.pathname === "/config.js") {

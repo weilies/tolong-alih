@@ -631,7 +631,7 @@ var MS = {
   "This browser can't show notifications. Open Tolong Alih in Chrome, or on iPhone in Safari, to get alerts.":"Pelayar ini tidak boleh memaparkan pemberitahuan. Buka Tolong Alih dalam Chrome, atau Safari pada iPhone, untuk mendapat amaran.",
   "Alerts on":"Amaran dihidupkan",
   "Could not turn on alerts.":"Tidak dapat menghidupkan amaran.",
-  "Test sent — check your notifications":"Ujian dihantar — semak pemberitahuan anda",
+  "Test coming in 10 seconds — lock your phone now":"Ujian tiba dalam 10 saat — kunci telefon anda sekarang",
   "No device has alerts on yet.":"Belum ada peranti yang menghidupkan amaran.",
   /* declare */
   "Declare a block":"Isytihar halangan",
@@ -1266,7 +1266,7 @@ $("pushTest").addEventListener("click", async function(){
     var res = await fetch("/api/push/test", { method:"POST", headers:{ authorization:"Bearer "+tok } });
     var out = await res.json().catch(function(){ return {}; });
     if(!res.ok) toast(out.error || "Could not send that.");
-    else toast(out.sent ? "Test sent — check your notifications" : "No device has alerts on yet.");
+    else toast(out.devices ? "Test coming in 10 seconds — lock your phone now" : "No device has alerts on yet.");
   }catch(e){ toast(why(e,"Could not send that.")); }
   busy(this,false,"Send me a test alert");
 });

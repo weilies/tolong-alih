@@ -95,8 +95,8 @@ RPCs too; do not loosen a policy to make a write work.
    sends after every verb that writes a message (`src/push.js`, RFC 8291/8292
    on WebCrypto, no deps). `messages.pushed_at` is the outbox, `push_drain`
    claims it behind a key only the worker holds. iOS needs Add to Home Screen
-   first; the app says so. Needs `VAPID_PRIVATE_KEY` as a wrangler secret per
-   env — see `db/README.md`. The 45s poll stays as the fallback.
+   first; the app says so. VAPID keys are worker secrets the deploy workflow makes
+   once per env — see `db/README.md`. The 45s poll stays as the fallback.
 4. **`public/admin.html`** — ads CRUD, gated on `profiles.is_admin`.
    Read `ad_performance` for the monthly invoice numbers.
 5. ~~**pg_cron** for `expire_blocks()`~~ — replaced by lazy expiry inside
