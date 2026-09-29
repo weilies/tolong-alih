@@ -35,6 +35,8 @@ jobs:
       # only sha256 of the drain key, which db/README.md says to put in
       # push_config — safe to show, it cannot be reversed.
       - name: VAPID keys (first run only)
+        # Never block a deploy on this: without the keys the app simply hides push.
+        continue-on-error: true
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
