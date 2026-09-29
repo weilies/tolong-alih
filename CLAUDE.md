@@ -54,7 +54,8 @@ A dedicated Neon project; each Neon branch is one environment, all in `public`.
 `db/schema.sql` is the whole schema, idempotent — apply it per branch.
 
 Tables: `profiles`, `cars`, `blocks`, `block_targets`, `messages`,
-`advertisers`, `ads`, `ad_events`, `trace_attempts`. View: `ad_performance`.
+`advertisers`, `ads`, `ad_events`, `trace_attempts`, `push_subscriptions`,
+`push_config`. View: `ad_performance`.
 All have RLS enabled; grants are column-scoped (a driver cannot set
 `profiles.is_admin` or `cars.verified`). User ids are text from
 `auth.user_id()`.
@@ -90,9 +91,12 @@ RPCs too; do not loosen a policy to make a write work.
 2. ~~**Replace the in-memory `DB` object**~~ — done. All four verbs, garage,
    inbox and ads read from Postgres. Alerts refresh on a 45s poll and on tab
    focus; Web Push replaces that.
-3. **Web Push** — service worker, VAPID keys, a push sender that fires on block
-   declare (Neon has no Edge Functions; a Cloudflare Worker fits). This is what makes the product work. iOS Safari needs the
-   site added to home screen first.
+3. ~~**Web Push**~~ — built. `public/sw.js` + `manifest.webmanifest`; the worker
+   sends after every verb that writes a message (`src/push.js`, RFC 8291/8292
+   on WebCrypto, no deps). `messages.pushed_at` is the outbox, `push_drain`
+   claims it behind a key only the worker holds. iOS needs Add to Home Screen
+   first; the app says so. Needs `VAPID_PRIVATE_KEY` as a wrangler secret per
+   env — see `db/README.md`. The 45s poll stays as the fallback.
 4. **`public/admin.html`** — ads CRUD, gated on `profiles.is_admin`.
    Read `ad_performance` for the monthly invoice numbers.
 5. ~~**pg_cron** for `expire_blocks()`~~ — replaced by lazy expiry inside

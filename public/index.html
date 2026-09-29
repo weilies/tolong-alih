@@ -4,6 +4,11 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="theme-color" content="#16150F" />
+<link rel="manifest" href="/manifest.webmanifest" />
+<link rel="icon" href="/icon-192.png" type="image/png" />
+<link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-title" content="Tolong Alih" />
 <title>Tolong Alih — sort out the block</title>
 <meta name="description" content="Blocked in by a double-parked car in Malaysia? Tolong Alih connects the two drivers by plate number, without either one sharing a phone number." />
 <meta property="og:title" content="Tolong Alih" />
@@ -398,6 +403,7 @@
         <label class="pickpic" for="avatarFile">Change photo</label>
         <input type="file" id="avatarFile" accept="image/*" hidden />
         <button class="btn btn-flat" id="langRow">Bahasa Malaysia</button>
+        <button class="btn btn-flat" id="pushTest" hidden>Send me a test alert</button>
         <a class="btn btn-flat" id="adminLink" href="/admin.html" hidden style="text-decoration:none;text-align:center">Ads console</a>
         <button class="btn btn-stop" id="signout">Sign out</button>
       </div>
@@ -405,6 +411,9 @@
     <div class="hazard thin" id="hz"></div>
 
     <main>
+      <!-- PUSH: how the blocked driver hears about it with the phone locked -->
+      <div id="pushCard" hidden></div>
+
       <!-- DECLARE -->
       <section class="panel on" id="pD" role="tabpanel">
         <h2 class="disp">Declare a block</h2>
@@ -609,6 +618,21 @@ var MS = {
   "Remove photo":"Buang gambar",
   "Ads console":"Konsol iklan",
   "Sign out":"Log keluar",
+  "Send me a test alert":"Hantar amaran ujian kepada saya",
+  /* push */
+  "Alerts are off":"Amaran dimatikan",
+  "Turn on alerts so your phone rings when someone blocks your car — even when it's locked.":"Hidupkan amaran supaya telefon anda berbunyi apabila seseorang menghalang kereta anda — walaupun telefon dikunci.",
+  "Turn on alerts":"Hidupkan amaran",
+  "Alerts on this iPhone":"Amaran pada iPhone ini",
+  "iPhone only delivers alerts to apps on the home screen. Tap Share, then Add to Home Screen, then open Tolong Alih from that icon and turn alerts on there.":"iPhone hanya menghantar amaran kepada aplikasi di skrin utama. Ketuk Kongsi, kemudian Tambah ke Skrin Utama, kemudian buka Tolong Alih dari ikon itu dan hidupkan amaran di sana.",
+  "Alerts are blocked":"Amaran disekat",
+  "This browser is set to block notifications from Tolong Alih. Allow them in the browser's site settings, then reload.":"Pelayar ini ditetapkan untuk menyekat pemberitahuan daripada Tolong Alih. Benarkan dalam tetapan laman pelayar, kemudian muat semula.",
+  "No alerts in this browser":"Tiada amaran dalam pelayar ini",
+  "This browser can't show notifications. Open Tolong Alih in Chrome, or on iPhone in Safari, to get alerts.":"Pelayar ini tidak boleh memaparkan pemberitahuan. Buka Tolong Alih dalam Chrome, atau Safari pada iPhone, untuk mendapat amaran.",
+  "Alerts on":"Amaran dihidupkan",
+  "Could not turn on alerts.":"Tidak dapat menghidupkan amaran.",
+  "Test sent — check your notifications":"Ujian dihantar — semak pemberitahuan anda",
+  "No device has alerts on yet.":"Belum ada peranti yang menghidupkan amaran.",
   /* declare */
   "Declare a block":"Isytihar halangan",
   "Two taps and a plate. The driver you've boxed in is pinged straight away.":"Dua ketukan dan satu plat. Pemandu yang anda halang akan dimaklumkan serta-merta.",
@@ -986,6 +1010,7 @@ $("resend").addEventListener("click", async function(){
 
 $("signout").addEventListener("click", async function(){
   clearInterval(poll);
+  await pushForget();
   await sb.auth.signOut();
   me = null; cars = []; declared = []; inbox = []; traced = null; adShown = {};
   $("sheet").hidden = true;
@@ -1118,13 +1143,133 @@ async function enterApp(){
   paintAvatar();
   stage("app");
   render();
+  pushSync();
+  if(/[?&]tab=alerts\b/.test(location.search)) openTab("pI");
   await Promise.all([refresh(), loadAds()]);
   render();
   clearInterval(poll);
   poll = setInterval(function(){ if(!document.hidden && me) refresh(); }, 45000);
 }
 
-document.addEventListener("visibilitychange", function(){ if(!document.hidden && me) refresh(); });
+document.addEventListener("visibilitychange", function(){
+  if(!document.hidden && me){ refresh(); pushSync(); }
+});
+
+/* ================= push =================
+   Web Push through /sw.js; the worker sends it after each verb (src/push.js).
+   The 45s poll stays as the fallback for browsers that can't or won't. */
+var PUSH_OK = "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
+var IOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+          (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+var STANDALONE = navigator.standalone === true ||
+                 (window.matchMedia && matchMedia("(display-mode: standalone)").matches);
+var swReg = PUSH_OK ? navigator.serviceWorker.register("/sw.js").catch(function(){ return null; }) : null;
+
+if(PUSH_OK) navigator.serviceWorker.addEventListener("message", function(e){
+  var t = e.data && e.data.type;
+  if(t === "push" && me) refresh();
+  if(t === "open-alerts" && me){ openTab("pI"); refresh(); }
+});
+
+function keyBytes(s){
+  var bin = atob(s.replace(/-/g,"+").replace(/_/g,"/") + "===".slice((s.length+3)%4));
+  return Uint8Array.from(bin, function(c){ return c.charCodeAt(0); });
+}
+function sameKey(sub, key){
+  var k = sub.options && sub.options.applicationServerKey;
+  if(!k) return true;
+  k = new Uint8Array(k);
+  return k.length === key.length && k.every(function(b,i){ return b === key[i]; });
+}
+
+function pushState(){
+  if(!ENV.vapidPublicKey) return "off";          /* server not set up: say nothing */
+  if(IOS && !STANDALONE) return "ios";
+  if(!PUSH_OK) return "none";
+  return Notification.permission;                 /* default | granted | denied */
+}
+
+function paintPush(){
+  var st = pushState(), card = $("pushCard");
+  $("pushTest").hidden = st !== "granted";
+  var copy = {
+    "default": ["hot", "Alerts are off",
+      "Turn on alerts so your phone rings when someone blocks your car — even when it's locked.",
+      '<button class="btn btn-hz" id="pushOn">Turn on alerts</button>'],
+    "ios": ["info", "Alerts on this iPhone",
+      "iPhone only delivers alerts to apps on the home screen. Tap Share, then Add to Home Screen, then open Tolong Alih from that icon and turn alerts on there.", ""],
+    "denied": ["info", "Alerts are blocked",
+      "This browser is set to block notifications from Tolong Alih. Allow them in the browser's site settings, then reload.", ""],
+    "none": ["info", "No alerts in this browser",
+      "This browser can't show notifications. Open Tolong Alih in Chrome, or on iPhone in Safari, to get alerts.", ""]
+  }[st];
+  card.hidden = !copy;
+  if(!copy) return;
+  card.innerHTML = '<div class="card '+copy[0]+'" style="margin:0 0 18px"><div class="in">'+
+    '<div class="top"><span class="eyebrow">'+copy[1]+'</span></div>'+
+    '<div class="msg">'+copy[2]+'</div>'+copy[3]+'</div></div>';
+  var on = $("pushOn");
+  if(on) on.addEventListener("click", pushEnable);
+  applyLang();
+}
+
+async function pushSubscribe(){
+  var reg = await swReg;
+  if(!reg) throw new Error("Could not turn on alerts.");
+  reg = await navigator.serviceWorker.ready;
+  var key = keyBytes(ENV.vapidPublicKey);
+  var sub = await reg.pushManager.getSubscription();
+  if(sub && !sameKey(sub, key)){ await sub.unsubscribe(); sub = null; }
+  if(!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly:true, applicationServerKey:key });
+  var j = sub.toJSON();
+  var r = await sb.rpc("push_subscribe", { p_endpoint:j.endpoint, p_p256dh:j.keys.p256dh, p_auth:j.keys.auth });
+  if(r.error) throw r.error;
+}
+
+/* Asking has to come from a tap — iOS ignores it otherwise, and Chrome
+   quietly demotes sites that prompt on load. */
+async function pushEnable(){
+  var btn = this;
+  busy(btn,true);
+  try{
+    var p = await Notification.requestPermission();
+    if(p === "granted"){ await pushSubscribe(); toast("Alerts on"); }
+  }catch(e){ toast(why(e,"Could not turn on alerts.")); }
+  busy(btn,false,"Turn on alerts");
+  paintPush();
+}
+
+/* Every load: browsers rotate and drop subscriptions, and a phone may have
+   been signed into another account since. Re-sending is cheap and idempotent. */
+function pushSync(){
+  paintPush();
+  if(pushState() === "granted") pushSubscribe().catch(function(){});
+}
+
+/* Signing out must stop this phone getting the last driver's alerts. */
+async function pushForget(){
+  if(!PUSH_OK || !(await swReg)) return;
+  try{
+    var sub = await (await navigator.serviceWorker.ready).pushManager.getSubscription();
+    if(!sub) return;
+    await sb.rpc("push_unsubscribe", { p_endpoint: sub.endpoint });
+    await sub.unsubscribe();
+  }catch(e){}
+}
+
+$("pushTest").addEventListener("click", async function(){
+  busy(this,true);
+  try{
+    await pushSubscribe();
+    var s = await sb.auth.getSession();
+    var tok = s.data && s.data.session && s.data.session.access_token;
+    var res = await fetch("/api/push/test", { method:"POST", headers:{ authorization:"Bearer "+tok } });
+    var out = await res.json().catch(function(){ return {}; });
+    if(!res.ok) toast(out.error || "Could not send that.");
+    else toast(out.sent ? "Test sent — check your notifications" : "No device has alerts on yet.");
+  }catch(e){ toast(why(e,"Could not send that.")); }
+  busy(this,false,"Send me a test alert");
+});
 
 /* profiles has no insert trigger, so the client owns its own row. */
 async function ensureProfile(session){
@@ -1326,6 +1471,10 @@ Array.prototype.forEach.call(document.querySelectorAll(".tabs button"), function
     if(pid === "pI") refresh();
   });
 });
+function openTab(pid){
+  var b = document.querySelector('.tabs button[data-p="'+pid+'"]');
+  if(b) b.click();
+}
 $("addSlot").addEventListener("click", function(){
   var s = $("slot2");
   if(s.hidden){ s.hidden=false; this.textContent="− Only one car"; $("v2").focus(); }

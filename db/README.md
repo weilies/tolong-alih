@@ -82,6 +82,26 @@ RPCs too; do not loosen a policy to make a write work.
 - Trusted origins: the environment's domain (`https://uat.alih.nextnovas.com`
   or `https://alih.nextnovas.com`). Localhost is allowed for `wrangler dev`.
 
+## Web Push (per environment)
+
+The worker sends pushes itself (`src/push.js`). Each environment needs its own
+VAPID pair — `node scripts/vapid.mjs` — and three things set from it:
+
+1. `VAPID_PUBLIC_KEY` in that env's `wrangler*.jsonc` vars.
+2. The private half as a worker secret:
+   `npx wrangler secret put VAPID_PRIVATE_KEY -c wrangler.uat.jsonc`
+3. The drain key's hash in the branch, so `push_drain` knows the worker:
+
+   ```sql
+   -- key = hex(sha256('tolong-alih push:' || VAPID_PRIVATE_KEY)), as drainKey() computes
+   insert into push_config (id, key_hash) values (1, encode(sha256(convert_to('<key>', 'UTF8')), 'hex'))
+   on conflict (id) do update set key_hash = excluded.key_hash;
+   ```
+
+Until the secret exists `/config.js` sends `vapidPublicKey: null` and the app
+shows no push prompt. Rotating the pair strands every subscription; drivers
+re-subscribe on their next visit.
+
 ## Making yourself admin
 
 After your first sign-in on the branch:

@@ -11,6 +11,10 @@
     // Neon project `tolong-alih`, branch `main`. Neither is a secret: the worker
     // proxies both from /api/auth and /api/rest, and RLS guards the data.
     "NEON_AUTH_URL": "https://ep-winter-mouse-b3lrpiom.neonauth.c-4.ap-southeast-1.aws.neon.tech/neondb/auth",
-    "NEON_DATA_API_URL": "https://ep-winter-mouse-b3lrpiom.apirest.c-4.ap-southeast-1.aws.neon.tech/neondb/rest/v1"
+    "NEON_DATA_API_URL": "https://ep-winter-mouse-b3lrpiom.apirest.c-4.ap-southeast-1.aws.neon.tech/neondb/rest/v1",
+    // Web Push: add VAPID_PUBLIC_KEY here and the VAPID_PRIVATE_KEY secret,
+    // from their own `node scripts/vapid.mjs` — never UAT's pair. Until then
+    // production simply offers no push.
+    "VAPID_SUBJECT": "https://alih.nextnovas.com"
   }
 }
