@@ -41,6 +41,25 @@ Solo project. Prefer boring, cheap, few dependencies. TypeScript/JavaScript.
 Pushing to the branch deploys it (`.github/workflows/deploy.yml`, needs
 `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` as repo secrets).
 Manual deploy for UAT: `npx wrangler deploy -c wrangler.uat.jsonc`
+Any other branch can deploy UAT through the workflow's `workflow_dispatch`
+(only `main` picks the production config). Full runbook: the `ship-uat` skill
+in `.claude/skills/`.
+
+### Lessons that cost a session
+
+- **The repo is public.** No keys in `wrangler*.jsonc`, commits or CI logs.
+  Secrets are made inside CI or set as worker secrets; logs may print hashes only.
+- **Every wrangler call failing with `Authentication error` / `Invalid access
+  token` = the `CLOUDFLARE_API_TOKEN` secret is dead.** Only the user can
+  replace it. Report it once; do not retry.
+- **Nothing here reaches a real phone**, and the sandbox usually cannot open
+  the live sites. Say what was verified (simulation, headless Chromium,
+  Neon rollback test) and hand the user the exact taps for the rest.
+- **Web Push on iPhone needs Add to Home Screen; on Android it needs Chrome
+  itself** — browsers inside other apps (WebView) have no push. Android in
+  desktop mode reports a Mac user agent; detect Android first.
+- **The user is often on a phone and alone.** Tests they run should work with
+  one person: delays before a test push, no "have someone declare".
 
 `src/worker.js` serves `/config.js` from its wrangler `vars` (the page reads
 `window.__ENV`), and proxies Neon Auth at `/api/auth/*` and the Data API at
