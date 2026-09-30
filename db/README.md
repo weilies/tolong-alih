@@ -82,6 +82,26 @@ RPCs too; do not loosen a policy to make a write work.
 - Trusted origins: the environment's domain (`https://uat.alih.nextnovas.com`
   or `https://alih.nextnovas.com`). Localhost is allowed for `wrangler dev`.
 
+## Web Push (per environment)
+
+The worker sends pushes itself (`src/push.js`) with a VAPID key pair held as
+two worker secrets, `VAPID_PUBLIC_KEY` and `VAPID_PRIVATE_KEY`. The deploy
+workflow makes them on a worker's first deploy and prints one line:
+
+    push_config.key_hash = <64 hex>
+
+Put that in the branch so `push_drain` recognises the worker:
+
+```sql
+insert into push_config (id, key_hash) values (1, '<64 hex>')
+on conflict (id) do update set key_hash = excluded.key_hash;
+```
+
+Until the secrets exist `/config.js` sends `vapidPublicKey: null` and the app
+shows no push prompt; until the hash is in, verbs send nothing (the test button
+still works). To rotate, delete both secrets and redeploy — every driver
+re-subscribes on their next visit.
+
 ## Making yourself admin
 
 After your first sign-in on the branch:

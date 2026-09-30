@@ -141,6 +141,28 @@ create table if not exists trace_attempts (
 );
 create index if not exists trace_attempts_user_idx on trace_attempts (user_id, created_at desc);
 
+-- Web Push. One row per browser that said yes; a phone can outlive an account,
+-- so the endpoint is the key and a new sign-in on the same phone takes it over.
+create table if not exists push_subscriptions (
+  endpoint   text primary key,
+  user_id    text not null,
+  p256dh     text not null,
+  auth       text not null,
+  created_at timestamptz not null default now()
+);
+create index if not exists push_subscriptions_user_idx on push_subscriptions (user_id);
+
+-- messages doubles as the push outbox: the worker claims unsent rows after
+-- every verb. See push_drain().
+alter table messages add column if not exists pushed_at timestamptz;
+create index if not exists messages_unpushed_idx on messages (created_at) where pushed_at is null;
+
+-- sha256 of the worker's push key, set per branch (db/README.md). Single row.
+create table if not exists push_config (
+  id       int primary key default 1 check (id = 1),
+  key_hash text not null
+);
+
 -- One row per ad per month: what the invoice is built from.
 create or replace view ad_performance as
 select a.id                                   as ad_id,
@@ -228,6 +250,8 @@ alter table advertisers    enable row level security;
 alter table ads            enable row level security;
 alter table ad_events      enable row level security;   -- no policies: function-only
 alter table trace_attempts enable row level security;   -- no policies: function-only
+alter table push_subscriptions enable row level security; -- no policies: function-only
+alter table push_config    enable row level security;   -- no policies: function-only
 
 drop policy if exists own_profile on profiles;
 create policy own_profile on profiles for all
@@ -686,6 +710,114 @@ as $$
   )
 $$;
 
+-- ================= web push =================
+-- The browser side is the caller's own business (subscribe, unsubscribe, list
+-- my devices). The sending side is the worker's: it calls push_drain after
+-- every verb with a key only it holds, and gets back who to wake. Nobody else
+-- can read another driver's push endpoint.
+
+create or replace function push_subscribe(p_endpoint text, p_p256dh text, p_auth text)
+returns json
+language plpgsql security definer
+set search_path = public
+as $$
+declare v_uid text := auth.user_id();
+begin
+  if v_uid is null then
+    raise exception 'Sign in first.' using errcode = '28000';
+  end if;
+  if p_endpoint !~ '^https://' or length(p_endpoint) > 1000
+     or coalesce(length(p_p256dh), 0) not between 80 and 100
+     or coalesce(length(p_auth), 0) not between 16 and 32 then
+    raise exception 'That is not a push subscription.' using errcode = '22023';
+  end if;
+
+  insert into push_subscriptions (endpoint, user_id, p256dh, auth)
+  values (p_endpoint, v_uid, p_p256dh, p_auth)
+  on conflict (endpoint) do update
+    set user_id = excluded.user_id, p256dh = excluded.p256dh, auth = excluded.auth;
+
+  return json_build_object('ok', true);
+end $$;
+
+create or replace function push_unsubscribe(p_endpoint text)
+returns json
+language plpgsql security definer
+set search_path = public
+as $$
+begin
+  delete from push_subscriptions where endpoint = p_endpoint and user_id = auth.user_id();
+  return json_build_object('ok', true);
+end $$;
+
+-- The caller's own devices, for the "send me a test" button.
+create or replace function push_mine()
+returns table (endpoint text, p256dh text, auth text)
+language plpgsql stable security definer
+set search_path = public
+as $$
+-- public.uid(), not auth.user_id(): the output column `auth` would shadow the schema.
+declare v_uid text := public.uid();
+begin
+  if v_uid is null then
+    raise exception 'Sign in first.' using errcode = '28000';
+  end if;
+  return query
+    select s.endpoint, s.p256dh, s.auth from push_subscriptions s where s.user_id = v_uid;
+end $$;
+
+create or replace function push_key_ok(p_key text)
+returns boolean language sql stable security definer
+set search_path = public
+as $$
+  select exists (select 1 from push_config
+                  where key_hash = encode(sha256(convert_to(coalesce(p_key, ''), 'UTF8')), 'hex'))
+$$;
+
+-- Claims every message not yet pushed and returns one row per device to wake.
+-- Older than ten minutes is left alone: a stale "you're blocked" at 3am helps
+-- nobody. skip locked lets two verbs finishing together drain without doubling.
+create or replace function push_drain(p_key text)
+returns table (endpoint text, p256dh text, auth text,
+               block_id uuid, kind text, title text, body text)
+language plpgsql security definer
+set search_path = public
+as $$
+begin
+  if not push_key_ok(p_key) then
+    raise exception 'Not the worker.' using errcode = '42501';
+  end if;
+
+  return query
+    with claimed as (
+      update messages m set pushed_at = now()
+       where m.id in (select x.id from messages x
+                       where x.pushed_at is null and x.to_user is not null
+                         and x.created_at > now() - interval '10 minutes'
+                       for update skip locked)
+      returning m.block_id, m.to_user, m.kind, m.from_label, m.body, m.is_typed
+    )
+    select s.endpoint, s.p256dh, s.auth, c.block_id, c.kind,
+           case when c.is_typed then 'Message · ' || c.from_label else c.from_label end,
+           c.body
+      from claimed c
+      join push_subscriptions s on s.user_id = c.to_user;
+end $$;
+
+-- The push service said 404/410: that browser unsubscribed or was wiped.
+create or replace function push_gone(p_key text, p_endpoints text[])
+returns json
+language plpgsql security definer
+set search_path = public
+as $$
+begin
+  if not push_key_ok(p_key) then
+    raise exception 'Not the worker.' using errcode = '42501';
+  end if;
+  delete from push_subscriptions where endpoint = any(p_endpoints);
+  return json_build_object('ok', true);
+end $$;
+
 -- ================= grants =================
 -- Start from nothing, then grant exactly what the client uses.
 
@@ -723,6 +855,9 @@ grant execute on function
   thread(uuid),
   log_ad_event(uuid, text, text),
   ad_report(),
+  push_subscribe(text, text, text),
+  push_unsubscribe(text),
+  push_mine(),
   -- Policy helpers: RLS evaluates them as the caller.
   uid(),
   i_declared(uuid),
@@ -732,3 +867,5 @@ grant execute on function
 to authenticated;
 
 grant execute on function public_stats() to anonymous, authenticated;
+-- The worker calls these with no session; the key argument is the gate.
+grant execute on function push_drain(text), push_gone(text, text[]) to anonymous, authenticated;
