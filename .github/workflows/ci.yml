@@ -1,0 +1,92 @@
+name: CI
+
+# Runs on every pull request, and as the first stage of every deploy
+# (deploy.yml calls it), so nothing reaches UAT or production unchecked.
+# Free on a public repo; touches no Neon branch and no Cloudflare account.
+
+on:
+  pull_request:
+    branches: [develop, main]
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  # A release to production is `develop` -> `main`, already proven on UAT.
+  # The only other way in is a hotfix/* branch.
+  release-flow:
+    if: github.event_name == 'pull_request' && github.base_ref == 'main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: main only takes develop or hotfix/*
+        env:
+          HEAD: ${{ github.head_ref }}
+        run: |
+          case "$HEAD" in
+            develop|hotfix/*) echo "OK: $HEAD -> main" ;;
+            *) echo "::error::PRs into main come from develop (tested on UAT) or hotfix/*. Retarget this PR to develop."; exit 1 ;;
+          esac
+
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Static checks (syntax, RPCs vs schema, wrangler configs, secrets)
+        run: node scripts/check.mjs
+      - name: Worker unit tests
+        run: node --test test/*.test.mjs
+
+  # db/schema.sql applied twice to a throwaway Postgres (proves it is
+  # idempotent, which deploys rely on), then the four verbs end to end.
+  database:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready --health-interval 2s --health-timeout 5s --health-retries 20
+    env:
+      PGHOST: localhost
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      PGDATABASE: postgres
+      PGOPTIONS: -c client_min_messages=warning
+    steps:
+      - uses: actions/checkout@v4
+      - name: Neon stand-ins (auth.user_id, Data API roles)
+        run: psql -v ON_ERROR_STOP=1 -q -f test/db/stub.sql
+      - name: schema.sql, first apply
+        run: psql -v ON_ERROR_STOP=1 -q -1 -f db/schema.sql
+      - name: schema.sql, second apply (must be a no-op that succeeds)
+        run: psql -v ON_ERROR_STOP=1 -q -1 -f db/schema.sql
+      - name: Verbs end to end
+        run: psql -v ON_ERROR_STOP=1 -q -f test/db/verbs.sql
+
+  # The real pages through the real worker in headless Chromium, with Neon
+  # faked in the browser. See test/smoke/.
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: npx playwright install --with-deps chromium
+      - run: npx playwright test -c test/smoke
+        env:
+          CI: "1"
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-traces
+          path: test-results/
+          retention-days: 7

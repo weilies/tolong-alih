@@ -1,0 +1,14 @@
+{
+  "name": "tolong-alih",
+  "private": true,
+  "type": "module",
+  "description": "Dev-only: checks and tests. Nothing here ships — the app has no build step.",
+  "scripts": {
+    "check": "node scripts/check.mjs",
+    "test": "node --test test/*.test.mjs",
+    "smoke": "playwright test -c test/smoke"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.56.1"
+  }
+}

@@ -38,12 +38,41 @@ Solo project. Prefer boring, cheap, few dependencies. TypeScript/JavaScript.
 | Branch | `develop` | `main` |
 | Config | `wrangler.uat.jsonc` | `wrangler.jsonc` |
 
-Pushing to the branch deploys it (`.github/workflows/deploy.yml`, needs
-`CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` as repo secrets).
-Manual deploy for UAT: `npx wrangler deploy -c wrangler.uat.jsonc`
-Any other branch can deploy UAT through the workflow's `workflow_dispatch`
-(only `main` picks the production config). Full runbook: the `ship-uat` skill
-in `.claude/skills/`.
+### Release flow
+
+feature branch → PR to `develop` → merge deploys **UAT** → try it there →
+PR `develop` → `main` → merge deploys **production**, tagged
+`release-YYYY.MM.DD-N`. PRs into `main` come only from `develop` or
+`hotfix/*` (CI enforces it). Runbooks: `ship-uat` and `release` skills in
+`.claude/skills/`.
+
+- **CI** (`.github/workflows/ci.yml`) runs on every PR and before every
+  deploy. Run the same locally before pushing:
+  `npm run check && npm test` (no install needed), `npm ci && npm run smoke`
+  (Playwright: real pages, real worker, Neon faked in the browser). The
+  `database` job applies `db/schema.sql` twice to a stock Postgres
+  (`test/db/stub.sql` stands in for Neon) and runs `test/db/verbs.sql`.
+- **Deploy** (`.github/workflows/deploy.yml`): CI → `schema.sql` to the Neon
+  branch (needs the `NEON_DATABASE_URL` environment secret, else skipped with a
+  warning) → worker → live check of `/config.js` → release tag (main only).
+  Secrets: `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` (repo).
+- **Rollback**: Actions → Deploy → Run workflow → `main` → `rollback`. Worker
+  only; that is safe because schema changes are additive by rule — never drop
+  or rename what the live client still calls.
+- New behaviour gets a smoke test in `test/smoke/app.spec.mjs`; a new or
+  changed verb gets a case in `test/db/verbs.sql`.
+- Manual UAT deploy of any branch: `workflow_dispatch` on Deploy (only `main`
+  picks the production config), or `npx wrangler deploy -c wrangler.uat.jsonc`.
+
+### SQL runs without a prompt
+
+`.claude/settings.json` lets Claude run Neon SQL (`run_sql`,
+`run_sql_transaction`) and schema reads without asking; deleting or resetting
+a branch or project still asks. The prompt is gone, the judgement is not:
+on the `main` branch (production), Claude states the SQL and gets a yes in
+the session before any `delete`, `update` without a narrow `where`, `drop`,
+`truncate` or `revoke`. Additive schema from `db/schema.sql` and reads need
+no yes. On `uat`, go ahead.
 
 ### Lessons that cost a session
 

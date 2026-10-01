@@ -9,6 +9,12 @@ UAT = Neon branch `uat` (`br-flat-lake-b33jhfl5`, project `wispy-union-37910963`
 + worker `tolong-alih-uat` + `wrangler.uat.jsonc`. Production is the same with
 `main`; never touch production unless the user says so in this session.
 
+## 0. Normal path
+
+Open a PR to `develop`; CI must be green; merging deploys UAT, and the Deploy
+workflow applies `db/schema.sql` itself when the `uat` environment has
+`NEON_DATABASE_URL`. The steps below are for when that path is not available.
+
 ## 1. Database first
 
 A client that calls an RPC the branch lacks fails as `PGRST202`. So:

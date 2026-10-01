@@ -25,8 +25,11 @@ MCP (`run_sql_transaction`, one statement per item) or psql:
 psql "$NEON_UAT_URL" -v ON_ERROR_STOP=1 -f db/schema.sql
 ```
 
-Apply to `main` before merging `develop` into `main`, or production ships a
-client calling functions that are not there yet.
+The Deploy workflow applies it before the worker on every deploy when the
+environment has `NEON_DATABASE_URL` (see CLAUDE.md, Release flow). Without that
+secret, apply it to `main` by hand before merging `develop` into `main`, or
+production ships a client calling functions that are not there yet. CI applies
+it twice to a stock Postgres on every PR, so it must stay idempotent.
 
 Design notes live in the file header. The short version:
 
