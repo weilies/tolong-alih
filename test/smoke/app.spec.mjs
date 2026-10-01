@@ -82,3 +82,42 @@ for (const page_ of ["/about.html", "/admin.html"]) {
     await page.waitForLoadState("networkidle");
   });
 }
+
+test("a first-time visitor lands on the explainer, and Start now opens the app", async ({ page }) => {
+  await fakeNeon(page, { signedIn: false, firstVisit: true });
+  await page.goto("/");
+  await expect(page).toHaveURL(/\/start\.html$/);
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+  await page.getByRole("link", { name: "Start now" }).first().click();
+  await expect(page).toHaveURL(/\/$/);
+  await expect(page.locator("#gGeo")).toHaveClass(/\bon\b/);
+  // second visit goes straight to the app
+  await page.goto("/");
+  await expect(page).toHaveURL(/\/$/);
+});
+
+test("a first-time visitor who is already signed in is not sent to the explainer", async ({ page }) => {
+  await fakeNeon(page, { firstVisit: true, cars: [car("WXY 1234")] });
+  await page.goto("/");
+  await page.click("#askGeo");
+  await expect(page.locator("#app")).toHaveClass(/\bon\b/);
+  await expect(page).toHaveURL(/\/$/);
+});
+
+for (const [path, label] of [["/start.html", /Skip to the app/], ["/about.html", /Back to the app/], ["/admin.html", /Back to the app/]]) {
+  test(`${path} has a visible way back to the app`, async ({ page }) => {
+    await fakeNeon(page, { signedIn: false });
+    await page.goto(path);
+    const back = page.getByRole("link", { name: label });
+    await expect(back).toBeVisible();
+    await back.click();
+    await expect(page).toHaveURL(/\/$/);
+  });
+}
+
+test("the footer shows the release the worker reports", async ({ page }) => {
+  await fakeNeon(page, { cars: [car("WXY 1234")] });
+  await signIn(page);
+  await expect(page.locator("#ver")).toContainText("dev");
+  await expect(page.locator("#dot")).toBeHidden();
+});

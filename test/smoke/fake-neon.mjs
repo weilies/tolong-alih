@@ -4,7 +4,15 @@
 
 const b64 = (o) => Buffer.from(JSON.stringify(o)).toString("base64url");
 
-export async function fakeNeon(page, { signedIn = true, cars = [], phone = "0123456789" } = {}) {
+export async function fakeNeon(page, {
+  signedIn = true, cars = [], phone = "0123456789",
+  declared = [],   // blocks I have open (Declare tab)
+  messages = [],   // my inbox (Alerts tab)
+  blocks = [],     // blocks those messages belong to
+  targets = [],    // block_targets rows I am party to
+  firstVisit = false, // true: this browser has never opened the app
+} = {}) {
+  if (!firstVisit) await page.addInitScript(() => localStorage.setItem("alih.seen", "1"));
   const state = { cars: [...cars], rpc: [], inserts: [] };
   const now = () => new Date().toISOString();
   const jwt = `${b64({ alg: "EdDSA", typ: "JWT" })}.${b64({
@@ -39,6 +47,11 @@ export async function fakeNeon(page, { signedIn = true, cars = [], phone = "0123
       return json({ phone, display_name: "Test Driver", avatar_url: null, is_admin: false });
     }
     if (path === "cars" && req.method() === "GET") return json(state.cars);
+    if (path === "blocks" && req.method() === "GET") {
+      return json(url.searchParams.has("blocker_id") ? declared : blocks);
+    }
+    if (path === "block_targets" && req.method() === "GET") return json(targets);
+    if (path === "messages" && req.method() === "GET") return json(messages);
     if (path === "cars" && req.method() === "POST") {
       const row = req.postDataJSON();
       state.inserts.push(row);

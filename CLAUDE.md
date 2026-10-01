@@ -18,7 +18,16 @@ Solo project. Prefer boring, cheap, few dependencies. TypeScript/JavaScript.
 
 ## Stack
 
-- **Frontend**: single static HTML file, no framework, no build step. `public/index.html`.
+- **Frontend**: static HTML, no framework, no build step. `public/index.html` is
+  the app; `public/start.html` explains it and walks through setup (install,
+  sign up, add a plate) — a browser that has never opened the app and has no
+  session is sent there first (`localStorage["alih.seen"]`). `about.html` is
+  Help & contact. Every page links back to the app. Its screenshots in
+  `public/guide/` are the real app with Neon faked: `npx playwright test -c
+  test/guide` regenerates them after a UI change.
+- **Copy**: plain words a first-time driver understands. Keep the four verbs as
+  names (Declare, Clear, Flag, Trace), but explain them in everyday language
+  next to them. Every English string the page shows has a BM entry in `MS`.
 - **Host**: Cloudflare Workers static assets. Two workers, one repo.
 - **Backend**: Neon — Postgres, Neon Auth (managed Better Auth) and the Data API
   (PostgREST). Project `tolong-alih`, aws-ap-southeast-1. See `db/README.md`.
@@ -61,6 +70,12 @@ PR `develop` → `main` → merge deploys **production**, tagged
   or rename what the live client still calls.
 - New behaviour gets a smoke test in `test/smoke/app.spec.mjs`; a new or
   changed verb gets a case in `test/db/verbs.sql`.
+- **Release names**: every deploy stamps `RELEASE` and `COMMIT` on the worker
+  (`wrangler deploy --var`). Production is `release-YYYY.MM.DD-N` — the same
+  name as its GitHub release tag; UAT is `uat-YYYY.MM.DD-N`; local is `dev`.
+  N is the Deploy run number. `/config.js` serves both and every page footer
+  shows them, linked to the tag or commit.
+- **Wrangler** is pinned once, `env.WRANGLER` in `deploy.yml`. Bump it there.
 - Manual UAT deploy of any branch: `workflow_dispatch` on Deploy (only `main`
   picks the production config), or `npx wrangler deploy -c wrangler.uat.jsonc`.
 

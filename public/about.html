@@ -35,6 +35,11 @@
     display:grid;place-items:center;font-size:13px;flex:none}
   .top .nm{font-size:12.5px;font-weight:600;white-space:nowrap}
   .top a{color:var(--hazard);font-size:12px;font-weight:600;text-decoration:none;white-space:nowrap}
+  .top a.back{font-size:13.5px;border:2px solid var(--hazard);padding:6px 10px}
+  .flinks{display:flex;gap:18px;margin-top:9px}
+  .flinks a{font-weight:600}
+  .ver{display:block;margin-top:10px;font-family:'JetBrains Mono',monospace;font-size:10.5px}
+  .ver a{color:var(--mute)}
   .avatar{width:31px;height:31px;flex:none;border:2px solid var(--hazard);background:var(--signage);
     color:#fff;cursor:pointer;padding:0;overflow:hidden;display:grid;place-items:center;
     font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 100,'wght' 700;font-size:12px}
@@ -108,7 +113,7 @@
   <div class="top">
     <div class="id"><div class="mk">🚗</div><span class="nm">Tolong <b style="color:var(--hazard)">Alih</b></span></div>
     <div class="id" style="flex:none">
-      <a href="/">Home</a>
+      <a href="/" class="back">← Back to the app</a>
       <button class="avatar" id="avatarBtn" aria-haspopup="true" aria-expanded="false" aria-label="Your account">
         <img id="avatarImg" alt="" hidden /><span id="avatarTxt">·</span>
       </button>
@@ -217,7 +222,8 @@
   <footer>
     <b>Tolong Alih</b> by Next Novas — declare when you box someone in, clear it when you move.
     Neither driver ever sees the other's number.
-    <a href="/" style="display:inline-block;margin-top:9px;font-weight:600">Open the app</a>
+    <nav class="flinks"><a href="/">Open the app</a><a href="/start.html">How it works</a></nav>
+    <small class="ver" id="ver"></small>
   </footer>
 </div>
 
@@ -233,6 +239,15 @@ function waNumber(){ return SUPPORT.wa.join(""); }
 function address(){ return SUPPORT.user[0]+String.fromCharCode(64)+SUPPORT.host.join("."); }
 
 var ENV = window.__ENV || {};
+if(ENV.release){
+  var vc = ENV.commit || "", vu = "https://github.com/weilies/tolong-alih/" +
+    (ENV.release.indexOf("release-") === 0 ? "releases/tag/"+encodeURIComponent(ENV.release) : "commit/"+encodeURIComponent(vc));
+  var ve = document.createElement("a");
+  ve.href = vu; ve.target = "_blank"; ve.rel = "noopener"; ve.textContent = ENV.release;
+  var vbox = document.getElementById("ver");
+  vbox.appendChild(document.createTextNode("Version ")); vbox.appendChild(ve);
+  if(vc) vbox.appendChild(document.createTextNode(" · "+vc.slice(0,7)));
+}
 function wa(t){ return "https://wa.me/"+waNumber()+"?text="+encodeURIComponent(t); }
 function mail(s,b){ return "mailto:"+address()+"?subject="+encodeURIComponent(s)+"&body="+encodeURIComponent(b); }
 
@@ -303,6 +318,8 @@ var MS = {
   "— the opposite case. They marked it cleared, you walk out, the car is still there. Flag reopens the block, tells them to move, and records it against them. Repeat offenders are how we find people abusing this.":"— keadaan sebaliknya. Mereka tanda sudah lepas, anda keluar, kereta masih di situ. Tanda membuka semula halangan, suruh mereka beredar, dan merekodkannya terhadap mereka. Pesalah berulang inilah cara kami mengesan penyalahgunaan.",
   "— you are boxed in and got no alert, because your plate is not registered. Enter their plate and yours, and if a matching block is open we connect you. Both plates are required on purpose: it means the only person who can look up a car is someone genuinely standing behind it, so this can never become a plate-lookup service.":"— anda terhalang dan tidak menerima amaran, kerana plat anda tidak berdaftar. Masukkan plat mereka dan plat anda, dan jika ada halangan yang sepadan kami hubungkan anda. Kedua-dua plat diperlukan dengan sengaja: ini bermakna satu-satunya orang yang boleh mencari kereta ialah orang yang benar-benar berdiri di belakangnya, jadi ini tidak akan menjadi perkhidmatan carian plat.",
   "Home":"Utama",
+  "← Back to the app":"← Kembali ke aplikasi",
+  "How it works":"Cara ia berfungsi",
   "Not signed in":"Belum log masuk",
   "Open the app":"Buka aplikasi",
   "← Back to app":"← Kembali ke aplikasi"

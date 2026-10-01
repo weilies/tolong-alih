@@ -31,8 +31,8 @@ jobs:
   checks:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
       - name: Static checks (syntax, RPCs vs schema, wrangler configs, secrets)
@@ -59,7 +59,7 @@ jobs:
       PGDATABASE: postgres
       PGOPTIONS: -c client_min_messages=warning
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Neon stand-ins (auth.user_id, Data API roles)
         run: psql -v ON_ERROR_STOP=1 -q -f test/db/stub.sql
       - name: schema.sql, first apply
@@ -74,8 +74,8 @@ jobs:
   smoke:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
