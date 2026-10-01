@@ -118,17 +118,23 @@ async function deliver(env, rows, message) {
 
 // Called after every verb. Claims whatever messages are unsent — this one and
 // any a previous run dropped — so a lost push is retried by the next verb.
-async function drainPush(env) {
+//
+// `authorization` is the bearer token of the driver whose verb triggered this.
+// Neon's Data API refuses any request without a JWT, whatever the anonymous
+// role allows, so the worker borrows the caller's. push_drain is granted to
+// `authenticated` and still gated on the worker's key, so a driver's token
+// alone gets nothing.
+async function drainPush(env, authorization) {
   if (!pushReady(env)) return;
   const key = await drainKey(env);
-  const res = await rpc(env, "push_drain", { p_key: key });
+  const res = await rpc(env, "push_drain", { p_key: key }, authorization);
   if (!res.ok) return console.error("push_drain", res.status, await res.text());
   const rows = await res.json();
   if (!rows.length) return;
   const { gone } = await deliver(env, rows, (r) => ({
     title: r.title, body: r.body, tag: r.block_id, kind: r.kind, url: "/",
   }));
-  if (gone.length) await rpc(env, "push_gone", { p_key: key, p_endpoints: gone });
+  if (gone.length) await rpc(env, "push_gone", { p_key: key, p_endpoints: gone }, authorization);
 }
 
 async function pushTest(request, env, ctx) {
@@ -147,7 +153,9 @@ async function pushTest(request, env, ctx) {
       title: "Blocked in (test)", body: "TEST 999 is parked behind your car. This is what a real alert looks like.",
       tag: "test", kind: "hot", url: "/",
     }));
-    if (gone.length) await rpc(env, "push_gone", { p_key: await drainKey(env), p_endpoints: gone });
+    if (gone.length) {
+      await rpc(env, "push_gone", { p_key: await drainKey(env), p_endpoints: gone }, request.headers.get("authorization"));
+    }
   }));
   return json(200, { devices: rows.length, delay: TEST_DELAY_MS / 1000 });
 }
@@ -165,7 +173,8 @@ async function proxyRest(request, env, ctx, path) {
   });
 
   if (res.ok && request.method === "POST" && PUSH_VERBS.has(path.replace(/^rpc\//, ""))) {
-    ctx.waitUntil(drainPush(env).catch((e) => console.error("drainPush", e)));
+    const authorization = request.headers.get("authorization");
+    ctx.waitUntil(drainPush(env, authorization).catch((e) => console.error("drainPush", e)));
   }
 
   const out = pick(res.headers, REST_RESPONSE_HEADERS);
