@@ -199,6 +199,10 @@ export default {
         dataApiUrl: `${url.origin}/api/rest`,
         // Only offered once the server can actually send.
         vapidPublicKey: pushReady(env) ? env.VAPID_PUBLIC_KEY : null,
+        // Stamped by the deploy workflow (release-YYYY.MM.DD-N on production,
+        // uat-YYYY.MM.DD-N on UAT); the page footer shows it.
+        release: env.RELEASE || "dev",
+        commit: env.COMMIT || null,
         ip: {
           country: cf.country || null,
           city: cf.city || null,

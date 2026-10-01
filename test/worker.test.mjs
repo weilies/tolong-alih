@@ -37,6 +37,14 @@ test("/config.js reports the env, same-origin API urls, and hides push without k
   assert.equal(cfg.authUrl, "https://uat.alih.nextnovas.com/api/auth");
   assert.equal(cfg.dataApiUrl, "https://uat.alih.nextnovas.com/api/rest");
   assert.equal(cfg.vapidPublicKey, null);
+  assert.equal(cfg.release, "dev", "no RELEASE var means a local build");
+});
+
+test("/config.js passes through the release the deploy stamped", async () => {
+  const env = { ...ENV, RELEASE: "uat-2026.10.01-30", COMMIT: "abc1234def" };
+  const body = await (await worker.fetch(new Request("https://x/config.js"), env, ctx())).text();
+  assert.match(body, /"release":"uat-2026.10.01-30"/);
+  assert.match(body, /"commit":"abc1234def"/);
 });
 
 test("/config.js offers the VAPID public key only when both halves are set", async () => {
