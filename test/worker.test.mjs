@@ -82,7 +82,10 @@ test("rest proxy: a verb RPC wakes the push drain, a plain read does not", async
     assert.equal(f.calls[0].init.headers.get("cookie"), null, "cookies never reach the Data API");
     assert.equal(c1.waits.length, 1, "declare_block schedules a push drain");
     await Promise.all(c1.waits);
-    assert.ok(f.calls.some((c) => c.url.endsWith("/rpc/push_drain")));
+    const drain = f.calls.find((c) => c.url.endsWith("/rpc/push_drain"));
+    assert.ok(drain, "push_drain was called");
+    // Neon rejects requests with no JWT, so the drain must carry the caller's.
+    assert.equal(drain.init.headers.authorization, "Bearer t");
 
     const c2 = ctx();
     await worker.fetch(new Request("https://x/api/rest/cars?select=id"), env, c2);
