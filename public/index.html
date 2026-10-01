@@ -220,6 +220,14 @@
     font-size:18px;text-transform:uppercase;margin-bottom:7px}
   .empty span{font-size:13.5px;color:var(--mute);line-height:1.55}
 
+  .guide{border:3px solid var(--tarmac);background:var(--hazard);padding:18px 18px 6px}
+  .guide .eyebrow{display:block;margin-bottom:6px}
+  .guide b{display:block;font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 125,'wght' 700;
+    font-size:19px;text-transform:uppercase;margin-bottom:7px}
+  .guide span{font-size:13.5px;line-height:1.55}
+  .guide .btn{background:var(--tarmac);color:var(--hazard)}
+  .tabs .nudge{position:absolute;top:7px;right:calc(50% - 16px);width:9px;height:9px;background:var(--hazard);border-radius:50%}
+
   .addmore{background:none;border:none;color:var(--signage);font-weight:600;font-size:13.5px;cursor:pointer;
     padding:12px 0;text-decoration:underline;text-underline-offset:3px}
   .addmore:focus-visible{outline:3px solid var(--signage);outline-offset:2px}
@@ -529,7 +537,7 @@
       <button role="tab" data-p="pD" aria-selected="true"><span class="ic">🅿️</span><span class="tx">Declare</span></button>
       <button role="tab" data-p="pI"><span class="ic">🔔</span><span class="tx">Alerts</span><span class="dot" id="dot" hidden>0</span></button>
       <button role="tab" data-p="pS"><span class="ic">🔍</span><span class="tx">Trace</span></button>
-      <button role="tab" data-p="pG"><span class="ic">🚗</span><span class="tx">Garage</span></button>
+      <button role="tab" data-p="pG"><span class="ic">🚗</span><span class="tx">Garage</span><span class="nudge" id="gNudge" hidden></span></button>
       <a class="tab-link" href="/about.html"><span class="ic">💬</span><span class="tx">Help</span></a>
     </nav>
   </div>
@@ -597,6 +605,7 @@ try{
 var me       = null;   /* { id, email } */
 var pending  = null;   /* { email, pw, phone } between signup and first session */
 var cars     = [];     /* my garage */
+var carsLoaded = false; /* false until the first read, so a slow network doesn't flash the new-driver guide */
 var declared = [];     /* blocks I opened that are still live */
 var inbox    = [];     /* messages addressed to me */
 var blockIx  = {};     /* block id -> { blocker_id, status, blocker_plate_norm } */
@@ -738,6 +747,10 @@ var MS = {
   "Rename":"Namakan",
   "Remove":"Buang",
   "Tap to pick":"Ketuk untuk pilih",
+  "Step 1 of 1":"Langkah 1 daripada 1",
+  "Add your car first":"Tambah kereta anda dahulu",
+  "Tolong Alih works off number plates. Register the plate you drive in your Garage — that is how other drivers reach you when you're boxed in, and what you declare a block with.":"Tolong Alih bergantung pada nombor plat. Daftarkan plat yang anda pandu di Garaj — itulah cara pemandu lain menghubungi anda apabila anda terhalang, dan plat yang anda guna untuk mengisytihar halangan.",
+  "Go to Garage":"Pergi ke Garaj",
   "Plates are self-declared — no documents to upload to register. A plate can only be claimed once, and alerts are tied to your account.":"Plat diisytihar sendiri — tiada dokumen untuk dimuat naik. Satu plat hanya boleh dituntut sekali, dan amaran terikat kepada akaun anda.",
   "Plate already claimed":"Plat sudah dituntut",
   "Send us the 车卡":"Hantar 车卡 kepada kami",
@@ -1075,7 +1088,7 @@ $("signout").addEventListener("click", async function(){
   clearInterval(poll);
   await pushForget();
   await sb.auth.signOut();
-  me = null; cars = []; declared = []; inbox = []; traced = null; adShown = {};
+  me = null; cars = []; carsLoaded = false; declared = []; inbox = []; traced = null; adShown = {};
   $("sheet").hidden = true;
   stage("gAuth");
 });
@@ -1455,6 +1468,7 @@ async function refresh(){
   ]);
   var g = res[0], b = res[1], m = res[2];
   cars = g.data || []; err = err || g.error;
+  if(!g.error) carsLoaded = true;
   declared = b.data || []; err = err || b.error;
   inbox = m.data || []; err = err || m.error;
 
@@ -1611,16 +1625,16 @@ function interstitial(done){
 }
 
 /* ================= tabs and inputs ================= */
+function goTab(pid){
+  Array.prototype.forEach.call(document.querySelectorAll(".tabs button"), function(x){
+    x.setAttribute("aria-selected", String(x.dataset.p===pid)); });
+  Array.prototype.forEach.call(document.querySelectorAll(".panel"), function(p){
+    p.classList.toggle("on", p.id===pid); });
+  window.scrollTo({top:0,behavior:"smooth"});
+  if(pid === "pI") refresh();
+}
 Array.prototype.forEach.call(document.querySelectorAll(".tabs button"), function(b){
-  b.addEventListener("click", function(){
-    var pid = b.dataset.p;
-    Array.prototype.forEach.call(document.querySelectorAll(".tabs button"), function(x){
-      x.setAttribute("aria-selected", String(x.dataset.p===pid)); });
-    Array.prototype.forEach.call(document.querySelectorAll(".panel"), function(p){
-      p.classList.toggle("on", p.id===pid); });
-    window.scrollTo({top:0,behavior:"smooth"});
-    if(pid === "pI") refresh();
-  });
+  b.addEventListener("click", function(){ goTab(b.dataset.p); });
 });
 function openTab(pid){
   var b = document.querySelector('.tabs button[data-p="'+pid+'"]');
@@ -1737,6 +1751,7 @@ document.addEventListener("click", function(ev){
     case "say":    doSay(id, myp, b); break;
     case "rename": renameCar(id); break;
     case "rmcar":  removeCar(id); break;
+    case "garage": goTab("pG"); setTimeout(function(){ $("newPlate").focus(); }, 250); break;
   }
 });
 
@@ -1851,8 +1866,11 @@ $("addCar").addEventListener("click", async function(){
 
   $("plateTaken").hidden = true;
   el.value = "";
-  toast(nice(p)+" added");
+  var first = !cars.length;
+  toast(first ? nice(p)+" added — you're all set" : nice(p)+" added");
   await refresh();
+  /* The guide sent a new driver here; once the first plate lands, the job is done. */
+  if(first && cars.length) goTab("pD");
 });
 
 /* ================= render ================= */
@@ -1874,9 +1892,14 @@ function render(){
           (i===0?" checked":"")+'>'+
           '<label for="mc'+i+'">'+plate(c.plate,"",true)+
           '<div class="nick">'+esc(c.nickname||"Tap to pick")+'</div></label></div>'; }).join("")
-    : '<div class="empty"><b>Nothing to drive</b><span>Add a car under Garage before you can declare a block.</span></div>';
+    : carsLoaded
+      ? '<div class="guide"><span class="eyebrow">Step 1 of 1</span><b>Add your car first</b>'+
+        '<span>Tolong Alih works off number plates. Register the plate you drive in your Garage — that is how other drivers reach you when you\'re boxed in, and what you declare a block with.</span>'+
+        '<button class="btn" data-act="garage">Go to Garage</button></div>'
+      : '<div class="empty"><b>Nothing to drive</b><span>Add a car under Garage before you can declare a block.</span></div>';
 
   $("declare").disabled = !cars.length;
+  $("gNudge").hidden = !(carsLoaded && !cars.length);
 
   $("mine").innerHTML = declared.length
     ? '<div style="margin-top:30px"><span class="eyebrow">Blocks you have open</span>'+
