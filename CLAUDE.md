@@ -38,9 +38,57 @@ Solo project. Prefer boring, cheap, few dependencies. TypeScript/JavaScript.
 | Branch | `develop` | `main` |
 | Config | `wrangler.uat.jsonc` | `wrangler.jsonc` |
 
-Pushing to the branch deploys it (`.github/workflows/deploy.yml`, needs
-`CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` as repo secrets).
-Manual deploy for UAT: `npx wrangler deploy -c wrangler.uat.jsonc`
+### Release flow
+
+feature branch → PR to `develop` → merge deploys **UAT** → try it there →
+PR `develop` → `main` → merge deploys **production**, tagged
+`release-YYYY.MM.DD-N`. PRs into `main` come only from `develop` or
+`hotfix/*` (CI enforces it). Runbooks: `ship-uat` and `release` skills in
+`.claude/skills/`.
+
+- **CI** (`.github/workflows/ci.yml`) runs on every PR and before every
+  deploy. Run the same locally before pushing:
+  `npm run check && npm test` (no install needed), `npm ci && npm run smoke`
+  (Playwright: real pages, real worker, Neon faked in the browser). The
+  `database` job applies `db/schema.sql` twice to a stock Postgres
+  (`test/db/stub.sql` stands in for Neon) and runs `test/db/verbs.sql`.
+- **Deploy** (`.github/workflows/deploy.yml`): CI → `schema.sql` to the Neon
+  branch (needs the `NEON_DATABASE_URL` environment secret, else skipped with a
+  warning) → worker → live check of `/config.js` → release tag (main only).
+  Secrets: `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` (repo).
+- **Rollback**: Actions → Deploy → Run workflow → `main` → `rollback`. Worker
+  only; that is safe because schema changes are additive by rule — never drop
+  or rename what the live client still calls.
+- New behaviour gets a smoke test in `test/smoke/app.spec.mjs`; a new or
+  changed verb gets a case in `test/db/verbs.sql`.
+- Manual UAT deploy of any branch: `workflow_dispatch` on Deploy (only `main`
+  picks the production config), or `npx wrangler deploy -c wrangler.uat.jsonc`.
+
+### SQL runs without a prompt
+
+`.claude/settings.json` lets Claude run Neon SQL (`run_sql`,
+`run_sql_transaction`) and schema reads without asking; deleting or resetting
+a branch or project still asks. The prompt is gone, the judgement is not:
+on the `main` branch (production), Claude states the SQL and gets a yes in
+the session before any `delete`, `update` without a narrow `where`, `drop`,
+`truncate` or `revoke`. Additive schema from `db/schema.sql` and reads need
+no yes. On `uat`, go ahead.
+
+### Lessons that cost a session
+
+- **The repo is public.** No keys in `wrangler*.jsonc`, commits or CI logs.
+  Secrets are made inside CI or set as worker secrets; logs may print hashes only.
+- **Every wrangler call failing with `Authentication error` / `Invalid access
+  token` = the `CLOUDFLARE_API_TOKEN` secret is dead.** Only the user can
+  replace it. Report it once; do not retry.
+- **Nothing here reaches a real phone**, and the sandbox usually cannot open
+  the live sites. Say what was verified (simulation, headless Chromium,
+  Neon rollback test) and hand the user the exact taps for the rest.
+- **Web Push on iPhone needs Add to Home Screen; on Android it needs Chrome
+  itself** — browsers inside other apps (WebView) have no push. Android in
+  desktop mode reports a Mac user agent; detect Android first.
+- **The user is often on a phone and alone.** Tests they run should work with
+  one person: delays before a test push, no "have someone declare".
 
 `src/worker.js` serves `/config.js` from its wrangler `vars` (the page reads
 `window.__ENV`), and proxies Neon Auth at `/api/auth/*` and the Data API at
@@ -54,7 +102,8 @@ A dedicated Neon project; each Neon branch is one environment, all in `public`.
 `db/schema.sql` is the whole schema, idempotent — apply it per branch.
 
 Tables: `profiles`, `cars`, `blocks`, `block_targets`, `messages`,
-`advertisers`, `ads`, `ad_events`, `trace_attempts`. View: `ad_performance`.
+`advertisers`, `ads`, `ad_events`, `trace_attempts`, `push_subscriptions`,
+`push_config`. View: `ad_performance`.
 All have RLS enabled; grants are column-scoped (a driver cannot set
 `profiles.is_admin` or `cars.verified`). User ids are text from
 `auth.user_id()`.
@@ -90,9 +139,12 @@ RPCs too; do not loosen a policy to make a write work.
 2. ~~**Replace the in-memory `DB` object**~~ — done. All four verbs, garage,
    inbox and ads read from Postgres. Alerts refresh on a 45s poll and on tab
    focus; Web Push replaces that.
-3. **Web Push** — service worker, VAPID keys, a push sender that fires on block
-   declare (Neon has no Edge Functions; a Cloudflare Worker fits). This is what makes the product work. iOS Safari needs the
-   site added to home screen first.
+3. ~~**Web Push**~~ — built. `public/sw.js` + `manifest.webmanifest`; the worker
+   sends after every verb that writes a message (`src/push.js`, RFC 8291/8292
+   on WebCrypto, no deps). `messages.pushed_at` is the outbox, `push_drain`
+   claims it behind a key only the worker holds. iOS needs Add to Home Screen
+   first; the app says so. VAPID keys are worker secrets the deploy workflow makes
+   once per env — see `db/README.md`. The 45s poll stays as the fallback.
 4. **`public/admin.html`** — ads CRUD, gated on `profiles.is_admin`.
    Read `ad_performance` for the monthly invoice numbers.
 5. ~~**pg_cron** for `expire_blocks()`~~ — replaced by lazy expiry inside
