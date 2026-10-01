@@ -64,6 +64,16 @@ PR `develop` → `main` → merge deploys **production**, tagged
 - Manual UAT deploy of any branch: `workflow_dispatch` on Deploy (only `main`
   picks the production config), or `npx wrangler deploy -c wrangler.uat.jsonc`.
 
+### SQL runs without a prompt
+
+`.claude/settings.json` lets Claude run Neon SQL (`run_sql`,
+`run_sql_transaction`) and schema reads without asking; deleting or resetting
+a branch or project still asks. The prompt is gone, the judgement is not:
+on the `main` branch (production), Claude states the SQL and gets a yes in
+the session before any `delete`, `update` without a narrow `where`, `drop`,
+`truncate` or `revoke`. Additive schema from `db/schema.sql` and reads need
+no yes. On `uat`, go ahead.
+
 ### Lessons that cost a session
 
 - **The repo is public.** No keys in `wrangler*.jsonc`, commits or CI logs.
