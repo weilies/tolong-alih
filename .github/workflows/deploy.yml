@@ -3,44 +3,79 @@ name: Deploy
 # develop -> tolong-alih-uat (uat.alih.nextnovas.com)
 # main    -> tolong-alih     (alih.nextnovas.com)
 #
-# Needs two repository secrets: CLOUDFLARE_API_TOKEN (with the "Edit
-# Cloudflare Workers" template) and CLOUDFLARE_ACCOUNT_ID.
+# Order: CI -> schema -> worker -> live check -> (main only) release tag.
+# Nothing deploys if CI fails, and the database is always ahead of the code
+# that calls it (schema.sql is additive and idempotent — CI proves both).
+#
+# Repository secrets: CLOUDFLARE_API_TOKEN ("Edit Cloudflare Workers" template)
+# and CLOUDFLARE_ACCOUNT_ID.
+# Environment secret (Settings -> Environments -> uat / production):
+# NEON_DATABASE_URL, the branch's neondb_owner connection string. Without it
+# the schema step is skipped with a warning and stays a manual step.
+#
+# Rollback: Actions -> Deploy -> Run workflow -> pick the branch (main =
+# production) -> action "rollback". Puts the worker back on its previous
+# version in seconds. It does not touch the database (schema changes are
+# additive, so old code keeps working on the newer schema).
 
 on:
   push:
     branches: [main, develop]
   workflow_dispatch:
+    inputs:
+      action:
+        description: deploy, or rollback the worker to its previous version
+        type: choice
+        options: [deploy, rollback]
+        default: deploy
 
 concurrency:
   group: deploy-${{ github.ref }}
-  cancel-in-progress: true
+  # A newer UAT push may replace an older one mid-flight; production never
+  # cancels a deploy that has started.
+  cancel-in-progress: ${{ github.ref_name != 'main' }}
+
+permissions:
+  contents: read
 
 jobs:
+  ci:
+    if: inputs.action != 'rollback'
+    uses: ./.github/workflows/ci.yml
+
   deploy:
+    needs: ci
     runs-on: ubuntu-latest
+    environment:
+      name: ${{ github.ref_name == 'main' && 'production' || 'uat' }}
+      url: ${{ github.ref_name == 'main' && 'https://alih.nextnovas.com' || 'https://uat.alih.nextnovas.com' }}
+    env:
+      CFG: ${{ github.ref_name == 'main' && 'wrangler.jsonc' || 'wrangler.uat.jsonc' }}
+      SITE: ${{ github.ref_name == 'main' && 'https://alih.nextnovas.com' || 'https://uat.alih.nextnovas.com' }}
+      APP_ENV: ${{ github.ref_name == 'main' && 'production' || 'uat' }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      NEON_DATABASE_URL: ${{ secrets.NEON_DATABASE_URL }}
+      PGOPTIONS: -c client_min_messages=warning
     steps:
       - uses: actions/checkout@v4
 
-      - name: Pick the wrangler config for this branch
-        id: cfg
+      - name: Database schema
         run: |
-          if [ "${{ github.ref_name }}" = "main" ]; then
-            echo "file=wrangler.jsonc" >> "$GITHUB_OUTPUT"
-          else
-            echo "file=wrangler.uat.jsonc" >> "$GITHUB_OUTPUT"
+          if [ -z "$NEON_DATABASE_URL" ]; then
+            echo "::warning::NEON_DATABASE_URL is not set for the $APP_ENV environment — schema.sql was NOT applied. Apply it by hand before this code needs it."
+            exit 0
           fi
+          psql "$NEON_DATABASE_URL" -v ON_ERROR_STOP=1 -q -1 -f db/schema.sql
+          echo "schema.sql applied to $APP_ENV."
 
       # Web Push keys, made here once per worker so the private half never
-      # touches git or a laptop. Later runs see the secret and skip. Printed:
-      # only sha256 of the drain key, which db/README.md says to put in
-      # push_config — safe to show, it cannot be reversed.
+      # touches git or a laptop. Later runs see the secret and skip. With
+      # NEON_DATABASE_URL set, the key hash goes straight into push_config;
+      # otherwise only the hash is printed (it cannot be reversed).
       - name: VAPID keys (first run only)
         # Never block a deploy on this: without the keys the app simply hides push.
         continue-on-error: true
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          CFG: ${{ steps.cfg.outputs.file }}
         run: |
           if npx --yes wrangler@4 secret list -c "$CFG" | grep -q '"VAPID_PRIVATE_KEY"'; then
             echo "VAPID keys already set on this worker."
@@ -50,12 +85,76 @@ jobs:
           . "$RUNNER_TEMP/vapid.env"
           printf '%s' "$VAPID_PRIVATE_KEY" | npx --yes wrangler@4 secret put VAPID_PRIVATE_KEY -c "$CFG"
           printf '%s' "$VAPID_PUBLIC_KEY"  | npx --yes wrangler@4 secret put VAPID_PUBLIC_KEY -c "$CFG"
-          node -e 'const c=require("crypto"),h=(s)=>c.createHash("sha256").update(s).digest("hex");
-            console.log("push_config.key_hash = " + h(h("tolong-alih push:" + process.argv[1])))' "$VAPID_PRIVATE_KEY"
+          HASH=$(node -e 'const c=require("crypto"),h=(s)=>c.createHash("sha256").update(s).digest("hex");
+            console.log(h(h("tolong-alih push:" + process.argv[1])))' "$VAPID_PRIVATE_KEY")
           rm -f "$RUNNER_TEMP/vapid.env"
+          if [ -n "$NEON_DATABASE_URL" ]; then
+            psql "$NEON_DATABASE_URL" -v ON_ERROR_STOP=1 -q -c \
+              "insert into push_config (id, key_hash) values (1, '$HASH') on conflict (id) do update set key_hash = excluded.key_hash"
+            echo "push_config.key_hash set on $APP_ENV."
+          else
+            echo "push_config.key_hash = $HASH"
+          fi
 
       - uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: deploy -c ${{ steps.cfg.outputs.file }}
+          command: deploy -c ${{ env.CFG }}
+
+      # The live site answers, serves the page, and says it is the right env.
+      # Reads static files and /config.js only — never wakes the database.
+      - name: Live check
+        run: |
+          for i in 1 2 3 4 5 6; do
+            CFGJS=$(curl -fsS "$SITE/config.js" || true)
+            PAGE=$(curl -fsS "$SITE/" || true)
+            if echo "$CFGJS" | grep -q "\"env\":\"$APP_ENV\"" && echo "$PAGE" | grep -q "Tolong Alih"; then
+              echo "$SITE is up and reports env=$APP_ENV."
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "::error::$SITE did not come up as $APP_ENV. Roll back: Actions -> Deploy -> Run workflow -> $GITHUB_REF_NAME -> rollback."
+          echo "config.js: $CFGJS"
+          exit 1
+
+  # Every production deploy is tagged, so "what changed since the last
+  # release" is one compare link, and the release notes write themselves.
+  tag:
+    needs: deploy
+    if: github.ref_name == 'main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Tag and release notes
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          PREV=$(git tag --list 'release-*' --sort=-creatordate | head -1)
+          TAG="release-$(date -u +%Y.%m.%d)-${GITHUB_RUN_NUMBER}"
+          git tag "$TAG" "$GITHUB_SHA"
+          git push origin "$TAG"
+          if [ -n "$PREV" ]; then
+            gh release create "$TAG" --title "$TAG" --notes-start-tag "$PREV" --generate-notes
+          else
+            gh release create "$TAG" --title "$TAG" --generate-notes
+          fi
+
+  rollback:
+    if: inputs.action == 'rollback'
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ github.ref_name == 'main' && 'production' || 'uat' }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Roll the worker back to its previous version
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CFG: ${{ github.ref_name == 'main' && 'wrangler.jsonc' || 'wrangler.uat.jsonc' }}
+        run: npx --yes wrangler@4 rollback -c "$CFG" -y -m "Rollback from GitHub Actions run $GITHUB_RUN_ID by $GITHUB_ACTOR"
