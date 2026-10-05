@@ -1459,6 +1459,11 @@ async function refresh(){
   if(!me) return;
   var err = null;
 
+  /* Blocks end in the database, lazily. Sweep first, or a block nobody cleared
+     (they moved and never reopened the app) keeps showing as open to both
+     drivers until someone happens to declare or trace. */
+  await sb.rpc("expire_blocks");
+
   /* Independent reads go out together: each is a round trip to Singapore,
      and in series they were most of the wait after a declare. */
   var res = await Promise.all([

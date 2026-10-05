@@ -52,8 +52,12 @@ for (const page of pages) {
 const schema = read("db/schema.sql");
 const defined = new Set([...schema.matchAll(/create or replace function\s+(?:public\.)?([a-z_]+)\s*\(/gi)]
   .map((m) => m[1]));
-const grantBlock = (schema.match(/grant execute on function([\s\S]*?)to authenticated;/i) || [, ""])[1];
-const granted = new Set([...grantBlock.matchAll(/([a-z_]+)\s*\(/g)].map((m) => m[1]));
+// Every `grant execute on function ... to <roles incl. authenticated>;` statement.
+const granted = new Set();
+for (const g of schema.matchAll(/grant execute on function([\s\S]*?)\sto\s+([a-z_,\s]*);/gi)) {
+  if (!/\bauthenticated\b/.test(g[2])) continue;
+  for (const m of g[1].matchAll(/([a-z_]+)\s*\(/g)) granted.add(m[1]);
+}
 
 const called = new Map(); // fn -> where
 for (const [page, html] of Object.entries(pageSource)) {

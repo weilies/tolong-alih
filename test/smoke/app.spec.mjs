@@ -65,6 +65,8 @@ test("declare sends the block to declare_block", async ({ page }) => {
   const db = await fakeNeon(page, { cars: [car("WXY 1234", "Myvi")] });
   await signIn(page);
   await expect(page.locator("#gNudge")).toBeHidden();
+  // every refresh first sweeps blocks that ran out of time
+  expect(db.rpc.map((c) => c.fn)).toContain("expire_blocks");
 
   await page.fill("#v1", "abc 987");
   await page.click("#declare");
