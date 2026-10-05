@@ -632,6 +632,8 @@ var MS = {
   /* account sheet */
   "Change photo":"Tukar gambar",
   "Remove photo":"Buang gambar",
+  "This email already has a password account that was never verified. Choose “I already have an account”, enter your password, verify the code we email you, then Google works too.":"Emel ini sudah ada akaun kata laluan yang belum disahkan. Pilih “I already have an account”, masukkan kata laluan, sahkan kod yang kami emel, kemudian Google pun boleh digunakan.",
+  "Google sign-in did not go through. Try again, or use your email and password.":"Log masuk Google tidak berjaya. Cuba lagi, atau guna emel dan kata laluan.",
   "Ads console":"Konsol iklan",
   "Sign out":"Log keluar",
   /* push */
@@ -1036,6 +1038,7 @@ $("signout").addEventListener("click", async function(){
   await pushForget();
   await sb.auth.signOut();
   me = null; cars = []; carsLoaded = false; declared = []; inbox = []; traced = null; adShown = {};
+  paintAvatar();
   $("sheet").hidden = true;
   stage("gAuth");
 });
@@ -1111,15 +1114,28 @@ $("clearPic").addEventListener("click", async function(){
 });
 
 /* ================= boot ================= */
+/* Google can send the driver back with ?error=... — say why, in plain words. */
+function oauthRefusal(){
+  var q = new URLSearchParams(location.search), code = q.get("error");
+  if(!code) return null;
+  try{ history.replaceState(null, "", location.pathname + location.hash); }catch(e){}
+  if(/link/i.test(code))
+    return "This email already has a password account that was never verified. Choose “I already have an account”, enter your password, verify the code we email you, then Google works too.";
+  return "Google sign-in did not go through. Try again, or use your email and password.";
+}
+
 async function afterGeo(){
   if(!sb){ stage("gAuth"); authNote(cfgErr); return; }
+  var refused = oauthRefusal();
   var r = await sb.auth.getSession();
   if(r.data && r.data.session) boot(r.data.session);
-  else stage("gAuth");
+  else { stage("gAuth"); if(refused) authNote(tr(refused)); }
 }
 
 async function boot(session){
   if(!session) return stage("gAuth");
+  /* Nothing of the last account on this phone may show for the next one. */
+  me = null; paintAvatar();
   var meta = session.user.user_metadata || {};
   me = {
     id: session.user.id,
