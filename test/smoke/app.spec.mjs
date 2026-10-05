@@ -297,3 +297,11 @@ test("contact page: topics start closed, open one at a time, and deep links open
   await page.click("#langBtn");
   await expect(page.getByRole("heading", { name: "Hubungi kami" })).toBeVisible();
 });
+
+test("Google refusing an unverified email account says what to do, then the URL is clean", async ({ page }) => {
+  await fakeNeon(page, { signedIn: false });
+  await page.goto("/?error=account_not_linked");
+  await page.click("#askGeo");
+  await expect(page.getByText(/never verified/)).toBeVisible();
+  expect(page.url()).not.toContain("error=");
+});
