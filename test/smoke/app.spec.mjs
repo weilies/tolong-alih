@@ -271,3 +271,29 @@ test("the terms page makes the promise and switches to BM", async ({ page }) => 
   await page.click("#langBtn");
   await expect(page.getByText("Kami tidak pernah menjual data anda.")).toBeVisible();
 });
+
+test("contact page: topics start closed, open one at a time, and deep links open the right one", async ({ page }) => {
+  await fakeNeon(page, { signedIn: false });
+  await page.goto("/about.html");
+  const topics = page.locator("details.topic");
+  await expect(topics).toHaveCount(5);
+  await expect(page.locator("details.topic[open]")).toHaveCount(0);
+  await page.locator("#t-report > summary").click();
+  await page.locator("#t-ads > summary").click();
+  await expect(page.locator("details.topic[open]")).toHaveCount(1);
+  await expect(page.locator("#t-ads")).toHaveAttribute("open", "");
+
+  await page.goto("/about.html#plate-ABC1234");
+  await page.reload();
+  await expect(page.locator("#t-plate")).toHaveAttribute("open", "");
+  expect(decodeURIComponent(await page.locator("#waPlate").getAttribute("href"))).toContain("ABC1234");
+
+  await page.goto("/about.html#delete");
+  await page.reload();
+  await expect(page.locator("#t-delete")).toHaveAttribute("open", "");
+  expect(await page.locator("#mailDelete").getAttribute("href")).toMatch(/^mailto:/);
+  await expect(page.locator("#waDelete")).toHaveCount(0);
+
+  await page.click("#langBtn");
+  await expect(page.getByRole("heading", { name: "Hubungi kami" })).toBeVisible();
+});
