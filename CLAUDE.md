@@ -100,6 +100,12 @@ the session before any `delete`, `update` without a narrow `where`, `drop`,
 `truncate` or `revoke`. Additive schema from `db/schema.sql` and reads need
 no yes. On `uat`, go ahead.
 
+**Production users are never deleted** (owner rule, October 2026, the app is
+launching): no deleting auth users, profiles, cars or blocks on `main`, and no
+cleanup scripts that do — not even test accounts, not even when asked in passing.
+Only the owner removes a production user, by hand. Test-account cleanup is for
+`uat` only.
+
 ### Lessons that cost a session
 
 - **The repo is public.** No keys in `wrangler*.jsonc`, commits or CI logs.
