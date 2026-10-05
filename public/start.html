@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="theme-color" content="#16150F" />
 <title>How it works · Tolong Alih</title>
-<meta name="description" content="Blocked in by a double-parked car? Tolong Alih tells the other driver using only the car plate. No phone numbers shared. Set up in 3 minutes." />
+<meta name="description" content="Blocked in by a double-parked car? Tolong Alih tells the other driver using only the car plate. No contact details shared. Set up in 3 minutes." />
 <meta property="og:title" content="Tolong Alih — how it works" />
 <meta property="og:description" content="Reach the driver who blocked you, using only their car plate." />
 <meta property="og:type" content="website" />
@@ -28,16 +28,6 @@
   .disp{font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 125,'wght' 700;
     text-transform:uppercase;line-height:1.05}
 
-  .top{background:var(--tarmac);color:#fff;padding:10px 16px;display:flex;
-    justify-content:space-between;align-items:center;gap:10px}
-  .brand{display:flex;align-items:center;gap:9px;font-size:13px;font-weight:600;white-space:nowrap}
-  .brand .mk{width:26px;height:26px;background:var(--hazard);display:grid;place-items:center;font-size:13px}
-  .brand b{color:var(--hazard)}
-  .top .r{display:flex;gap:8px;align-items:center}
-  .top a.skip{color:var(--hazard);font-size:13px;font-weight:600;text-decoration:none;white-space:nowrap}
-  .lang{cursor:pointer;background:var(--tarmac);color:var(--hazard);border:2px solid var(--hazard);
-    font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 100,'wght' 700;font-size:11px;
-    letter-spacing:.1em;padding:4px 8px}
 
   main{padding:26px 18px 10px}
   section{margin-bottom:34px}
@@ -101,24 +91,24 @@
   .ver{display:block;margin-top:10px;font-family:'JetBrains Mono',monospace;font-size:10.5px}
   .ver a{color:var(--mute)}
 </style>
+<link rel="stylesheet" href="/chrome.css" />
 </head>
 <body>
 <div class="wrap">
-  <header class="top">
-    <a class="brand" href="/" style="color:#fff;text-decoration:none"><span class="mk">🚗</span><span>Tolong <b>Alih</b></span></a>
+  <header class="appbar">
+    <a class="ta" href="/" aria-label="Tolong Alih — home">TA</a>
+    <span class="ttl">How it works</span>
     <div class="r">
-      <a class="skip" href="/" data-start>Skip to the app →</a>
-      <button class="lang" id="langBtn" lang="ms">BM</button>
+    <a class="bell" href="/#pI" aria-label="Alerts">🔔</a>
+    <button class="lang" id="langBtn" lang="ms">BM</button>
     </div>
   </header>
-  <div class="hazard"></div>
 
   <main>
     <!-- ================= what it is ================= -->
     <section>
       <h1 class="disp">Blocked in by a double-parked car?</h1>
-      <p class="lede">Tolong Alih lets you reach the other driver using <b>only their car plate</b>.
-      No phone numbers are shared, ever.</p>
+      <p class="lede">Tolong Alih lets you reach the other driver using <b>only their car plate</b>. No contact details are shared, ever.</p>
       <a class="cta" href="#setup">Set up in 3 minutes</a>
       <a class="quiet" href="/" data-start>I've used it before — open the app</a>
     </section>
@@ -156,7 +146,7 @@
 
       <div class="promise">
         <ul>
-          <li>Neither driver ever sees the other's phone number.</li>
+          <li>Neither driver ever sees the other's name or email.</li>
           <li>Blocked but got no alert? Use <b>Trace</b>: type their plate and yours, and we'll find them.</li>
           <li>Free for drivers.</li>
         </ul>
@@ -251,8 +241,8 @@
 
       <div class="step">
         <h3>Step 2 · Create your account</h3>
-        <p class="why">Use Google, or your email and a password. We also ask for your phone number — only so we can call you if the app can't reach the other driver. They never see it.</p>
-        <img class="shot" src="/guide/signup.jpg" width="372" height="660" loading="lazy" alt="The sign-in screen with Continue with Google, email, password and phone." />
+        <p class="why">Use Google, or your email and a password. That is all we ask for. The other driver never sees your name or email.</p>
+        <img class="shot" src="/guide/signup.jpg" width="372" height="567" loading="lazy" alt="The sign-in screen with Continue with Google, email and password." />
       </div>
 
       <div class="step">
@@ -290,6 +280,14 @@
   <small class="ver" id="ver"></small>
 </footer>
 
+<nav class="tabbar" aria-label="Main">
+  <a href="/#pD" data-p="pD"><span class="ic">🅿️</span><span class="tx">Declare</span></a>
+  <a href="/#pS" data-p="pS"><span class="ic">🔍</span><span class="tx">Trace</span></a>
+  <a href="/#pG" data-p="pG"><span class="ic">🚗</span><span class="tx">Garage</span></a>
+  <a href="/start.html" aria-current="page"><span class="ic">❓</span><span class="tx">Help</span></a>
+  <a href="/about.html"><span class="ic">💬</span><span class="tx">Contact</span></a>
+</nav>
+
 <script src="/config.js"></script>
 <script>
 (function(){
@@ -299,6 +297,7 @@ function esc(s){ return String(s==null?"":s).replace(/[&<>"']/g,function(c){
   return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); }
 
 /* Having read this far counts as seen: the app stops sending them here. */
+try{ localStorage.setItem("alih.seen","1"); }catch(e){}
 Array.prototype.forEach.call(document.querySelectorAll("[data-start]"), function(a){
   a.addEventListener("click", function(){ try{ localStorage.setItem("alih.seen","1"); }catch(e){} });
 });
@@ -335,7 +334,7 @@ var MS = {
   "Blocked in by a double-parked car?":"Kereta anda dihalang parkir berganda?",
   "Tolong Alih lets you reach the other driver using":"Tolong Alih membolehkan anda menghubungi pemandu itu menggunakan",
   "only their car plate":"plat kereta mereka sahaja",
-  ". No phone numbers are shared, ever.":". Tiada nombor telefon dikongsi, sama sekali.",
+  ". No contact details are shared, ever.":". Tiada butiran hubungan dikongsi, sama sekali.",
   "Set up in 3 minutes":"Sedia dalam 3 minit",
   "I've used it before — open the app":"Saya pernah guna — buka aplikasi",
   "How it works":"Cara ia berfungsi",
@@ -353,7 +352,7 @@ var MS = {
   "When you drive off":"Apabila anda beredar",
   "Tap \"I've moved\"":"Tekan \"Saya dah alih\"",
   "The other driver is told they're free to go.":"Pemandu satu lagi diberitahu mereka boleh keluar.",
-  "Neither driver ever sees the other's phone number.":"Kedua-dua pemandu tidak pernah nampak nombor telefon satu sama lain.",
+  "Neither driver ever sees the other's name or email.":"Kedua-dua pemandu tidak pernah nampak nama atau e-mel satu sama lain.",
   "Blocked but got no alert? Use":"Dihalang tetapi tiada amaran? Guna",
   "Trace":"Jejak",
   ": type their plate and yours, and we'll find them.":": taip plat mereka dan plat anda, kami akan cari mereka.",
@@ -386,7 +385,7 @@ var MS = {
   "or":"atau",
   "Illustration of Chrome on Android. Your screen may look slightly different.":"Ilustrasi Chrome di Android. Skrin anda mungkin sedikit berbeza.",
   "Step 2 · Create your account":"Langkah 2 · Buka akaun anda",
-  "Use Google, or your email and a password. We also ask for your phone number — only so we can call you if the app can't reach the other driver. They never see it.":"Guna Google, atau e-mel dan kata laluan. Kami juga minta nombor telefon — hanya supaya kami boleh menelefon anda jika aplikasi gagal menghubungi pemandu lain. Mereka tidak akan nampak nombor itu.",
+  "Use Google, or your email and a password. That is all we ask for. The other driver never sees your name or email.":"Guna Google, atau e-mel dan kata laluan. Itu sahaja yang kami minta. Pemandu lain tidak pernah nampak nama atau e-mel anda.",
   "Step 3 · Add your car plate":"Langkah 3 · Tambah plat kereta anda",
   "Garage":"Garaj",
   "at the bottom of the app, type your plate, tap":"di bawah aplikasi, taip plat anda, tekan",
@@ -411,7 +410,8 @@ var MS = {
   "by Next Novas":"oleh Next Novas",
   "Open the app":"Buka aplikasi",
   "Contact":"Hubungi kami",
-  "Terms of use":"Syarat penggunaan"
+  "Terms of use":"Syarat penggunaan",
+  "Help":"Bantuan"
 };
 var FLAT = {};
 Object.keys(MS).forEach(function(k){ FLAT[k.replace(/\s+/g," ").trim()] = MS[k]; });

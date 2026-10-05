@@ -5,7 +5,7 @@
 const b64 = (o) => Buffer.from(JSON.stringify(o)).toString("base64url");
 
 export async function fakeNeon(page, {
-  signedIn = true, cars = [], phone = "0123456789",
+  signedIn = true, cars = [], phone = null, email = "driver@example.my", isAdmin = false,
   declared = [],   // blocks I have open (Declare tab)
   messages = [],   // my inbox (Alerts tab)
   blocks = [],     // blocks those messages belong to
@@ -16,7 +16,7 @@ export async function fakeNeon(page, {
   const state = { cars: [...cars], rpc: [], inserts: [] };
   const now = () => new Date().toISOString();
   const jwt = `${b64({ alg: "EdDSA", typ: "JWT" })}.${b64({
-    sub: "u1", email: "driver@example.my", iat: Math.floor(Date.now() / 1000), exp: Math.floor(Date.now() / 1000) + 3600,
+    sub: "u1", email, iat: Math.floor(Date.now() / 1000), exp: Math.floor(Date.now() / 1000) + 3600,
   })}.sig`;
 
   // Fonts and anything else off-box: never leave the machine.
@@ -28,7 +28,7 @@ export async function fakeNeon(page, {
       status: 200, contentType: "application/json", headers: { "set-auth-jwt": jwt },
       body: JSON.stringify({
         session: { id: "s1", userId: "u1", token: "t", expiresAt: new Date(Date.now() + 864e5).toISOString(), createdAt: now(), updatedAt: now() },
-        user: { id: "u1", email: "driver@example.my", name: "Test Driver", emailVerified: true, createdAt: now(), updatedAt: now() },
+        user: { id: "u1", email, name: "Test Driver", emailVerified: true, createdAt: now(), updatedAt: now() },
       }),
     });
   });
@@ -44,7 +44,7 @@ export async function fakeNeon(page, {
       return json({ block_id: "00000000-0000-0000-0000-000000000001", notified: 1, ok: true });
     }
     if (path === "profiles" && req.method() === "GET") {
-      return json({ phone, display_name: "Test Driver", avatar_url: null, is_admin: false });
+      return json({ phone, display_name: "Test Driver", avatar_url: null, is_admin: isAdmin });
     }
     if (path === "cars" && req.method() === "GET") return json(state.cars);
     if (path === "blocks" && req.method() === "GET") {

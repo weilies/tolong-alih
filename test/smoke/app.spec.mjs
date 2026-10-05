@@ -107,13 +107,14 @@ test("a first-time visitor who is already signed in is not sent to the explainer
   await expect(page).toHaveURL(/\/$/);
 });
 
-for (const [path, label] of [["/start.html", /Skip to the app/], ["/about.html", /Back to the app/], ["/admin.html", /Back to the app/], ["/terms.html", /Back to the app/]]) {
-  test(`${path} has a visible way back to the app`, async ({ page }) => {
+// TA is the way home from every page, whatever is open.
+for (const path of ["/start.html", "/about.html", "/terms.html", "/admin.html"]) {
+  test(`${path}: TA goes home`, async ({ page }) => {
     await fakeNeon(page, { signedIn: false });
     await page.goto(path);
-    const back = page.getByRole("link", { name: label });
-    await expect(back).toBeVisible();
-    await back.click();
+    const home = page.getByRole("link", { name: /Tolong Alih — home/ });
+    await expect(home).toBeVisible();
+    await home.click();
     await expect(page).toHaveURL(/\/$/);
   });
 }
@@ -144,27 +145,129 @@ test("Help shows the figures once the worker has them", async ({ page }) => {
   await expect(page.locator("#statsBlock")).toContainText("Plates registered");
 });
 
-test("bottom tabs are Declare, Alerts, Trace, Garage, Help and Contact, with no repeats elsewhere", async ({ page }) => {
+test("every page has the same header and five-tab bar", async ({ page }) => {
+  await fakeNeon(page, { signedIn: false });
+  for (const path of ["/start.html", "/about.html", "/terms.html", "/admin.html"]) {
+    await page.goto(path);
+    await expect(page.locator(".appbar .ta")).toHaveText("TA");
+    await expect(page.locator(".tabbar .tx")).toHaveText(["Declare", "Trace", "Garage", "Help", "Contact"]);
+    await expect(page.locator(".appbar .bell")).toHaveAttribute("href", "/#pI");
+  }
+  await page.goto("/start.html");
+  await expect(page.locator('.tabbar a[aria-current="page"] .tx')).toHaveText("Help");
+  await page.goto("/about.html");
+  await expect(page.locator('.tabbar a[aria-current="page"] .tx')).toHaveText("Contact");
+});
+
+test("header and bottom bar stay put while a long page scrolls", async ({ page }) => {
+  await fakeNeon(page, { signedIn: false });
+  await page.goto("/terms.html");
+  await page.evaluate(() => window.scrollTo(0, 900));
+  await page.waitForTimeout(150);
+  const head = await page.locator(".appbar").boundingBox();
+  const bar = await page.locator(".tabbar").boundingBox();
+  const vh = page.viewportSize().height;
+  expect(Math.round(head.y)).toBe(0);
+  expect(Math.round(bar.y + bar.height)).toBe(vh);
+});
+
+test("in the app: bell instead of an Alerts tab, a red dot only while an alert is open", async ({ page }) => {
+  const BLOCK = "00000000-0000-0000-0000-0000000000b1";
+  const alert = {
+    cars: [car("WXY 1234")],
+    blocks: [{ id: BLOCK, blocker_id: "someone", status: "open", blocker_plate_norm: "ABC1234" }],
+    targets: [{ block_id: BLOCK, victim_plate_norm: "WXY1234" }],
+    messages: [{ id: "m1", block_id: BLOCK, from_label: "Blocked in", kind: "hot", is_typed: false,
+      body: "ABC1234 is parked behind your WXY1234.", created_at: new Date().toISOString(), from_user: null }],
+  };
+  await fakeNeon(page, alert);
+  await signIn(page);
+  await expect(page.locator(".tabbar .tx")).toHaveText(["Declare", "Trace", "Garage", "Help", "Contact"]);
+  await expect(page.locator("#dot")).toBeVisible();
+  await page.locator("#bell").click();
+  await expect(page.locator("#pI")).toHaveClass(/\bon\b/);
+  await expect(page.locator("#inbox")).toContainText("ABC1234 is parked behind your WXY1234");
+  // TA is home
+  await page.getByRole("link", { name: /Tolong Alih — home/ }).click();
+  await expect(page.locator("#pD")).toHaveClass(/\bon\b/);
+});
+
+test("the bell has no dot when nothing is waiting, and an expired block does not count", async ({ page }) => {
+  const BLOCK = "00000000-0000-0000-0000-0000000000b1";
+  await fakeNeon(page, {
+    cars: [car("WXY 1234")],
+    blocks: [{ id: BLOCK, blocker_id: "someone", status: "expired", blocker_plate_norm: "ABC1234" }],
+    targets: [{ block_id: BLOCK, victim_plate_norm: "WXY1234" }],
+    messages: [{ id: "m1", block_id: BLOCK, from_label: "Blocked in", kind: "hot", is_typed: false,
+      body: "old", created_at: new Date().toISOString(), from_user: null }],
+  });
+  await signIn(page);
+  await expect(page.locator("#dot")).toBeHidden();
+});
+
+test("the account menu has no language row, and the language toggle lives in the header", async ({ page }) => {
   await fakeNeon(page, { cars: [car("WXY 1234")] });
   await signIn(page);
-  await expect(page.locator("nav.tabs .tx")).toHaveText(["Declare", "Alerts", "Trace", "Garage", "Help", "Contact"]);
-  await expect(page.locator("nav.tabs a", { hasText: "Help" })).toHaveAttribute("href", "/start.html");
-  await expect(page.locator("nav.tabs a", { hasText: "Contact" })).toHaveAttribute("href", "/about.html");
-  // the footer carries only the terms, and the account menu has no test alert
-  await expect(page.locator("footer .flinks a")).toHaveText(["Terms of use"]);
+  await expect(page.locator(".appbar #langBtn")).toBeVisible();
   await page.click("#avatarBtn");
+  await expect(page.getByText("Bahasa Malaysia")).toHaveCount(0);
   await expect(page.getByText("Send me a test alert")).toHaveCount(0);
-  await page.keyboard.press("Escape");
   await page.locator("#sheet").click({ position: { x: 5, y: 5 } });
-  await page.locator("nav.tabs a", { hasText: "Help" }).click();
-  await expect(page).toHaveURL(/start/);
+  await page.click("#langBtn");
+  await expect(page.locator(".tabbar .tx").first()).toHaveText("Isytihar");
+  await expect(page.locator("footer .flinks a")).toHaveText(["Syarat penggunaan"]);
+});
+
+test("a bottom-bar link from another page opens that tab, even after signing in", async ({ page }) => {
+  await fakeNeon(page, { cars: [car("WXY 1234")] });
+  await signIn(page);
+  await page.goto("/about.html");
+  await page.locator(".tabbar a", { hasText: "Garage" }).click();
+  await expect(page).toHaveURL(/#pG$/);
+  await expect(page.locator("#pG")).toHaveClass(/\bon\b/);
+  await expect(page.locator('.tabbar a[aria-current="page"] .tx')).toHaveText("Garage");
+});
+
+test("there is no phone number anywhere in sign-up, and a profile without one goes straight in", async ({ page }) => {
+  await fakeNeon(page, { signedIn: false });
+  await page.goto("/");
+  await page.click("#askGeo");
+  await expect(page.locator("#gAuth")).toHaveClass(/\bon\b/);
+  await expect(page.locator("#phone, #phone2, #gPhone")).toHaveCount(0);
+  await expect(page.locator("#gAuth")).not.toContainText(/phone/i);
+
+  const ctx = await page.context().newPage();
+  await fakeNeon(ctx, { cars: [car("WXY 1234")], phone: null });
+  await ctx.goto("/");
+  await ctx.click("#askGeo");
+  await expect(ctx.locator("#app")).toHaveClass(/\bon\b/);
+});
+
+test("the ads console is offered only to the owner", async ({ page }) => {
+  await fakeNeon(page, { cars: [car("WXY 1234")], isAdmin: true });            // an admin, but not the owner
+  await signIn(page);
+  await page.click("#avatarBtn");
+  await expect(page.locator("#adminLink")).toBeHidden();
+
+  const owner = await page.context().newPage();
+  await fakeNeon(owner, { cars: [car("WXY 1234")], isAdmin: true, email: "weilies.chok@gmail.com" });
+  await owner.goto("/");
+  await owner.click("#askGeo");
+  await expect(owner.locator("#app")).toHaveClass(/\bon\b/);
+  await owner.click("#avatarBtn");
+  await expect(owner.locator("#adminLink")).toBeVisible();
+
+  const notOwner = await page.context().newPage();
+  await fakeNeon(notOwner, { isAdmin: true });
+  await notOwner.goto("/admin.html");
+  await expect(notOwner.getByText("owner only")).toBeVisible();
 });
 
 test("the terms page makes the promise and switches to BM", async ({ page }) => {
   await fakeNeon(page, { signedIn: false });
   await page.goto("/terms.html");
   await expect(page.getByText("We never sell your data.")).toBeVisible();
-  await expect(page.getByText("We never sell, share or show your phone number.")).toBeVisible();
+  await expect(page.getByText(/We don't ask for your phone number/)).toBeVisible();
   await page.click("#langBtn");
   await expect(page.getByText("Kami tidak pernah menjual data anda.")).toBeVisible();
 });

@@ -1,0 +1,53 @@
+/* The frame every page shares: a sticky header and a sticky bottom bar.
+   One file, so a change here reaches every screen. The markup is the same on
+   each page (scripts/check.mjs enforces it) and the colours come from each
+   page's own :root (--tarmac --hazard --signage --alert).
+
+   Header: TA (always goes home) · title or place · [bell] [avatar] · BM/EN
+   Bottom: Declare · Trace · Garage · Help · Contact                          */
+
+body{padding-bottom:calc(66px + env(safe-area-inset-bottom))}
+
+/* ---------- header ---------- */
+.appbar{position:sticky;top:var(--ib,0px);z-index:50;width:100%;
+  display:flex;align-items:center;gap:10px;color:#fff;padding:9px 12px 14px;
+  /* tarmac with a hazard stripe along its lower edge */
+  background:
+    linear-gradient(var(--tarmac),var(--tarmac)) 0 0/100% calc(100% - 5px) no-repeat,
+    repeating-linear-gradient(45deg,var(--hazard) 0 13px,var(--tarmac) 13px 26px)}
+.appbar .ta{flex:none;width:36px;height:36px;display:grid;place-items:center;
+  background:var(--hazard);color:var(--tarmac);text-decoration:none;
+  font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 125,'wght' 700;
+  font-size:14px;letter-spacing:-.02em}
+.appbar .ta:focus-visible,.appbar .bell:focus-visible{outline:2px solid #fff;outline-offset:2px}
+.appbar .ttl{flex:1;min-width:0;font-size:13px;font-weight:600;color:#fff;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.appbar .ttl.loc{font-family:'JetBrains Mono',monospace;font-size:10.5px;font-weight:500;color:var(--hazard)}
+.appbar .r{display:flex;align-items:center;gap:8px;flex:none}
+
+.appbar .bell{position:relative;width:34px;height:34px;display:grid;place-items:center;
+  color:#fff;text-decoration:none;font-size:17px;line-height:1;border:2px solid #4A463A}
+.appbar .bell[aria-current="page"]{border-color:var(--hazard)}
+/* a dot, not a count: it only says "something is waiting" */
+.appbar .dot{position:absolute;top:-5px;right:-5px;width:13px;height:13px;border-radius:50%;
+  background:var(--alert);border:2px solid var(--tarmac);font-size:0;padding:0}
+.appbar .dot[hidden]{display:none}
+
+.appbar .lang{cursor:pointer;background:var(--tarmac);color:var(--hazard);border:2px solid var(--hazard);
+  font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 100,'wght' 700;
+  font-size:11px;letter-spacing:.1em;padding:6px 8px;min-width:36px}
+.appbar .lang:focus-visible{outline:2px solid #fff;outline-offset:2px}
+
+/* ---------- bottom bar ---------- */
+.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:50;background:var(--tarmac);
+  display:flex;max-width:520px;margin:0 auto;padding-bottom:env(safe-area-inset-bottom)}
+.tabbar a{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:5px;
+  padding:11px 2px 12px;color:#8A8474;text-decoration:none;position:relative;transition:.14s}
+.tabbar .ic{font-size:17px;line-height:1}
+.tabbar .tx{font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 100,'wght' 600;
+  font-size:9.5px;letter-spacing:.1em;text-transform:uppercase}
+.tabbar a[aria-current="page"]{color:var(--hazard)}
+.tabbar a[aria-current="page"]::before{content:"";position:absolute;top:0;left:14%;right:14%;height:3px;background:var(--hazard)}
+.tabbar a:focus-visible{outline:3px solid var(--hazard);outline-offset:-5px}
+.tabbar .nudge{position:absolute;top:7px;right:calc(50% - 16px);width:9px;height:9px;background:var(--hazard);border-radius:50%}
+.tabbar .nudge[hidden]{display:none}
