@@ -383,18 +383,15 @@ Array.prototype.forEach.call(document.querySelectorAll("details"), function(d){
 /* Reach figures come from the platform, never a spreadsheet. Below a threshold
    the raw numbers mislead rather than inform, so say what is actually true. */
 (async function stats(){
-  /* No session on this page, so no SDK either: public_stats is the one
-     function the Data API's anonymous role may call. */
-  if(!ENV.dataApiUrl) return;
-  var d;
+  /* Visitors here are not signed in, and Neon's Data API answers nobody without
+     a token, so the worker serves a cached copy at /api/stats (src/worker.js).
+     It is null until a driver has used the app in this region; at today's size
+     that is the same message as below 100 monthly drivers. */
+  var d = null;
   try{
-    var res = await fetch(ENV.dataApiUrl+"/rpc/public_stats", {
-      method:"POST", headers:{ "content-type":"application/json" }, body:"{}"
-    });
-    if(!res.ok) return;
-    d = await res.json();
-  }catch(e){ return; }
-  if(!d) return;
+    var res = await fetch("/api/stats");
+    if(res.ok) d = await res.json();
+  }catch(e){}
 
   var el = document.getElementById("statsBlock");
   var fmt = function(n){
@@ -402,7 +399,7 @@ Array.prototype.forEach.call(document.querySelectorAll("details"), function(d){
     return n >= 1000 ? (n/1000).toFixed(n >= 10000 ? 0 : 1).replace(/\.0$/,"")+"K" : String(n);
   };
 
-  if((Number(d.mau)||0) < 100){
+  if(!d || (Number(d.mau)||0) < 100){
     el.innerHTML = '<div class="early"><b>Just launched</b><span>Live in Johor and opening to more '+
       'areas. Founding merchant slots are open now at a rate that will not rise as the driver base '+
       'grows.</span></div>';

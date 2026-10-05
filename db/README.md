@@ -65,8 +65,13 @@ RPCs too; do not loosen a policy to make a write work.
 
 - Auth provider: Neon Auth
 - Exposed schema: `public`
-- Anonymous role: `anonymous` — only `public_stats()` is granted to it, for the
-  About page, which calls it with no session.
+- Anonymous role: `anonymous`, with only `public_stats()` and the push functions
+  granted to it. **It does not help:** since the end of September the Data API
+  answers any request without a bearer JWT with `400 missing authentication
+  credentials`, whatever the anonymous role may call. So nothing calls Neon
+  without a token. The worker borrows the signed-in driver's own: `push_drain`
+  after each verb, and `public_stats` for the Help page, which reads the worker's
+  cached `/api/stats` (see `src/worker.js`).
 - Provisioned **without** Neon's default grants (they grant full CRUD on every
   table; `schema.sql` grants per column instead). A side effect: the API roles
   get no USAGE on schema `auth`, which Neon's `cloud_admin` owns and we cannot

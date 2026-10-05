@@ -160,6 +160,65 @@ async function pushTest(request, env, ctx) {
   return json(200, { devices: rows.length, delay: TEST_DELAY_MS / 1000 });
 }
 
+// ---- public stats (the Help page's reach figures) ----
+// Neon's Data API refuses every request without a bearer JWT, the anonymous role
+// included, and the worker has no credential of its own. So the page reads
+// /api/stats, which serves a copy kept in the edge cache, and the copy is
+// refreshed with the token of whichever driver's request happens to pass
+// through. public_stats() returns only aggregate counts and is granted to
+// `authenticated`, so a driver's token learns nothing the page does not show.
+// Before any driver has used the app in this data centre the copy is empty
+// and the page says so.
+const STATS_URL = "https://stats.internal/public_stats";
+const STATS_TTL_MS = 15 * 60 * 1000;   // refresh when older than this
+const STATS_CHECK_MS = 60 * 1000;      // at most one cache lookup a minute per isolate
+let statsCheckedAt = 0;
+
+function edgeCache() {
+  return typeof caches !== "undefined" ? caches.default : null;
+}
+
+// Synchronous, so a request that does not need it schedules nothing.
+function statsWarmupDue(authorization) {
+  if (!authorization || !edgeCache()) return false;
+  const now = Date.now();
+  if (now - statsCheckedAt < STATS_CHECK_MS) return false;
+  statsCheckedAt = now;
+  return true;
+}
+
+async function readStats() {
+  const hit = await edgeCache().match(STATS_URL);
+  if (!hit) return null;
+  return { body: await hit.text(), at: Number(hit.headers.get("x-cached-at")) || 0 };
+}
+
+async function warmStats(env, authorization) {
+  const cached = await readStats();
+  if (cached && Date.now() - cached.at < STATS_TTL_MS) return;
+  const res = await rpc(env, "public_stats", {}, authorization);
+  if (!res.ok) return console.error("public_stats", res.status, await res.text());
+  const body = await res.text();
+  await edgeCache().put(STATS_URL, new Response(body, {
+    headers: {
+      "content-type": "application/json",
+      "cache-control": "public, max-age=86400",
+      "x-cached-at": String(Date.now()),
+    },
+  }));
+}
+
+async function statsResponse(request) {
+  const headers = {
+    "content-type": "application/json",
+    "cache-control": "public, max-age=300",
+  };
+  if (request.method !== "GET") return new Response('{"error":"GET only"}', { status: 405, headers });
+  let cached = null;
+  try { cached = edgeCache() ? await readStats() : null; } catch (e) { console.error("readStats", e); }
+  return new Response(cached ? cached.body : "null", { headers });
+}
+
 async function proxyRest(request, env, ctx, path) {
   const incoming = new URL(request.url);
   const upstream = new URL(`${env.NEON_DATA_API_URL.replace(/\/+$/, "")}/${path}`);
@@ -172,9 +231,12 @@ async function proxyRest(request, env, ctx, path) {
     body: hasBody ? await request.text() : undefined,
   });
 
+  const authorization = request.headers.get("authorization");
   if (res.ok && request.method === "POST" && PUSH_VERBS.has(path.replace(/^rpc\//, ""))) {
-    const authorization = request.headers.get("authorization");
     ctx.waitUntil(drainPush(env, authorization).catch((e) => console.error("drainPush", e)));
+  }
+  if (res.ok && statsWarmupDue(authorization)) {
+    ctx.waitUntil(warmStats(env, authorization).catch((e) => console.error("warmStats", e)));
   }
 
   const out = pick(res.headers, REST_RESPONSE_HEADERS);
@@ -194,6 +256,9 @@ export default {
     }
     if (url.pathname === "/api/push/test") {
       return pushTest(request, env, ctx);
+    }
+    if (url.pathname === "/api/stats") {
+      return statsResponse(request);
     }
 
     if (url.pathname === "/config.js") {
