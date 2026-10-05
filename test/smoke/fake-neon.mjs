@@ -11,6 +11,7 @@ export async function fakeNeon(page, {
   blocks = [],     // blocks those messages belong to
   targets = [],    // block_targets rows I am party to
   firstVisit = false, // true: this browser has never opened the app
+  unverified = false, // true: password sign-in is refused, as Neon Auth does for an unverified email
 } = {}) {
   if (!firstVisit) await page.addInitScript(() => localStorage.setItem("alih.seen", "1"));
   const state = { cars: [...cars], rpc: [], inserts: [] };
@@ -23,6 +24,10 @@ export async function fakeNeon(page, {
   await page.route(/^(?!http:\/\/localhost)/, (r) => r.abort());
 
   await page.route("**/api/auth/**", (r) => {
+    if (unverified && /sign-in\/email/.test(r.request().url())) {
+      return r.fulfill({ status: 403, contentType: "application/json",
+        body: JSON.stringify({ message: "Email not verified", code: "EMAIL_NOT_VERIFIED" }) });
+    }
     if (!signedIn) return r.fulfill({ status: 200, contentType: "application/json", body: "null" });
     return r.fulfill({
       status: 200, contentType: "application/json", headers: { "set-auth-jwt": jwt },

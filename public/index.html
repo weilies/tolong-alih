@@ -999,7 +999,7 @@ $("signin").addEventListener("click", async function(){
   busy(this,true);
   var r = await sb.auth.signInWithPassword({ email: email, password: pw });
   busy(this,false,"I already have an account");
-  if(r.error && r.error.code === "email_not_confirmed"){
+  if(r.error && /not.?(verified|confirmed)/i.test((r.error.code||"")+" "+(r.error.message||""))){
     pending = { email: email, pw: pw };
     await sb.auth.resend({ type:"signup", email: email });
     $("mailTo").textContent = email;
