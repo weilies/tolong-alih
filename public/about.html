@@ -28,37 +28,10 @@
   .mono{font-family:'JetBrains Mono',monospace}
   .wrap{width:100%;max-width:560px;flex:1;display:flex;flex-direction:column}
 
-  .top{background:var(--tarmac);color:#fff;padding:11px 16px;display:flex;
-    justify-content:space-between;align-items:center;gap:10px}
-  .top .id{display:flex;align-items:center;gap:9px;min-width:0}
-  .top .mk{width:26px;height:26px;background:var(--hazard);color:var(--tarmac);
-    display:grid;place-items:center;font-size:13px;flex:none}
-  .top .nm{font-size:12.5px;font-weight:600;white-space:nowrap}
-  .top a{color:var(--hazard);font-size:12px;font-weight:600;text-decoration:none;white-space:nowrap}
-  .top a.back{font-size:13.5px;border:2px solid var(--hazard);padding:6px 10px}
   .flinks{display:flex;gap:18px;margin-top:9px}
   .flinks a{font-weight:600}
   .ver{display:block;margin-top:10px;font-family:'JetBrains Mono',monospace;font-size:10.5px}
   .ver a{color:var(--mute)}
-  .avatar{width:31px;height:31px;flex:none;border:2px solid var(--hazard);background:var(--signage);
-    color:#fff;cursor:pointer;padding:0;overflow:hidden;display:grid;place-items:center;
-    font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 100,'wght' 700;font-size:12px}
-  .avatar img{width:100%;height:100%;object-fit:cover;display:block}
-  .avatar.big{width:52px;height:52px;font-size:19px;border-width:3px;border-color:var(--tarmac)}
-  .sheet{position:fixed;inset:0;z-index:70;background:rgba(22,21,15,.6);
-    display:flex;align-items:flex-start;justify-content:flex-end;padding:56px 12px 0}
-  .sheet[hidden]{display:none}
-  .sheet-in{background:var(--signal);border:3px solid var(--tarmac);box-shadow:6px 6px 0 var(--hazard);
-    padding:16px;width:100%;max-width:290px}
-  .sheet .who{display:flex;gap:12px;align-items:center;margin-bottom:6px}
-  .sheet .who b{display:block;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .sheet .who span{display:block;font-size:11.5px;color:var(--mute);overflow:hidden;
-    text-overflow:ellipsis;white-space:nowrap}
-  .lang{position:fixed;top:9px;right:10px;z-index:90;cursor:pointer;
-    background:var(--tarmac);color:var(--hazard);border:2px solid var(--hazard);
-    font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 100,'wght' 700;
-    font-size:11px;letter-spacing:.1em;padding:5px 9px}
-  .lang:focus-visible{outline:2px solid var(--signage);outline-offset:2px}
 
   main{padding:24px 18px 34px}
   .lede{font-size:15px;line-height:1.6;color:#3B382E;margin-bottom:22px}
@@ -107,34 +80,21 @@
   footer{padding:20px 18px calc(28px + env(safe-area-inset-bottom));
     color:var(--mute);font-size:12px;line-height:1.7;border-top:3px solid var(--edge)}
 </style>
+<link rel="stylesheet" href="/chrome.css" />
 </head>
 <body>
 <div class="wrap">
-  <div class="top">
-    <div class="id"><div class="mk">🚗</div><span class="nm">Tolong <b style="color:var(--hazard)">Alih</b></span></div>
-    <div class="id" style="flex:none">
-      <a href="/" class="back">← Back to the app</a>
-      <button class="avatar" id="avatarBtn" aria-haspopup="true" aria-expanded="false" aria-label="Your account">
-        <img id="avatarImg" alt="" hidden /><span id="avatarTxt">·</span>
-      </button>
+  <header class="appbar">
+    <a class="ta" href="/" aria-label="Tolong Alih — home">TA</a>
+    <span class="ttl">Contact</span>
+    <div class="r">
+    <a class="bell" href="/#pI" aria-label="Alerts">🔔</a>
+    <button class="lang" id="langBtn" lang="ms">BM</button>
     </div>
-  </div>
-
-  <div class="sheet" id="sheet" hidden>
-    <div class="sheet-in">
-      <div class="who">
-        <div class="avatar big"><img id="sheetImg" alt="" hidden /><span id="sheetTxt">·</span></div>
-        <div style="min-width:0"><b id="sheetName">Not signed in</b><span id="sheetMail">Tolong Alih</span></div>
-      </div>
-      <button class="btn" id="langRow">Bahasa Malaysia</button>
-      <a class="btn btn-hz" href="/" style="text-decoration:none">Open the app</a>
-    </div>
-  </div>
-  <div class="hazard"></div>
+  </header>
 
   <main>
-    <p class="lede"><b>Tolong Alih</b> connects two drivers by plate number when one blocks the
-    other in. Neither ever sees the other's phone number.</p>
+    <p class="lede"><b>Tolong Alih</b> connects two drivers by plate number when one blocks the other in. Neither ever sees the other's name or email.</p>
 
     <details open>
       <summary><b>Support</b><span class="sign">+</span></summary>
@@ -189,13 +149,10 @@
         here. Tolong Alih is one of them.</p>
 
         <h3>Your data</h3>
-        <p>We hold your email, phone number and the plates you register. Your number exists only so
-        a driver can be reached when the app cannot reach them, and is never shown to another user.
-        Location confirms you are in Malaysia and tailors the app to where you are; coordinates are never shown
-        to other drivers.</p>
+        <p>We hold your email and the plates you register. We do not ask for a phone number. Location confirms you are in Malaysia and tailors the app to where you are; coordinates are never shown to other drivers.</p>
         <p class="mute">Ask and we will export everything we hold on you, or delete your account
         outright.</p>
-        <p><a href="/terms.html">Read our simple terms of use.</a> We never sell your data or your phone number.</p>
+        <p><a href="/terms.html">Read our simple terms of use.</a> We never sell your data.</p>
 
         <h3>The four words</h3>
         <p>Every action in Tolong Alih is one of four. We use the same word everywhere so nobody
@@ -221,12 +178,19 @@
   </main>
 
   <footer>
-    <b>Tolong Alih</b> by Next Novas — declare when you box someone in, clear it when you move.
-    Neither driver ever sees the other's number.
+    <b>Tolong Alih</b> by Next Novas — declare when you box someone in, clear it when you move. Neither driver ever sees the other's name or email.
     <nav class="flinks"><a href="/">Open the app</a><a href="/start.html">Help</a><a href="/terms.html">Terms of use</a></nav>
     <small class="ver" id="ver"></small>
   </footer>
 </div>
+
+<nav class="tabbar" aria-label="Main">
+  <a href="/#pD" data-p="pD"><span class="ic">🅿️</span><span class="tx">Declare</span></a>
+  <a href="/#pS" data-p="pS"><span class="ic">🔍</span><span class="tx">Trace</span></a>
+  <a href="/#pG" data-p="pG"><span class="ic">🚗</span><span class="tx">Garage</span></a>
+  <a href="/start.html"><span class="ic">❓</span><span class="tx">Help</span></a>
+  <a href="/about.html" aria-current="page"><span class="ic">💬</span><span class="tx">Contact</span></a>
+</nav>
 
 <script src="/config.js"></script>
 <script>
@@ -271,8 +235,8 @@ document.getElementById("mailMerchant").href = mail("Advertising on Tolong Alih"
    node so switching back is exact. The choice is shared with the app through
    the same localStorage key. */
 var MS = {
-  "connects two drivers by plate number when one blocks the other in. Neither ever sees the other's phone number.":"menghubungkan dua pemandu melalui nombor plat apabila seorang menghalang yang lain. Kedua-duanya tidak pernah melihat nombor telefon satu sama lain.",
-  "by Next Novas — declare when you box someone in, clear it when you move. Neither driver ever sees the other's number.":"oleh Next Novas — isytihar apabila anda menghalang seseorang, lepaskan apabila anda beredar. Kedua-dua pemandu tidak pernah melihat nombor satu sama lain.",
+  "connects two drivers by plate number when one blocks the other in. Neither ever sees the other's name or email.":"menghubungkan dua pemandu melalui nombor plat apabila seorang menghalang yang lain. Kedua-duanya tidak pernah nampak nama atau e-mel satu sama lain.",
+  "by Next Novas — declare when you box someone in, clear it when you move. Neither driver ever sees the other's name or email.":"oleh Next Novas — isytihar apabila anda menghalang seseorang, lepaskan apabila anda beredar. Kedua-dua pemandu tidak pernah nampak nama atau e-mel satu sama lain.",
   "Support":"Bantuan",
   "Someone else has my plate":"Orang lain ada plat saya",
   "Almost always the previous owner, who never removed the car after selling it.":"Hampir selalu pemilik terdahulu, yang tidak membuang kereta itu selepas menjualnya.",
@@ -291,7 +255,7 @@ var MS = {
   "Help":"Bantuan",
   "Terms of use":"Syarat penggunaan",
   "Read our simple terms of use.":"Baca syarat penggunaan kami yang ringkas.",
-  "We never sell your data or your phone number.":"Kami tidak pernah menjual data atau nombor telefon anda.",
+  "We never sell your data.":"Kami tidak pernah menjual data anda.",
   "Hyperlocal.":"Sangat setempat.",
   "Shown only to drivers inside the radius you choose.":"Ditunjukkan hanya kepada pemandu dalam radius yang anda pilih.",
   "Flat monthly fee.":"Bayaran bulanan tetap.",
@@ -327,7 +291,10 @@ var MS = {
   "How it works":"Cara ia berfungsi",
   "Not signed in":"Belum log masuk",
   "Open the app":"Buka aplikasi",
-  "← Back to app":"← Kembali ke aplikasi"
+  "← Back to app":"← Kembali ke aplikasi",
+  "Garage":"Garaj",
+  "Contact":"Hubungi kami",
+  "We hold your email and the plates you register. We do not ask for a phone number. Location confirms you are in Malaysia and tailors the app to where you are; coordinates are never shown to other drivers.":"Kami menyimpan e-mel dan plat yang anda daftarkan. Kami tidak meminta nombor telefon. Lokasi mengesahkan anda berada di Malaysia dan menyesuaikan aplikasi dengan tempat anda; koordinat tidak pernah ditunjukkan kepada pemandu lain."
 };
 
 var LANG = "en";
@@ -356,25 +323,15 @@ function applyLang(){
     }
   });
   document.documentElement.lang = LANG;
-  var b = document.getElementById("langRow");
-  b.textContent = LANG === "ms" ? "English" : "Bahasa Malaysia";
+  var b = document.getElementById("langBtn");
+  b.textContent = LANG === "ms" ? "EN" : "BM";
   b.setAttribute("lang", LANG === "ms" ? "en" : "ms");
 }
 
-document.getElementById("langRow").addEventListener("click", function(){
+document.getElementById("langBtn").addEventListener("click", function(){
   LANG = LANG === "ms" ? "en" : "ms";
   try{ localStorage.setItem("alih.lang", LANG); }catch(e){}
   applyLang();
-});
-
-document.getElementById("avatarBtn").addEventListener("click", function(){
-  var open = document.getElementById("sheet").hidden;
-  document.getElementById("sheet").hidden = !open;
-  this.setAttribute("aria-expanded", String(open));
-});
-document.getElementById("sheet").addEventListener("click", function(ev){
-  if(ev.target === this){ this.hidden = true;
-    document.getElementById("avatarBtn").setAttribute("aria-expanded","false"); }
 });
 
 applyLang();
