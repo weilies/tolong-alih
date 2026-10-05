@@ -17,7 +17,7 @@
  *                 After a verb that writes a message, the worker also sends
  *                 the Web Push for it (src/push.js) — Neon has nothing that
  *                 can make an outbound call, so this is where it has to live.
- *   /api/push/test  sends a test notification to the caller's own devices.
+ *   /api/stats      the Help page's reach figures, from the edge cache.
  */
 
 import { drainKey, sendPush } from "./push.js";
@@ -31,7 +31,6 @@ const REST_REQUEST_HEADERS = [
 ];
 const REST_RESPONSE_HEADERS = ["content-type", "content-range", "preference-applied", "location"];
 // The verbs that leave a message for the other driver: each one is a push.
-const TEST_DELAY_MS = 10000;
 const PUSH_VERBS = new Set(["declare_block", "clear_block", "flag_block", "contact_blocker", "say"]);
 
 function pick(from, names, into = new Headers()) {
@@ -137,29 +136,6 @@ async function drainPush(env, authorization) {
   if (gone.length) await rpc(env, "push_gone", { p_key: key, p_endpoints: gone }, authorization);
 }
 
-async function pushTest(request, env, ctx) {
-  const json = (status, body) => new Response(JSON.stringify(body), {
-    status, headers: { "content-type": "application/json", "cache-control": "no-store" },
-  });
-  if (request.method !== "POST") return json(405, { error: "POST only" });
-  if (!pushReady(env)) return json(503, { error: "Push is not set up on this server yet." });
-
-  const res = await rpc(env, "push_mine", {}, request.headers.get("authorization"));
-  if (!res.ok) return json(res.status, { error: "Sign in first." });
-  const rows = await res.json();
-  // Sent after a pause, so a driver testing alone has time to lock the phone.
-  ctx.waitUntil(new Promise((r) => setTimeout(r, TEST_DELAY_MS)).then(async () => {
-    const { gone } = await deliver(env, rows, () => ({
-      title: "Blocked in (test)", body: "TEST 999 is parked behind your car. This is what a real alert looks like.",
-      tag: "test", kind: "hot", url: "/",
-    }));
-    if (gone.length) {
-      await rpc(env, "push_gone", { p_key: await drainKey(env), p_endpoints: gone }, request.headers.get("authorization"));
-    }
-  }));
-  return json(200, { devices: rows.length, delay: TEST_DELAY_MS / 1000 });
-}
-
 // ---- public stats (the Help page's reach figures) ----
 // Neon's Data API refuses every request without a bearer JWT, the anonymous role
 // included, and the worker has no credential of its own. So the page reads
@@ -253,9 +229,6 @@ export default {
     }
     if (url.pathname.startsWith("/api/rest/")) {
       return proxyRest(request, env, ctx, url.pathname.slice("/api/rest/".length));
-    }
-    if (url.pathname === "/api/push/test") {
-      return pushTest(request, env, ctx);
     }
     if (url.pathname === "/api/stats") {
       return statsResponse(request);

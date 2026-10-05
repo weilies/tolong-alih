@@ -42,7 +42,16 @@ createServer(async (req, res) => {
     method: req.method, headers: req.headers,
     body: ["GET", "HEAD"].includes(req.method) ? undefined : Buffer.concat(chunks),
   });
-  const out = await worker.fetch(request, env, { waitUntil() {} });
-  res.writeHead(out.status, Object.fromEntries(out.headers));
-  res.end(Buffer.from(await out.arrayBuffer()));
+  try {
+    const out = await worker.fetch(request, env, { waitUntil() {} });
+    res.writeHead(out.status, Object.fromEntries(out.headers));
+    res.end(Buffer.from(await out.arrayBuffer()));
+  } catch (e) {
+    // The Neon addresses above go nowhere. A request that slips past the
+    // browser-side fake (one in flight as a test ends) must fail that request,
+    // not take the server, and every test after it, down.
+    console.warn(`smoke server: ${req.method} ${req.url} -> 502 (${e.message})`);
+    res.writeHead(502, { "content-type": "text/plain" });
+    res.end("upstream unreachable in tests");
+  }
 }).listen(port, () => console.log(`smoke server on http://localhost:${port}`));
