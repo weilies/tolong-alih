@@ -81,6 +81,24 @@ begin
     perform pg_temp.expect(false, 'signed-out declare is refused');
   exception when invalid_authorization_specification then null; end;
 
+  -- expiry: time is up, or older than 24 hours, whether open or flagged
+  insert into blocks (blocker_id, blocker_plate_norm, status, declared_at, expires_at) values
+    ('e1', 'AAA1111', 'open',     now() - interval '3 hours',  now() - interval '1 hour'),
+    ('e2', 'BBB2222', 'disputed', now() - interval '3 hours',  now() - interval '1 hour'),
+    ('e3', 'CCC3333', 'disputed', now() - interval '25 hours', now() + interval '1 hour'),
+    ('e4', 'DDD4444', 'open',     now() - interval '25 hours', now() + interval '1 hour'),
+    ('e5', 'EEE5555', 'open',     now() - interval '30 minutes', now() + interval '2 hours'),
+    ('e6', 'FFF6666', 'disputed', now() - interval '2 hours',  now() + interval '1 hour'),
+    ('e7', 'GGG7777', 'cleared',  now() - interval '30 hours', now() - interval '27 hours');
+  perform expire_blocks();
+  perform pg_temp.expect((select status from blocks where blocker_id = 'e1') = 'expired', 'open block past its time expires');
+  perform pg_temp.expect((select status from blocks where blocker_id = 'e2') = 'expired', 'flagged block past its time expires');
+  perform pg_temp.expect((select status from blocks where blocker_id = 'e3') = 'expired', 'flagged block older than 24h expires');
+  perform pg_temp.expect((select status from blocks where blocker_id = 'e4') = 'expired', 'open block older than 24h expires');
+  perform pg_temp.expect((select status from blocks where blocker_id = 'e5') = 'open', 'a fresh open block stays open');
+  perform pg_temp.expect((select status from blocks where blocker_id = 'e6') = 'disputed', 'a fresh flagged block stays flagged');
+  perform pg_temp.expect((select status from blocks where blocker_id = 'e7') = 'cleared', 'a cleared block is left alone');
+
   raise notice 'verbs: all checks passed';
 end $$;
 
