@@ -18,7 +18,20 @@ Solo project. Prefer boring, cheap, few dependencies. TypeScript/JavaScript.
 
 ## Stack
 
-- **Frontend**: single static HTML file, no framework, no build step. `public/index.html`.
+- **Frontend**: static HTML, no framework, no build step. `public/index.html` is
+  the app; `public/start.html` explains it and walks through setup (install,
+  sign up, add a plate) — a browser that has never opened the app and has no
+  session is sent there first (`localStorage["alih.seen"]`). The bottom tabs
+  are Declare, Alerts, Trace, Garage, Help (`start.html`) and Contact
+  (`about.html`); `terms.html` is the plain-words terms of use, linked from the
+  footer and sign-up. Never promise in it anything the app does not do — it says
+  we never sell data or phone numbers, and that location goes to OpenStreetMap
+  for the place name. Every page links back to the app. Its screenshots in
+  `public/guide/` are the real app with Neon faked: `npx playwright test -c
+  test/guide` regenerates them after a UI change.
+- **Copy**: plain words a first-time driver understands. Keep the four verbs as
+  names (Declare, Clear, Flag, Trace), but explain them in everyday language
+  next to them. Every English string the page shows has a BM entry in `MS`.
 - **Host**: Cloudflare Workers static assets. Two workers, one repo.
 - **Backend**: Neon — Postgres, Neon Auth (managed Better Auth) and the Data API
   (PostgREST). Project `tolong-alih`, aws-ap-southeast-1. See `db/README.md`.
@@ -61,6 +74,12 @@ PR `develop` → `main` → merge deploys **production**, tagged
   or rename what the live client still calls.
 - New behaviour gets a smoke test in `test/smoke/app.spec.mjs`; a new or
   changed verb gets a case in `test/db/verbs.sql`.
+- **Release names**: every deploy stamps `RELEASE` and `COMMIT` on the worker
+  (`wrangler deploy --var`). Production is `release-YYYY.MM.DD-N` — the same
+  name as its GitHub release tag; UAT is `uat-YYYY.MM.DD-N`; local is `dev`.
+  N is the Deploy run number. `/config.js` serves both and every page footer
+  shows them, linked to the tag or commit.
+- **Wrangler** is pinned once, `env.WRANGLER` in `deploy.yml`. Bump it there.
 - Manual UAT deploy of any branch: `workflow_dispatch` on Deploy (only `main`
   picks the production config), or `npx wrangler deploy -c wrangler.uat.jsonc`.
 
@@ -87,8 +106,9 @@ no yes. On `uat`, go ahead.
 - **Web Push on iPhone needs Add to Home Screen; on Android it needs Chrome
   itself** — browsers inside other apps (WebView) have no push. Android in
   desktop mode reports a Mac user agent; detect Android first.
-- **The user is often on a phone and alone.** Tests they run should work with
-  one person: delays before a test push, no "have someone declare".
+- **The user is usually alone, with a phone and a laptop.** Tests they run
+  should need no second person: one account signed in on each device. The old
+  "Send me a test alert" button was removed on purpose; do not bring it back.
 
 `src/worker.js` serves `/config.js` from its wrangler `vars` (the page reads
 `window.__ENV`), and proxies Neon Auth at `/api/auth/*` and the Data API at

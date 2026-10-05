@@ -17,7 +17,7 @@
  *                 After a verb that writes a message, the worker also sends
  *                 the Web Push for it (src/push.js) — Neon has nothing that
  *                 can make an outbound call, so this is where it has to live.
- *   /api/push/test  sends a test notification to the caller's own devices.
+ *   /api/stats      the Help page's reach figures, from the edge cache.
  */
 
 import { drainKey, sendPush } from "./push.js";
@@ -31,7 +31,6 @@ const REST_REQUEST_HEADERS = [
 ];
 const REST_RESPONSE_HEADERS = ["content-type", "content-range", "preference-applied", "location"];
 // The verbs that leave a message for the other driver: each one is a push.
-const TEST_DELAY_MS = 10000;
 const PUSH_VERBS = new Set(["declare_block", "clear_block", "flag_block", "contact_blocker", "say"]);
 
 function pick(from, names, into = new Headers()) {
@@ -137,27 +136,63 @@ async function drainPush(env, authorization) {
   if (gone.length) await rpc(env, "push_gone", { p_key: key, p_endpoints: gone }, authorization);
 }
 
-async function pushTest(request, env, ctx) {
-  const json = (status, body) => new Response(JSON.stringify(body), {
-    status, headers: { "content-type": "application/json", "cache-control": "no-store" },
-  });
-  if (request.method !== "POST") return json(405, { error: "POST only" });
-  if (!pushReady(env)) return json(503, { error: "Push is not set up on this server yet." });
+// ---- public stats (the Help page's reach figures) ----
+// Neon's Data API refuses every request without a bearer JWT, the anonymous role
+// included, and the worker has no credential of its own. So the page reads
+// /api/stats, which serves a copy kept in the edge cache, and the copy is
+// refreshed with the token of whichever driver's request happens to pass
+// through. public_stats() returns only aggregate counts and is granted to
+// `authenticated`, so a driver's token learns nothing the page does not show.
+// Before any driver has used the app in this data centre the copy is empty
+// and the page says so.
+const STATS_URL = "https://stats.internal/public_stats";
+const STATS_TTL_MS = 15 * 60 * 1000;   // refresh when older than this
+const STATS_CHECK_MS = 60 * 1000;      // at most one cache lookup a minute per isolate
+let statsCheckedAt = 0;
 
-  const res = await rpc(env, "push_mine", {}, request.headers.get("authorization"));
-  if (!res.ok) return json(res.status, { error: "Sign in first." });
-  const rows = await res.json();
-  // Sent after a pause, so a driver testing alone has time to lock the phone.
-  ctx.waitUntil(new Promise((r) => setTimeout(r, TEST_DELAY_MS)).then(async () => {
-    const { gone } = await deliver(env, rows, () => ({
-      title: "Blocked in (test)", body: "TEST 999 is parked behind your car. This is what a real alert looks like.",
-      tag: "test", kind: "hot", url: "/",
-    }));
-    if (gone.length) {
-      await rpc(env, "push_gone", { p_key: await drainKey(env), p_endpoints: gone }, request.headers.get("authorization"));
-    }
+function edgeCache() {
+  return typeof caches !== "undefined" ? caches.default : null;
+}
+
+// Synchronous, so a request that does not need it schedules nothing.
+function statsWarmupDue(authorization) {
+  if (!authorization || !edgeCache()) return false;
+  const now = Date.now();
+  if (now - statsCheckedAt < STATS_CHECK_MS) return false;
+  statsCheckedAt = now;
+  return true;
+}
+
+async function readStats() {
+  const hit = await edgeCache().match(STATS_URL);
+  if (!hit) return null;
+  return { body: await hit.text(), at: Number(hit.headers.get("x-cached-at")) || 0 };
+}
+
+async function warmStats(env, authorization) {
+  const cached = await readStats();
+  if (cached && Date.now() - cached.at < STATS_TTL_MS) return;
+  const res = await rpc(env, "public_stats", {}, authorization);
+  if (!res.ok) return console.error("public_stats", res.status, await res.text());
+  const body = await res.text();
+  await edgeCache().put(STATS_URL, new Response(body, {
+    headers: {
+      "content-type": "application/json",
+      "cache-control": "public, max-age=86400",
+      "x-cached-at": String(Date.now()),
+    },
   }));
-  return json(200, { devices: rows.length, delay: TEST_DELAY_MS / 1000 });
+}
+
+async function statsResponse(request) {
+  const headers = {
+    "content-type": "application/json",
+    "cache-control": "public, max-age=300",
+  };
+  if (request.method !== "GET") return new Response('{"error":"GET only"}', { status: 405, headers });
+  let cached = null;
+  try { cached = edgeCache() ? await readStats() : null; } catch (e) { console.error("readStats", e); }
+  return new Response(cached ? cached.body : "null", { headers });
 }
 
 async function proxyRest(request, env, ctx, path) {
@@ -172,9 +207,12 @@ async function proxyRest(request, env, ctx, path) {
     body: hasBody ? await request.text() : undefined,
   });
 
+  const authorization = request.headers.get("authorization");
   if (res.ok && request.method === "POST" && PUSH_VERBS.has(path.replace(/^rpc\//, ""))) {
-    const authorization = request.headers.get("authorization");
     ctx.waitUntil(drainPush(env, authorization).catch((e) => console.error("drainPush", e)));
+  }
+  if (res.ok && statsWarmupDue(authorization)) {
+    ctx.waitUntil(warmStats(env, authorization).catch((e) => console.error("warmStats", e)));
   }
 
   const out = pick(res.headers, REST_RESPONSE_HEADERS);
@@ -192,8 +230,8 @@ export default {
     if (url.pathname.startsWith("/api/rest/")) {
       return proxyRest(request, env, ctx, url.pathname.slice("/api/rest/".length));
     }
-    if (url.pathname === "/api/push/test") {
-      return pushTest(request, env, ctx);
+    if (url.pathname === "/api/stats") {
+      return statsResponse(request);
     }
 
     if (url.pathname === "/config.js") {
@@ -208,6 +246,10 @@ export default {
         dataApiUrl: `${url.origin}/api/rest`,
         // Only offered once the server can actually send.
         vapidPublicKey: pushReady(env) ? env.VAPID_PUBLIC_KEY : null,
+        // Stamped by the deploy workflow (release-YYYY.MM.DD-N on production,
+        // uat-YYYY.MM.DD-N on UAT); the page footer shows it.
+        release: env.RELEASE || "dev",
+        commit: env.COMMIT || null,
         ip: {
           country: cf.country || null,
           city: cf.city || null,

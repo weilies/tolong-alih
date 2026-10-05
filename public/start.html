@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#16150F" />
+<title>How it works · Tolong Alih</title>
+<meta name="description" content="Blocked in by a double-parked car? Tolong Alih tells the other driver using only the car plate. No phone numbers shared. Set up in 3 minutes." />
+<meta property="og:title" content="Tolong Alih — how it works" />
+<meta property="og:description" content="Reach the driver who blocked you, using only their car plate." />
+<meta property="og:type" content="website" />
+<meta property="og:locale" content="en_MY" />
+<link rel="manifest" href="/manifest.webmanifest" />
+<link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100,600;125,700&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root{--tarmac:#16150F;--hazard:#FFD200;--signage:#0B4DA2;--alert:#E03A17;
+    --clear:#00874E;--signal:#FFFFFF;--fog:#F2F0E9;--edge:#D8D4C6;--mute:#6E6A5E;--ink:#3B382E}
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  html,body{background:var(--fog);color:var(--tarmac);
+    font-family:'Instrument Sans',system-ui,-apple-system,sans-serif;-webkit-font-smoothing:antialiased}
+  body{min-height:100dvh;display:flex;flex-direction:column;align-items:center}
+  a{color:var(--signage)}
+  .wrap{width:100%;max-width:560px}
+  .hazard{height:8px;background:repeating-linear-gradient(45deg,var(--hazard) 0 13px,var(--tarmac) 13px 26px)}
+  .disp{font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 125,'wght' 700;
+    text-transform:uppercase;line-height:1.05}
+
+  .top{background:var(--tarmac);color:#fff;padding:10px 16px;display:flex;
+    justify-content:space-between;align-items:center;gap:10px}
+  .brand{display:flex;align-items:center;gap:9px;font-size:13px;font-weight:600;white-space:nowrap}
+  .brand .mk{width:26px;height:26px;background:var(--hazard);display:grid;place-items:center;font-size:13px}
+  .brand b{color:var(--hazard)}
+  .top .r{display:flex;gap:8px;align-items:center}
+  .top a.skip{color:var(--hazard);font-size:13px;font-weight:600;text-decoration:none;white-space:nowrap}
+  .lang{cursor:pointer;background:var(--tarmac);color:var(--hazard);border:2px solid var(--hazard);
+    font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 100,'wght' 700;font-size:11px;
+    letter-spacing:.1em;padding:4px 8px}
+
+  main{padding:26px 18px 10px}
+  section{margin-bottom:34px}
+  h1{font-size:30px;margin-bottom:14px}
+  h2{font-size:21px;margin-bottom:6px}
+  .lede{font-size:16.5px;line-height:1.6;color:var(--ink)}
+  .lede b{color:var(--tarmac)}
+  p{font-size:15px;line-height:1.6;color:var(--ink)}
+  .sub{color:var(--mute);font-size:14px;margin-bottom:16px}
+
+  .cta{display:block;text-align:center;padding:17px;border:3px solid var(--tarmac);
+    background:var(--hazard);color:var(--tarmac);text-decoration:none;box-shadow:5px 5px 0 var(--tarmac);
+    font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 100,'wght' 700;font-size:15px;
+    text-transform:uppercase;letter-spacing:.05em;margin-top:18px}
+  .cta:active{transform:translate(3px,3px);box-shadow:2px 2px 0 var(--tarmac)}
+  .quiet{display:block;text-align:center;margin-top:14px;font-size:14px;font-weight:600}
+
+  /* How it works: one card per moment, each with the real screen */
+  .story{background:var(--signal);border:3px solid var(--tarmac);margin-bottom:14px}
+  .story .hd{display:flex;gap:12px;align-items:flex-start;padding:15px 15px 12px}
+  .num{flex:none;width:34px;height:34px;background:var(--hazard);border:3px solid var(--tarmac);
+    display:grid;place-items:center;font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 100,'wght' 700}
+  .story h3{font-size:16.5px;margin-bottom:4px}
+  .story p{font-size:14.5px}
+  .story img{display:block;width:100%;height:auto;border-top:3px solid var(--edge)}
+  .tag{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+    background:var(--tarmac);color:var(--hazard);padding:2px 7px;margin-bottom:6px}
+
+  .promise{background:var(--tarmac);color:#fff;padding:16px 16px 14px}
+  .promise li{list-style:none;font-size:14.5px;line-height:1.5;padding-left:26px;position:relative;margin-bottom:8px}
+  .promise li::before{content:"✓";position:absolute;left:0;color:var(--hazard);font-weight:700}
+
+  /* Setup: numbered steps */
+  .step{border-left:4px solid var(--hazard);padding:2px 0 4px 16px;margin-bottom:26px}
+  .step h3{font-size:18px;margin-bottom:6px}
+  .step .why{font-size:14px;color:var(--mute);margin-bottom:12px}
+  .shot{display:block;width:100%;max-width:380px;height:auto;border:3px solid var(--tarmac);margin-top:10px;background:#fff}
+  .tabs{display:flex;gap:8px;margin:6px 0 12px}
+  .tabs button{flex:1;padding:11px 6px;border:3px solid var(--edge);background:var(--signal);cursor:pointer;
+    font-family:inherit;font-size:14px;font-weight:600;color:var(--tarmac)}
+  .tabs button[aria-selected="true"]{border-color:var(--tarmac);background:var(--hazard)}
+  ol.do{margin:0 0 4px 20px}
+  ol.do li{font-size:15px;line-height:1.55;color:var(--ink);margin-bottom:8px}
+  ol.do b{color:var(--tarmac)}
+  .warn{background:#FFF4E5;border:2px solid #E8A23A;padding:10px 12px;font-size:13.5px;line-height:1.5;margin:10px 0}
+  .done{background:#E7F5EE;border:2px solid var(--clear);padding:10px 12px;font-size:14px;font-weight:600;margin:6px 0 10px}
+  figure{margin-top:10px}
+  figcaption{font-size:12px;color:var(--mute);margin-top:5px}
+  svg.ill{display:block;width:100%;max-width:380px;height:auto;border:3px solid var(--tarmac);background:#fff}
+
+  .words{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .word{background:var(--signal);border:3px solid var(--edge);padding:12px}
+  .word b{display:block;font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 100,'wght' 700;
+    text-transform:uppercase;font-size:14px;margin-bottom:4px}
+  .word span{font-size:13.5px;line-height:1.45;color:var(--ink)}
+
+  footer{width:100%;max-width:560px;padding:20px 18px calc(28px + env(safe-area-inset-bottom));
+    color:var(--mute);font-size:12px;line-height:1.7;border-top:3px solid var(--edge)}
+  footer nav{display:flex;gap:18px;margin-top:6px}
+  footer nav a{font-weight:600;font-size:13px}
+  .ver{display:block;margin-top:10px;font-family:'JetBrains Mono',monospace;font-size:10.5px}
+  .ver a{color:var(--mute)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <a class="brand" href="/" style="color:#fff;text-decoration:none"><span class="mk">🚗</span><span>Tolong <b>Alih</b></span></a>
+    <div class="r">
+      <a class="skip" href="/" data-start>Skip to the app →</a>
+      <button class="lang" id="langBtn" lang="ms">BM</button>
+    </div>
+  </header>
+  <div class="hazard"></div>
+
+  <main>
+    <!-- ================= what it is ================= -->
+    <section>
+      <h1 class="disp">Blocked in by a double-parked car?</h1>
+      <p class="lede">Tolong Alih lets you reach the other driver using <b>only their car plate</b>.
+      No phone numbers are shared, ever.</p>
+      <a class="cta" href="#setup">Set up in 3 minutes</a>
+      <a class="quiet" href="/" data-start>I've used it before — open the app</a>
+    </section>
+
+    <section>
+      <h2 class="disp">How it works</h2>
+      <p class="sub">Two drivers, one app. Here is what each of them sees.</p>
+
+      <div class="story">
+        <div class="hd"><span class="num">1</span><div>
+          <span class="tag">If you double-park</span>
+          <h3>Tell them before you walk away</h3>
+          <p>Type the plate of the car you're blocking and how long you'll be. That's it.</p>
+        </div></div>
+        <img src="/guide/declare.jpg" width="380" height="535" loading="lazy" alt="The Declare screen: your car, the plate you are blocking, and how long you'll be." />
+      </div>
+
+      <div class="story">
+        <div class="hd"><span class="num">2</span><div>
+          <span class="tag">If your car is blocked</span>
+          <h3>Your phone tells you who, and when they're back</h3>
+          <p>Tap <b>Come now</b> if you need to leave, or <b>I'm waiting</b>. You can also send a message.</p>
+        </div></div>
+        <img src="/guide/alert.jpg" width="380" height="290" loading="lazy" alt="An alert: WXY1234 is parked behind your car, back in 15 minutes, with Come now and I'm waiting buttons." />
+      </div>
+
+      <div class="story">
+        <div class="hd"><span class="num">3</span><div>
+          <span class="tag">When you drive off</span>
+          <h3>Tap "I've moved"</h3>
+          <p>The other driver is told they're free to go.</p>
+        </div></div>
+        <img src="/guide/moved.jpg" width="380" height="177" loading="lazy" alt="Your open block with the green I've moved button." />
+      </div>
+
+      <div class="promise">
+        <ul>
+          <li>Neither driver ever sees the other's phone number.</li>
+          <li>Blocked but got no alert? Use <b>Trace</b>: type their plate and yours, and we'll find them.</li>
+          <li>Free for drivers.</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- ================= setup ================= -->
+    <section id="setup">
+      <h2 class="disp">Set up in 3 minutes</h2>
+      <p class="sub">Do this once, now — not when you're already stuck in a car park.</p>
+
+      <div class="step">
+        <h3>Step 1 · Put Tolong Alih on your home screen</h3>
+        <p class="why">So alerts reach you even when your phone is locked. On iPhone, alerts only work after this step.</p>
+        <div class="done" id="installed" hidden>✓ Already installed — you're using it from your home screen.</div>
+
+        <div id="installHow">
+          <div class="tabs" role="tablist">
+            <button role="tab" id="tIOS" aria-selected="true" data-os="ios">iPhone</button>
+            <button role="tab" id="tAnd" aria-selected="false" data-os="android">Android</button>
+          </div>
+
+          <div data-for="ios">
+            <div class="warn">Use <b>Safari</b>. If you opened this link from WhatsApp or Facebook, tap ⋯ and choose <b>Open in Safari</b> first.</div>
+            <ol class="do">
+              <li>Tap the <b>Share</b> button <span aria-hidden="true">(square with an arrow ⬆)</span> at the bottom of Safari.</li>
+              <li>Scroll down and tap <b>Add to Home Screen</b>.</li>
+              <li>Tap <b>Add</b>. Then open Tolong Alih from its new icon.</li>
+            </ol>
+            <figure>
+              <svg class="ill" viewBox="0 0 380 300" role="img" aria-label="Illustration: Safari's Share button at the bottom, then Add to Home Screen in the menu">
+                <rect x="0" y="0" width="380" height="300" fill="#F2F0E9"/>
+                <!-- left: safari bottom bar -->
+                <rect x="14" y="20" width="160" height="260" rx="18" fill="#fff" stroke="#16150F" stroke-width="3"/>
+                <rect x="28" y="40" width="132" height="14" rx="4" fill="#D8D4C6"/>
+                <rect x="28" y="64" width="100" height="10" rx="3" fill="#EDEBE3"/><rect x="28" y="82" width="120" height="10" rx="3" fill="#EDEBE3"/><rect x="28" y="100" width="90" height="10" rx="3" fill="#EDEBE3"/>
+                <rect x="14" y="228" width="160" height="52" fill="#F7F6F2" stroke="#16150F" stroke-width="3"/>
+                <text x="38" y="262" font-size="18" fill="#0B4DA2">‹</text><text x="62" y="262" font-size="18" fill="#C9C5B7">›</text>
+                <circle cx="94" cy="254" r="19" fill="#FFD200" stroke="#E03A17" stroke-width="3"/>
+                <path d="M86 252 v10 h16 v-10" fill="none" stroke="#0B4DA2" stroke-width="2.4"/>
+                <path d="M94 244 v13 M89 249 l5 -5 l5 5" fill="none" stroke="#0B4DA2" stroke-width="2.4"/>
+                <text x="126" y="261" font-size="16" fill="#0B4DA2">⧉</text>
+                <text x="94" y="218" font-size="13" font-weight="700" text-anchor="middle" fill="#E03A17">1 · Share</text>
+                <!-- arrow -->
+                <path d="M182 150 h22 m-8 -8 l8 8 l-8 8" fill="none" stroke="#16150F" stroke-width="3"/>
+                <!-- right: share sheet -->
+                <rect x="212" y="20" width="154" height="260" rx="18" fill="#fff" stroke="#16150F" stroke-width="3"/>
+                <rect x="224" y="40" width="130" height="30" rx="6" fill="#F2F0E9"/><text x="234" y="60" font-size="12" fill="#6E6A5E">Copy</text>
+                <rect x="224" y="76" width="130" height="30" rx="6" fill="#F2F0E9"/><text x="234" y="96" font-size="12" fill="#6E6A5E">Add Bookmark</text>
+                <rect x="224" y="112" width="130" height="36" rx="6" fill="#FFD200" stroke="#E03A17" stroke-width="3"/>
+                <text x="234" y="135" font-size="12.5" font-weight="700" fill="#16150F">Add to Home Screen</text>
+                <rect x="224" y="154" width="130" height="30" rx="6" fill="#F2F0E9"/><text x="234" y="174" font-size="12" fill="#6E6A5E">Find on Page</text>
+                <text x="289" y="210" font-size="13" font-weight="700" text-anchor="middle" fill="#E03A17">2 · Add to</text>
+                <text x="289" y="228" font-size="13" font-weight="700" text-anchor="middle" fill="#E03A17">Home Screen</text>
+              </svg>
+              <figcaption>Illustration of Safari on iPhone. Your screen may look slightly different.</figcaption>
+            </figure>
+          </div>
+
+          <div data-for="android" hidden>
+            <div class="warn">Use <b>Chrome</b>. If you opened this link from WhatsApp or Facebook, tap ⋮ and choose <b>Open in Chrome</b> first.</div>
+            <ol class="do">
+              <li>Tap the <b>⋮</b> menu at the top right of Chrome.</li>
+              <li>Tap <b>Add to Home screen</b> (or <b>Install app</b>).</li>
+              <li>Tap <b>Install</b> or <b>Add</b>. Then open Tolong Alih from its new icon.</li>
+            </ol>
+            <figure>
+              <svg class="ill" viewBox="0 0 380 300" role="img" aria-label="Illustration: Chrome's three-dot menu at the top right, then Add to Home screen">
+                <rect x="0" y="0" width="380" height="300" fill="#F2F0E9"/>
+                <rect x="14" y="20" width="160" height="260" rx="18" fill="#fff" stroke="#16150F" stroke-width="3"/>
+                <rect x="14" y="20" width="160" height="50" rx="18" fill="#F7F6F2" stroke="#16150F" stroke-width="3"/>
+                <rect x="26" y="34" width="106" height="22" rx="11" fill="#EDEBE3"/>
+                <circle cx="152" cy="45" r="15" fill="#FFD200" stroke="#E03A17" stroke-width="3"/>
+                <circle cx="152" cy="38" r="2.4" fill="#16150F"/><circle cx="152" cy="45" r="2.4" fill="#16150F"/><circle cx="152" cy="52" r="2.4" fill="#16150F"/>
+                <text x="140" y="92" font-size="13" font-weight="700" text-anchor="end" fill="#E03A17">1 · Menu ⋮</text>
+                <rect x="28" y="110" width="120" height="10" rx="3" fill="#EDEBE3"/><rect x="28" y="128" width="100" height="10" rx="3" fill="#EDEBE3"/><rect x="28" y="146" width="130" height="10" rx="3" fill="#EDEBE3"/>
+                <path d="M182 150 h22 m-8 -8 l8 8 l-8 8" fill="none" stroke="#16150F" stroke-width="3"/>
+                <rect x="212" y="20" width="154" height="260" rx="18" fill="#fff" stroke="#16150F" stroke-width="3"/>
+                <rect x="224" y="40" width="130" height="30" rx="6" fill="#F2F0E9"/><text x="234" y="60" font-size="12" fill="#6E6A5E">New tab</text>
+                <rect x="224" y="76" width="130" height="30" rx="6" fill="#F2F0E9"/><text x="234" y="96" font-size="12" fill="#6E6A5E">Bookmarks</text>
+                <rect x="224" y="112" width="130" height="36" rx="6" fill="#FFD200" stroke="#E03A17" stroke-width="3"/>
+                <text x="234" y="135" font-size="12.5" font-weight="700" fill="#16150F">Add to Home screen</text>
+                <rect x="224" y="154" width="130" height="30" rx="6" fill="#F2F0E9"/><text x="234" y="174" font-size="12" fill="#6E6A5E">Settings</text>
+                <text x="289" y="210" font-size="13" font-weight="700" text-anchor="middle" fill="#E03A17">2 · Add to</text>
+                <text x="289" y="228" font-size="13" font-weight="700" text-anchor="middle" fill="#E03A17">Home screen</text>
+              </svg>
+              <figcaption>Illustration of Chrome on Android. Your screen may look slightly different.</figcaption>
+            </figure>
+          </div>
+        </div>
+      </div>
+
+      <div class="step">
+        <h3>Step 2 · Create your account</h3>
+        <p class="why">Use Google, or your email and a password. We also ask for your phone number — only so we can call you if the app can't reach the other driver. They never see it.</p>
+        <img class="shot" src="/guide/signup.jpg" width="372" height="660" loading="lazy" alt="The sign-in screen with Continue with Google, email, password and phone." />
+      </div>
+
+      <div class="step">
+        <h3>Step 3 · Add your car plate</h3>
+        <p class="why">Tap <b>Garage</b> at the bottom of the app, type your plate, tap <b>Add to garage</b>. This is how you get an alert when someone blocks you.</p>
+        <img class="shot" src="/guide/garage-add.jpg" width="380" height="431" loading="lazy" alt="The Garage screen with a plate typed in and the Add to garage button." />
+        <p class="why" style="margin-top:12px">Done. Your plate shows in your garage:</p>
+        <img class="shot" src="/guide/garage-done.jpg" width="380" height="386" loading="lazy" alt="Your garage showing the plate you added." />
+      </div>
+
+      <div class="step">
+        <h3>Step 4 · Allow alerts</h3>
+        <p class="why">The app asks once. Tap <b>Allow alerts</b>, then <b>Allow</b>.</p>
+      </div>
+
+      <a class="cta" href="/" data-start>Start now</a>
+    </section>
+
+    <section>
+      <h2 class="disp">The four buttons</h2>
+      <p class="sub">The same four words everywhere in the app.</p>
+      <div class="words">
+        <div class="word"><b>Declare</b><span>I double-parked. Tell the driver I'm blocking.</span></div>
+        <div class="word"><b>Clear</b><span>I've moved. Tell them they can go.</span></div>
+        <div class="word"><b>Trace</b><span>I'm blocked but got no alert. Find the driver by both plates.</span></div>
+        <div class="word"><b>Flag</b><span>They said they moved, but they're still there.</span></div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<footer>
+  <b style="color:var(--tarmac)">Tolong Alih</b> by Next Novas
+  <nav><a href="/" data-start>Open the app</a><a href="/about.html">Contact</a><a href="/terms.html">Terms of use</a></nav>
+  <small class="ver" id="ver"></small>
+</footer>
+
+<script src="/config.js"></script>
+<script>
+(function(){
+"use strict";
+function $(id){ return document.getElementById(id); }
+function esc(s){ return String(s==null?"":s).replace(/[&<>"']/g,function(c){
+  return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); }
+
+/* Having read this far counts as seen: the app stops sending them here. */
+Array.prototype.forEach.call(document.querySelectorAll("[data-start]"), function(a){
+  a.addEventListener("click", function(){ try{ localStorage.setItem("alih.seen","1"); }catch(e){} });
+});
+
+/* ---- install steps: show the phone they are holding ---- */
+var ua = navigator.userAgent || "";
+var android = /Android/i.test(ua);
+var ios = !android && (/iPhone|iPad|iPod/i.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1));
+var standalone = (window.matchMedia && matchMedia("(display-mode: standalone)").matches) || navigator.standalone === true;
+function pick(os){
+  Array.prototype.forEach.call(document.querySelectorAll("[data-os]"), function(b){
+    b.setAttribute("aria-selected", String(b.dataset.os === os)); });
+  Array.prototype.forEach.call(document.querySelectorAll("[data-for]"), function(d){
+    d.hidden = d.dataset.for !== os; });
+}
+Array.prototype.forEach.call(document.querySelectorAll("[data-os]"), function(b){
+  b.addEventListener("click", function(){ pick(b.dataset.os); });
+});
+pick(android ? "android" : "ios");
+if(standalone){ $("installed").hidden = false; $("installHow").hidden = true; }
+
+/* ---- version ---- */
+var ENV = window.__ENV || {};
+if(ENV.release){
+  var c = ENV.commit || "";
+  var url = "https://github.com/weilies/tolong-alih/" +
+    (ENV.release.indexOf("release-") === 0 ? "releases/tag/"+encodeURIComponent(ENV.release) : "commit/"+encodeURIComponent(c));
+  $("ver").innerHTML = 'Version <a href="'+esc(url)+'" target="_blank" rel="noopener">'+esc(ENV.release)+'</a>'+(c?' · '+esc(c.slice(0,7)):'');
+}
+
+/* ---- language: same approach and storage key as the app ---- */
+var MS = {
+  "Skip to the app →":"Terus ke aplikasi →",
+  "Blocked in by a double-parked car?":"Kereta anda dihalang parkir berganda?",
+  "Tolong Alih lets you reach the other driver using":"Tolong Alih membolehkan anda menghubungi pemandu itu menggunakan",
+  "only their car plate":"plat kereta mereka sahaja",
+  ". No phone numbers are shared, ever.":". Tiada nombor telefon dikongsi, sama sekali.",
+  "Set up in 3 minutes":"Sedia dalam 3 minit",
+  "I've used it before — open the app":"Saya pernah guna — buka aplikasi",
+  "How it works":"Cara ia berfungsi",
+  "Two drivers, one app. Here is what each of them sees.":"Dua pemandu, satu aplikasi. Inilah yang masing-masing nampak.",
+  "If you double-park":"Jika anda parkir berganda",
+  "Tell them before you walk away":"Beritahu mereka sebelum anda pergi",
+  "Type the plate of the car you're blocking and how long you'll be. That's it.":"Taip plat kereta yang anda halang dan berapa lama anda pergi. Itu sahaja.",
+  "If your car is blocked":"Jika kereta anda dihalang",
+  "Your phone tells you who, and when they're back":"Telefon anda beritahu siapa, dan bila mereka kembali",
+  "Tap":"Tekan",
+  "Come now":"Datang sekarang",
+  "if you need to leave, or":"jika anda perlu pergi, atau",
+  "I'm waiting":"Saya menunggu",
+  ". You can also send a message.":". Anda juga boleh hantar mesej.",
+  "When you drive off":"Apabila anda beredar",
+  "Tap \"I've moved\"":"Tekan \"Saya dah alih\"",
+  "The other driver is told they're free to go.":"Pemandu satu lagi diberitahu mereka boleh keluar.",
+  "Neither driver ever sees the other's phone number.":"Kedua-dua pemandu tidak pernah nampak nombor telefon satu sama lain.",
+  "Blocked but got no alert? Use":"Dihalang tetapi tiada amaran? Guna",
+  "Trace":"Jejak",
+  ": type their plate and yours, and we'll find them.":": taip plat mereka dan plat anda, kami akan cari mereka.",
+  "Free for drivers.":"Percuma untuk pemandu.",
+  "Do this once, now — not when you're already stuck in a car park.":"Buat sekali, sekarang — bukan ketika anda sudah tersangkut di tempat letak kereta.",
+  "Step 1 · Put Tolong Alih on your home screen":"Langkah 1 · Letak Tolong Alih di skrin utama",
+  "So alerts reach you even when your phone is locked. On iPhone, alerts only work after this step.":"Supaya amaran sampai walaupun telefon dikunci. Di iPhone, amaran hanya berfungsi selepas langkah ini.",
+  "✓ Already installed — you're using it from your home screen.":"✓ Sudah dipasang — anda sedang gunanya dari skrin utama.",
+  "Use":"Guna",
+  ". If you opened this link from WhatsApp or Facebook, tap ⋯ and choose":". Jika anda buka pautan ini dari WhatsApp atau Facebook, tekan ⋯ dan pilih",
+  "Open in Safari":"Buka dalam Safari",
+  "first.":"dahulu.",
+  "Tap the":"Tekan butang",
+  "Share":"Kongsi",
+  "button":"",
+  "(square with an arrow ⬆)":"(segi empat dengan anak panah ⬆)",
+  "at the bottom of Safari.":"di bahagian bawah Safari.",
+  "Scroll down and tap":"Tatal ke bawah dan tekan",
+  "Add to Home Screen":"Tambah ke Skrin Utama",
+  "Add":"Tambah",
+  ". Then open Tolong Alih from its new icon.":". Kemudian buka Tolong Alih dari ikon barunya.",
+  "Illustration of Safari on iPhone. Your screen may look slightly different.":"Ilustrasi Safari di iPhone. Skrin anda mungkin sedikit berbeza.",
+  ". If you opened this link from WhatsApp or Facebook, tap ⋮ and choose":". Jika anda buka pautan ini dari WhatsApp atau Facebook, tekan ⋮ dan pilih",
+  "Open in Chrome":"Buka dalam Chrome",
+  "menu at the top right of Chrome.":"menu di penjuru kanan atas Chrome.",
+  "Add to Home screen":"Tambah ke Skrin utama",
+  "(or":"(atau",
+  "Install app":"Pasang aplikasi",
+  "Install":"Pasang",
+  "or":"atau",
+  "Illustration of Chrome on Android. Your screen may look slightly different.":"Ilustrasi Chrome di Android. Skrin anda mungkin sedikit berbeza.",
+  "Step 2 · Create your account":"Langkah 2 · Buka akaun anda",
+  "Use Google, or your email and a password. We also ask for your phone number — only so we can call you if the app can't reach the other driver. They never see it.":"Guna Google, atau e-mel dan kata laluan. Kami juga minta nombor telefon — hanya supaya kami boleh menelefon anda jika aplikasi gagal menghubungi pemandu lain. Mereka tidak akan nampak nombor itu.",
+  "Step 3 · Add your car plate":"Langkah 3 · Tambah plat kereta anda",
+  "Garage":"Garaj",
+  "at the bottom of the app, type your plate, tap":"di bawah aplikasi, taip plat anda, tekan",
+  "Add to garage":"Tambah ke garaj",
+  ". This is how you get an alert when someone blocks you.":". Inilah cara anda menerima amaran apabila seseorang menghalang anda.",
+  "Done. Your plate shows in your garage:":"Siap. Plat anda kini dalam garaj:",
+  "Step 4 · Allow alerts":"Langkah 4 · Benarkan amaran",
+  "The app asks once. Tap":"Aplikasi tanya sekali. Tekan",
+  "Allow alerts":"Benarkan amaran",
+  ", then":", kemudian",
+  "Allow":"Benarkan",
+  "Start now":"Mula sekarang",
+  "The four buttons":"Empat butang",
+  "The same four words everywhere in the app.":"Empat perkataan yang sama di seluruh aplikasi.",
+  "Declare":"Isytihar",
+  "I double-parked. Tell the driver I'm blocking.":"Saya parkir berganda. Beritahu pemandu yang saya halang.",
+  "Clear":"Lepaskan",
+  "I've moved. Tell them they can go.":"Saya dah alih. Beritahu mereka boleh pergi.",
+  "I'm blocked but got no alert. Find the driver by both plates.":"Saya dihalang tetapi tiada amaran. Cari pemandu dengan kedua-dua plat.",
+  "Flag":"Lapor",
+  "They said they moved, but they're still there.":"Mereka kata sudah alih, tetapi masih di situ.",
+  "by Next Novas":"oleh Next Novas",
+  "Open the app":"Buka aplikasi",
+  "Contact":"Hubungi kami",
+  "Terms of use":"Syarat penggunaan"
+};
+var FLAT = {};
+Object.keys(MS).forEach(function(k){ FLAT[k.replace(/\s+/g," ").trim()] = MS[k]; });
+var LANG = "en";
+try{ LANG = localStorage.getItem("alih.lang") || "en"; }catch(e){}
+var ORIG = new Map();
+function applyLang(){
+  var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), nodes = [], n;
+  while((n = w.nextNode())) nodes.push(n);
+  nodes.forEach(function(node){
+    if(node.parentNode && /^(SCRIPT|STYLE)$/.test(node.parentNode.nodeName)) return;
+    if(!ORIG.has(node)) ORIG.set(node, node.nodeValue);
+    var raw = ORIG.get(node), key = raw.replace(/\s+/g," ").trim();
+    if(!key) return;
+    var hit = LANG === "ms" ? FLAT[key] : null;
+    node.nodeValue = (hit != null) ? raw.match(/^\s*/)[0] + hit + raw.match(/\s*$/)[0] : raw;
+  });
+  document.documentElement.lang = LANG;
+  $("langBtn").textContent = LANG === "ms" ? "EN" : "BM";
+}
+$("langBtn").addEventListener("click", function(){
+  LANG = LANG === "ms" ? "en" : "ms";
+  try{ localStorage.setItem("alih.lang", LANG); }catch(e){}
+  applyLang();
+});
+applyLang();
+})();
+</script>
+</body>
+</html>

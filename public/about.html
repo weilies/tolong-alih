@@ -4,9 +4,9 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="theme-color" content="#16150F" />
-<title>Help · Tolong Alih by Next Novas</title>
+<title>Contact · Tolong Alih by Next Novas</title>
 <meta name="description" content="Support for drivers, plate ownership transfers, and advertising for Malaysian local businesses. Tolong Alih is built by Next Novas." />
-<meta property="og:title" content="Tolong Alih — Help" />
+<meta property="og:title" content="Tolong Alih — Contact" />
 <meta property="og:description" content="Driver support, plate transfers, and advertising with us." />
 <meta property="og:type" content="website" />
 <meta property="og:locale" content="en_MY" />
@@ -35,6 +35,11 @@
     display:grid;place-items:center;font-size:13px;flex:none}
   .top .nm{font-size:12.5px;font-weight:600;white-space:nowrap}
   .top a{color:var(--hazard);font-size:12px;font-weight:600;text-decoration:none;white-space:nowrap}
+  .top a.back{font-size:13.5px;border:2px solid var(--hazard);padding:6px 10px}
+  .flinks{display:flex;gap:18px;margin-top:9px}
+  .flinks a{font-weight:600}
+  .ver{display:block;margin-top:10px;font-family:'JetBrains Mono',monospace;font-size:10.5px}
+  .ver a{color:var(--mute)}
   .avatar{width:31px;height:31px;flex:none;border:2px solid var(--hazard);background:var(--signage);
     color:#fff;cursor:pointer;padding:0;overflow:hidden;display:grid;place-items:center;
     font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 100,'wght' 700;font-size:12px}
@@ -108,7 +113,7 @@
   <div class="top">
     <div class="id"><div class="mk">🚗</div><span class="nm">Tolong <b style="color:var(--hazard)">Alih</b></span></div>
     <div class="id" style="flex:none">
-      <a href="/">Home</a>
+      <a href="/" class="back">← Back to the app</a>
       <button class="avatar" id="avatarBtn" aria-haspopup="true" aria-expanded="false" aria-label="Your account">
         <img id="avatarImg" alt="" hidden /><span id="avatarTxt">·</span>
       </button>
@@ -190,6 +195,7 @@
         to other drivers.</p>
         <p class="mute">Ask and we will export everything we hold on you, or delete your account
         outright.</p>
+        <p><a href="/terms.html">Read our simple terms of use.</a> We never sell your data or your phone number.</p>
 
         <h3>The four words</h3>
         <p>Every action in Tolong Alih is one of four. We use the same word everywhere so nobody
@@ -217,7 +223,8 @@
   <footer>
     <b>Tolong Alih</b> by Next Novas — declare when you box someone in, clear it when you move.
     Neither driver ever sees the other's number.
-    <a href="/" style="display:inline-block;margin-top:9px;font-weight:600">Open the app</a>
+    <nav class="flinks"><a href="/">Open the app</a><a href="/start.html">Help</a><a href="/terms.html">Terms of use</a></nav>
+    <small class="ver" id="ver"></small>
   </footer>
 </div>
 
@@ -233,6 +240,15 @@ function waNumber(){ return SUPPORT.wa.join(""); }
 function address(){ return SUPPORT.user[0]+String.fromCharCode(64)+SUPPORT.host.join("."); }
 
 var ENV = window.__ENV || {};
+if(ENV.release){
+  var vc = ENV.commit || "", vu = "https://github.com/weilies/tolong-alih/" +
+    (ENV.release.indexOf("release-") === 0 ? "releases/tag/"+encodeURIComponent(ENV.release) : "commit/"+encodeURIComponent(vc));
+  var ve = document.createElement("a");
+  ve.href = vu; ve.target = "_blank"; ve.rel = "noopener"; ve.textContent = ENV.release;
+  var vbox = document.getElementById("ver");
+  vbox.appendChild(document.createTextNode("Version ")); vbox.appendChild(ve);
+  if(vc) vbox.appendChild(document.createTextNode(" · "+vc.slice(0,7)));
+}
 function wa(t){ return "https://wa.me/"+waNumber()+"?text="+encodeURIComponent(t); }
 function mail(s,b){ return "mailto:"+address()+"?subject="+encodeURIComponent(s)+"&body="+encodeURIComponent(b); }
 
@@ -272,6 +288,10 @@ var MS = {
   "Advertise with us":"Beriklan dengan kami",
   "Tolong Alih reaches drivers standing next to their car, waiting, with nothing to do.\n        A good moment to hear about the workshop or kopitiam down the road.":"Tolong Alih menjangkau pemandu yang sedang berdiri di sebelah kereta, menunggu, tanpa apa-apa untuk dibuat. Masa yang baik untuk mendengar tentang bengkel atau kopitiam berdekatan.",
   "How it works":"Cara ia berfungsi",
+  "Help":"Bantuan",
+  "Terms of use":"Syarat penggunaan",
+  "Read our simple terms of use.":"Baca syarat penggunaan kami yang ringkas.",
+  "We never sell your data or your phone number.":"Kami tidak pernah menjual data atau nombor telefon anda.",
   "Hyperlocal.":"Sangat setempat.",
   "Shown only to drivers inside the radius you choose.":"Ditunjukkan hanya kepada pemandu dalam radius yang anda pilih.",
   "Flat monthly fee.":"Bayaran bulanan tetap.",
@@ -303,6 +323,8 @@ var MS = {
   "— the opposite case. They marked it cleared, you walk out, the car is still there. Flag reopens the block, tells them to move, and records it against them. Repeat offenders are how we find people abusing this.":"— keadaan sebaliknya. Mereka tanda sudah lepas, anda keluar, kereta masih di situ. Tanda membuka semula halangan, suruh mereka beredar, dan merekodkannya terhadap mereka. Pesalah berulang inilah cara kami mengesan penyalahgunaan.",
   "— you are boxed in and got no alert, because your plate is not registered. Enter their plate and yours, and if a matching block is open we connect you. Both plates are required on purpose: it means the only person who can look up a car is someone genuinely standing behind it, so this can never become a plate-lookup service.":"— anda terhalang dan tidak menerima amaran, kerana plat anda tidak berdaftar. Masukkan plat mereka dan plat anda, dan jika ada halangan yang sepadan kami hubungkan anda. Kedua-dua plat diperlukan dengan sengaja: ini bermakna satu-satunya orang yang boleh mencari kereta ialah orang yang benar-benar berdiri di belakangnya, jadi ini tidak akan menjadi perkhidmatan carian plat.",
   "Home":"Utama",
+  "← Back to the app":"← Kembali ke aplikasi",
+  "How it works":"Cara ia berfungsi",
   "Not signed in":"Belum log masuk",
   "Open the app":"Buka aplikasi",
   "← Back to app":"← Kembali ke aplikasi"
@@ -366,18 +388,15 @@ Array.prototype.forEach.call(document.querySelectorAll("details"), function(d){
 /* Reach figures come from the platform, never a spreadsheet. Below a threshold
    the raw numbers mislead rather than inform, so say what is actually true. */
 (async function stats(){
-  /* No session on this page, so no SDK either: public_stats is the one
-     function the Data API's anonymous role may call. */
-  if(!ENV.dataApiUrl) return;
-  var d;
+  /* Visitors here are not signed in, and Neon's Data API answers nobody without
+     a token, so the worker serves a cached copy at /api/stats (src/worker.js).
+     It is null until a driver has used the app in this region; at today's size
+     that is the same message as below 100 monthly drivers. */
+  var d = null;
   try{
-    var res = await fetch(ENV.dataApiUrl+"/rpc/public_stats", {
-      method:"POST", headers:{ "content-type":"application/json" }, body:"{}"
-    });
-    if(!res.ok) return;
-    d = await res.json();
-  }catch(e){ return; }
-  if(!d) return;
+    var res = await fetch("/api/stats");
+    if(res.ok) d = await res.json();
+  }catch(e){}
 
   var el = document.getElementById("statsBlock");
   var fmt = function(n){
@@ -385,7 +404,7 @@ Array.prototype.forEach.call(document.querySelectorAll("details"), function(d){
     return n >= 1000 ? (n/1000).toFixed(n >= 10000 ? 0 : 1).replace(/\.0$/,"")+"K" : String(n);
   };
 
-  if((Number(d.mau)||0) < 100){
+  if(!d || (Number(d.mau)||0) < 100){
     el.innerHTML = '<div class="early"><b>Just launched</b><span>Live in Johor and opening to more '+
       'areas. Founding merchant slots are open now at a rate that will not rise as the driver base '+
       'grows.</span></div>';

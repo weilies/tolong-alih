@@ -236,7 +236,13 @@ create or replace function expire_blocks() returns void
 language sql security definer
 set search_path = public
 as $$
-  update blocks set status = 'expired' where status = 'open' and expires_at < now();
+  -- A block ends when its time is up, and never later than 24 hours after it
+  -- was declared. Disputed (flagged) blocks used to be skipped here, so a flag
+  -- could leave a block open forever; the 24 hour cap also covers a driver who
+  -- moved and never opened the app again.
+  update blocks set status = 'expired'
+   where status in ('open', 'disputed')
+     and (expires_at < now() or declared_at < now() - interval '24 hours');
 $$;
 
 -- ================= RLS =================
@@ -865,6 +871,10 @@ grant execute on function
   is_admin(),
   plate_norm(text)
 to authenticated;
+
+-- Drivers' phones sweep stale blocks before they read (no cron on a
+-- scale-to-zero compute). It takes no arguments and only applies the rule above.
+grant execute on function expire_blocks() to authenticated;
 
 grant execute on function public_stats() to anonymous, authenticated;
 -- The worker calls these with no session; the key argument is the gate.
