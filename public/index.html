@@ -53,7 +53,7 @@
   .wrap{width:100%;max-width:520px;display:flex;flex-direction:column;flex:1}
 
   /* ---------- gates ---------- */
-  .gate{flex:1;display:none;flex-direction:column;justify-content:center;padding:34px 20px 40px;min-height:100dvh}
+  .gate{flex:1;display:none;flex-direction:column;justify-content:center;padding:34px 20px 40px;min-height:calc(100dvh - 140px)}
   .gate.on{display:flex;animation:in .3s cubic-bezier(.2,.7,.3,1)}
   @keyframes in{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
   @media (prefers-reduced-motion:reduce){.gate.on{animation:none}}
@@ -98,13 +98,8 @@
   .note{font-size:12px;color:var(--mute);margin-top:10px;line-height:1.55}
 
   /* ---------- app shell ---------- */
-  #app{display:none;flex-direction:column;flex:1;padding-bottom:calc(84px + env(safe-area-inset-bottom))}
+  #app{display:none;flex-direction:column;flex:1}
   #app.on{display:flex}
-  .topbar{background:var(--tarmac);color:#fff;padding:11px 16px;display:flex;justify-content:space-between;align-items:center;gap:10px}
-  .topbar .id{display:flex;align-items:center;gap:9px;min-width:0}
-  .topbar .mk{width:26px;height:26px;background:var(--hazard);color:var(--tarmac);display:grid;place-items:center;font-size:13px;flex:none}
-  .topbar .nm{font-size:12.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .topbar .loc{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--hazard);white-space:nowrap}
 
   .avwrap{position:relative;flex:none}
   .avx{position:absolute;top:-7px;right:-7px;width:21px;height:21px;border-radius:99px;
@@ -112,16 +107,6 @@
     font-size:13px;line-height:1;display:grid;place-items:center;padding:0}
   .avx[hidden]{display:none}
   .avx:focus-visible{outline:2px solid var(--tarmac);outline-offset:2px}
-  /* the pill is the only way to switch language before signing in; once the app
-     shell is up the control lives in the account sheet instead */
-  #app.on ~ .lang, body.inapp .lang{display:none}
-  .lang{position:fixed;top:9px;right:10px;z-index:90;cursor:pointer;
-    background:var(--tarmac);color:var(--hazard);border:2px solid var(--hazard);
-    font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 100,'wght' 700;
-    font-size:11px;letter-spacing:.1em;padding:5px 9px}
-  .lang:focus-visible{outline:2px solid var(--signage);outline-offset:2px}
-  /* keep the avatar clear of the fixed language pill */
-  .topbar > .id:last-child{padding-right:42px}
 
   .avatar{width:31px;height:31px;flex:none;border:2px solid var(--hazard);background:var(--signage);
     color:#fff;cursor:pointer;padding:0;overflow:hidden;display:grid;place-items:center;
@@ -131,7 +116,7 @@
   .avatar.big{width:52px;height:52px;font-size:19px;border-width:3px;border-color:var(--tarmac)}
 
   .sheet{position:fixed;inset:0;z-index:70;background:rgba(22,21,15,.6);
-    display:flex;align-items:flex-start;justify-content:flex-end;padding:56px 12px 0}
+    display:flex;align-items:flex-start;justify-content:flex-end;padding:calc(64px + var(--ib,0px)) 12px 0}
   /* display:flex beats the hidden attribute, and an invisible overlay would
      otherwise sit over the whole app swallowing every tap. */
   .sheet[hidden]{display:none}
@@ -226,7 +211,6 @@
     font-size:19px;text-transform:uppercase;margin-bottom:7px}
   .guide span{font-size:13.5px;line-height:1.55}
   .guide .btn{background:var(--tarmac);color:var(--hazard)}
-  .tabs .nudge{position:absolute;top:7px;right:calc(50% - 16px);width:9px;height:9px;background:var(--hazard);border-radius:50%}
 
   .addmore{background:none;border:none;color:var(--signage);font-weight:600;font-size:13.5px;cursor:pointer;
     padding:12px 0;text-decoration:underline;text-underline-offset:3px}
@@ -284,7 +268,6 @@
   .install .go[hidden]{display:none}
   .install .x{flex:none;background:none;border:none;color:#8A8474;font-size:22px;line-height:1;cursor:pointer;padding:4px}
   body{padding-top:var(--ib,0px)}
-  .lang{margin-top:var(--ib,0px)}
 
   /* ---------- push pre-prompt ---------- */
   .ask .bd{text-align:left}
@@ -292,22 +275,6 @@
   .steps{margin:12px 0 0 20px;font-size:14px;line-height:1.55}
   .steps li{margin-top:6px}
   .ask .ft .btn + .btn{margin-top:10px}
-
-  /* ---------- tabs ---------- */
-  .tabs{position:fixed;left:0;right:0;bottom:0;z-index:30;background:var(--tarmac);
-    display:flex;max-width:520px;margin:0 auto;padding-bottom:env(safe-area-inset-bottom)}
-  .tabs button,.tabs .tab-link{flex:1;background:none;border:none;cursor:pointer;padding:11px 2px 12px;
-    display:flex;flex-direction:column;align-items:center;gap:5px;color:#8A8474;transition:.14s;
-    position:relative;text-decoration:none}
-  .tabs .ic{font-size:17px;line-height:1}
-  .tabs .tx{font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 100,'wght' 600;
-    font-size:9.5px;letter-spacing:.1em;text-transform:uppercase}
-  .tabs button[aria-selected="true"]{color:var(--hazard)}
-  .tabs button[aria-selected="true"]::before{content:"";position:absolute;top:0;left:14%;right:14%;height:3px;background:var(--hazard)}
-  .tabs button:focus-visible{outline:3px solid var(--hazard);outline-offset:-5px}
-  .dot[hidden]{display:none}
-  .dot{position:absolute;top:6px;right:calc(50% - 19px);min-width:17px;height:17px;
-    background:var(--alert);color:#fff;font-size:10px;font-weight:700;display:grid;place-items:center;padding:0 4px}
 
   .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(94px + env(safe-area-inset-bottom));
     background:var(--tarmac);color:#fff;padding:12px 18px;font-weight:600;font-size:13.5px;
@@ -324,7 +291,14 @@
   .flinks a{color:var(--signage);font-weight:600;font-size:13px}
   .ver{display:block;margin-top:12px;font-family:'JetBrains Mono',monospace;font-size:10.5px}
   .ver a{color:var(--mute)}
+  /* ---------- frame specifics (the shared header and bar live in /chrome.css) ---------- */
+  /* bell and avatar only make sense once signed in */
+  body .appbar .bell,body .appbar .avatar{display:none}
+  body.inapp .appbar .bell,body.inapp .appbar .avatar{display:grid}
+  /* the crawling band under the header is the "a block is open" signal */
+  #hz:not(.live){display:none}
 </style>
+<link rel="stylesheet" href="/chrome.css" />
 </head>
 <body>
 <!-- Install first: on iPhone it is the only way alerts can reach a driver, and
@@ -337,8 +311,19 @@
   <button class="go" id="installGo" hidden>Install</button>
   <button class="x" id="installX" aria-label="Close">×</button>
 </div>
-<button class="lang" id="langBtn" lang="ms">BM</button>
 <div class="wrap">
+  <!-- The frame: same on every page (see chrome.css). TA always goes home. -->
+  <header class="appbar">
+    <a class="ta" href="/" id="homeLink" aria-label="Tolong Alih — home">TA</a>
+    <span class="ttl loc" id="topLoc"></span>
+    <div class="r">
+      <a class="bell" id="bell" href="/#pI" data-p="pI" aria-label="Alerts">🔔<i class="dot" id="dot" hidden></i></a>
+      <button class="avatar" id="avatarBtn" aria-haspopup="true" aria-expanded="false" aria-label="Your account">
+        <img id="avatarImg" alt="" hidden /><span id="avatarTxt">·</span>
+      </button>
+      <button class="lang" id="langBtn" lang="ms">BM</button>
+    </div>
+  </header>
 
   <!-- ============ GATE 1 · LOCATION ============ -->
   <section class="gate on" id="gGeo">
@@ -378,12 +363,10 @@
         <input id="email" type="email" placeholder="you@email.com" autocomplete="email" inputmode="email" />
         <span class="lbl eyebrow">Password</span>
         <input id="pw" type="password" placeholder="At least 8 characters" autocomplete="current-password" />
-        <span class="lbl eyebrow">Phone <span style="text-transform:none;letter-spacing:0">— only when creating an account</span></span>
-        <input id="phone" type="tel" placeholder="012-345 6789" autocomplete="tel" inputmode="tel" />
         <button class="btn btn-hz" id="signup">Create account</button>
         <button class="btn btn-flat" id="signin">I already have an account</button>
-        <p class="note">We only use your phone number if the app can't reach the other driver. They never see it. By continuing, you agree we keep your plates and contact details to run the service. You can ask us to delete them any time.</p>
-        <p class="note"><a href="/terms.html" style="color:var(--signage);font-weight:600">Read our simple terms. We never sell your data or phone number.</a></p>
+        <p class="note">By continuing, you agree we keep your email and the plates you add to run the service. You can ask us to delete them any time.</p>
+        <p class="note"><a href="/terms.html" style="color:var(--signage);font-weight:600">Read our simple terms. We never sell your data.</a></p>
       </div>
     </div>
   </section>
@@ -406,35 +389,8 @@
     </div>
   </section>
 
-  <!-- ============ GATE 4 · PHONE ============ -->
-  <section class="gate" id="gPhone">
-    <div class="brandline"><div class="mk">🚗</div><b>Tolong <span class="hi">Alih</span></b></div>
-    <div class="sign">
-      <div class="hazard"></div>
-      <div class="pad">
-        <div class="glyph">📞</div>
-        <h1 class="disp">Your phone number</h1>
-        <p>If the app can't reach the other driver, we may need to call you. They never see your number.</p>
-        <span class="lbl eyebrow">Phone number</span>
-        <input id="phone2" type="tel" placeholder="012-345 6789" autocomplete="tel" inputmode="tel" />
-        <button class="btn btn-hz" id="savePhone">Save and continue</button>
-        <p class="note">We only ask once. Google sign-in doesn't share your number with us.</p>
-      </div>
-    </div>
-  </section>
-
   <!-- ============ APP ============ -->
   <div id="app">
-    <div class="topbar">
-      <div class="id"><div class="mk">🚗</div><span class="nm">Tolong <b style="color:var(--hazard)">Alih</b></span></div>
-      <div class="id" style="flex:none">
-        <span class="loc" id="topLoc">—</span>
-        <button class="avatar" id="avatarBtn" aria-haspopup="true" aria-expanded="false" aria-label="Your account">
-          <img id="avatarImg" alt="" hidden /><span id="avatarTxt">·</span>
-        </button>
-      </div>
-    </div>
-
     <div class="sheet" id="sheet" hidden>
       <div class="sheet-in">
         <div class="who">
@@ -449,8 +405,6 @@
         </div>
         <label class="pickpic" for="avatarFile">Change photo</label>
         <input type="file" id="avatarFile" accept="image/*" hidden />
-        <button class="btn btn-flat" id="langRow">Bahasa Malaysia</button>
-        <a class="btn btn-flat" href="/start.html" style="text-decoration:none;text-align:center">How it works</a>
         <a class="btn btn-flat" id="adminLink" href="/admin.html" hidden style="text-decoration:none;text-align:center">Ads console</a>
         <button class="btn btn-stop" id="signout">Sign out</button>
       </div>
@@ -485,7 +439,7 @@
         </div>
 
         <button class="btn btn-hz" id="declare">Declare block</button>
-        <p class="note">Your phone number stays hidden. When you drive off, tap “I've moved” so they know they can go.</p>
+        <p class="note">The other driver only sees your car plate. When you drive off, tap “I've moved” so they know they can go.</p>
 
         <div id="mine"></div>
       </section>
@@ -535,21 +489,22 @@
 
     <footer>
       <b>Tolong Alih</b>
-      <span>Tell drivers when you've blocked them. Get told when you're blocked. Phone numbers stay private.</span>
+      <span>Tell drivers when you've blocked them. Get told when you're blocked. Your details stay private.</span>
       <nav class="flinks"><a href="/terms.html">Terms of use</a></nav>
       <small class="ver" id="ver"></small>
     </footer>
-
-    <nav class="tabs" role="tablist">
-      <button role="tab" data-p="pD" aria-selected="true"><span class="ic">🅿️</span><span class="tx">Declare</span></button>
-      <button role="tab" data-p="pI"><span class="ic">🔔</span><span class="tx">Alerts</span><span class="dot" id="dot" hidden>0</span></button>
-      <button role="tab" data-p="pS"><span class="ic">🔍</span><span class="tx">Trace</span></button>
-      <button role="tab" data-p="pG"><span class="ic">🚗</span><span class="tx">Garage</span><span class="nudge" id="gNudge" hidden></span></button>
-      <a class="tab-link" href="/start.html"><span class="ic">❓</span><span class="tx">Help</span></a>
-      <a class="tab-link" href="/about.html"><span class="ic">💬</span><span class="tx">Contact</span></a>
-    </nav>
   </div>
 </div>
+
+<!-- The bottom bar: same on every page (see chrome.css). Declare/Trace/Garage
+     switch panels in the app; from other pages they link back here. -->
+<nav class="tabbar" aria-label="Main">
+  <a href="/#pD" data-p="pD"><span class="ic">🅿️</span><span class="tx">Declare</span></a>
+  <a href="/#pS" data-p="pS"><span class="ic">🔍</span><span class="tx">Trace</span></a>
+  <a href="/#pG" data-p="pG"><span class="ic">🚗</span><span class="tx">Garage</span><i class="nudge" id="gNudge" hidden></i></a>
+  <a href="/start.html"><span class="ic">❓</span><span class="tx">Help</span></a>
+  <a href="/about.html"><span class="ic">💬</span><span class="tx">Contact</span></a>
+</nav>
 
 <div class="veil" id="veil" role="dialog" aria-modal="true" aria-label="Sponsor message">
   <div class="promo">
@@ -611,7 +566,8 @@ try{
 
 /* ================= state ================= */
 var me       = null;   /* { id, email } */
-var pending  = null;   /* { email, pw, phone } between signup and first session */
+var pending  = null;   /* { email, pw } between signup and first session */
+var OWNER_EMAIL = "weilies.chok@gmail.com";   /* the one account shown the ads console */
 var cars     = [];     /* my garage */
 var carsLoaded = false; /* false until the first read, so a slow network doesn't flash the new-driver guide */
 var declared = [];     /* blocks I opened that are still live */
@@ -663,10 +619,9 @@ var MS = {
   "Email":"E-mel",
   "Password":"Kata laluan",
   "At least 8 characters":"Sekurang-kurangnya 8 aksara",
-  "— only when creating an account":"— hanya semasa membuka akaun",
   "Create account":"Buka akaun",
   "I already have an account":"Saya sudah ada akaun",
-  "We only use your phone number if the app can't reach the other driver. They never see it. By continuing, you agree we keep your plates and contact details to run the service. You can ask us to delete them any time.":"Kami hanya guna nombor telefon anda jika aplikasi gagal menghubungi pemandu lain. Mereka tidak akan nampak nombor itu. Dengan meneruskan, anda bersetuju kami menyimpan plat dan butiran hubungan anda untuk menjalankan perkhidmatan ini. Anda boleh minta kami padamnya bila-bila masa.",
+  "By continuing, you agree we keep your email and the plates you add to run the service. You can ask us to delete them any time.":"Dengan meneruskan, anda bersetuju kami menyimpan e-mel dan plat yang anda tambah untuk menjalankan perkhidmatan ini. Anda boleh minta kami padamnya bila-bila masa.",
   /* gate 3 */
   "Check your email":"Semak e-mel anda",
   "Verification code":"Kod pengesahan",
@@ -674,14 +629,11 @@ var MS = {
   "Send it again":"Hantar sekali lagi",
   "Or just tap the link in that email.":"Atau tekan sahaja pautan dalam e-mel itu.",
   /* gate 4 */
-  "Your phone number":"Nombor telefon anda",
-  "If the app can't reach the other driver, we may need to call you. They never see your number.":"Jika aplikasi gagal menghubungi pemandu lain, kami mungkin perlu menelefon anda. Mereka tidak akan nampak nombor anda.",
-  "Phone number":"Nombor telefon",
-  "Save and continue":"Simpan dan teruskan",
-  "We only ask once. Google sign-in doesn't share your number with us.":"Kami tanya sekali sahaja. Log masuk Google tidak berkongsi nombor anda dengan kami.",
   /* account sheet */
   "Change photo":"Tukar gambar",
   "Remove photo":"Buang gambar",
+  "This email already has a password account that was never verified. Choose “I already have an account”, enter your password, verify the code we email you, then Google works too.":"Emel ini sudah ada akaun kata laluan yang belum disahkan. Pilih “I already have an account”, masukkan kata laluan, sahkan kod yang kami emel, kemudian Google pun boleh digunakan.",
+  "Google sign-in did not go through. Try again, or use your email and password.":"Log masuk Google tidak berjaya. Cuba lagi, atau guna emel dan kata laluan.",
   "Ads console":"Konsol iklan",
   "Sign out":"Log keluar",
   /* push */
@@ -721,11 +673,12 @@ var MS = {
   "I'll be back in":"Saya kembali dalam",
   "1 hr":"1 jam",
   "Declare block":"Isytihar halangan",
-  "Your phone number stays hidden. When you drive off, tap “I've moved” so they know they can go.":"Nombor telefon anda kekal tersembunyi. Apabila anda beredar, tekan “Saya dah alih” supaya mereka tahu boleh keluar.",
+  "The other driver only sees your car plate. When you drive off, tap “I've moved” so they know they can go.":"Pemandu lain hanya nampak plat kereta anda. Apabila anda beredar, tekan “Saya dah alih” supaya mereka tahu boleh keluar.",
   "Blocks you have open":"Halangan anda yang terbuka",
   "I've moved — clear it":"Saya dah alih — lepaskan",
   /* alerts */
   "Alerts":"Amaran",
+  "Sign in first.":"Log masuk dahulu.",
   "When someone blocks your car, or replies to you, it shows up here.":"Apabila seseorang menghalang kereta anda, atau membalas anda, ia muncul di sini.",
   "All clear":"Semua selesai",
   "Nobody is blocking your car right now.":"Tiada sesiapa menghalang kereta anda sekarang.",
@@ -764,15 +717,14 @@ var MS = {
   "Help":"Bantuan",
   "Contact":"Hubungi kami",
   "Terms of use":"Syarat penggunaan",
-  "Read our simple terms. We never sell your data or phone number.":"Baca syarat kami yang ringkas. Kami tidak pernah menjual data atau nombor telefon anda.",
+  "Read our simple terms. We never sell your data.":"Baca syarat kami yang ringkas. Kami tidak pernah menjual data anda.",
   "Sponsored":"Tajaan",
   "Sponsor message":"Mesej penaja",
   "Continue":"Teruskan",
   "Continue in":"Teruskan dalam",
   "Remove photo":"Buang gambar",
   "About & contact us":"Tentang & hubungi kami",
-  "Tell drivers when you've blocked them. Get told when you're blocked. Phone numbers stay private.":"Beritahu pemandu apabila anda menghalang mereka. Dapat amaran apabila anda dihalang. Nombor telefon kekal peribadi.",
-  "How it works":"Cara ia berfungsi",
+  "Tell drivers when you've blocked them. Get told when you're blocked. Your details stay private.":"Beritahu pemandu apabila anda menghalang mereka. Dapat amaran apabila anda dihalang. Butiran anda kekal peribadi.",
   /* toasts */
   "Location confirmed — Malaysia":"Lokasi disahkan — Malaysia",
   "Signed in with Google":"Log masuk dengan Google",
@@ -793,8 +745,6 @@ var MS = {
   "That doesn't look like a plate.":"Itu tidak kelihatan seperti plat.",
   "Enter a valid email address.":"Masukkan alamat e-mel yang sah.",
   "Password needs at least 8 characters.":"Kata laluan perlu sekurang-kurangnya 8 aksara.",
-  "Enter the phone number we can fall back to.":"Masukkan nombor telefon simpanan.",
-  "Enter a Malaysian mobile number.":"Masukkan nombor telefon bimbit Malaysia.",
   "Enter your email and password.":"Masukkan e-mel dan kata laluan anda.",
   "Enter the six-digit code.":"Masukkan kod enam digit.",
   "No connection. Try again.":"Tiada sambungan. Cuba lagi.",
@@ -836,7 +786,6 @@ function applyLang(){
     el.setAttribute("placeholder", ph || el._ph);
   });
   document.documentElement.lang = LANG;
-  $("langRow").textContent = LANG === "ms" ? "English" : "Bahasa Malaysia";
   var b = $("langBtn");
   b.textContent = LANG === "ms" ? "EN" : "BM";
   b.setAttribute("lang", LANG === "ms" ? "en" : "ms");
@@ -849,7 +798,6 @@ function toggleLang(){
   applyLang();
 }
 $("langBtn").addEventListener("click", toggleLang);
-$("langRow").addEventListener("click", toggleLang);
 
 /* Turn an auth/Postgres error into something a driver can act on. */
 function why(e, fallback){
@@ -868,7 +816,7 @@ function busy(btn,on,label){
 }
 
 function stage(id){
-  ["gGeo","gAuth","gVerify","gPhone"].forEach(function(g){ $(g).classList.toggle("on", g===id); });
+  ["gGeo","gAuth","gVerify"].forEach(function(g){ $(g).classList.toggle("on", g===id); });
   $("app").classList.toggle("on", id==="app");
   document.body.classList.toggle("inapp", id === "app");
   window.scrollTo(0,0);
@@ -1013,11 +961,6 @@ function authNote(msg){
   if(p) p.innerHTML = '<b style="color:var(--alert)">'+esc(msg)+'</b>';
 }
 
-function tidyPhone(v){
-  var d = (v||"").replace(/[^\d]/g,"").replace(/^60/,"0");
-  return d ? (d[0]==="0" ? d : "0"+d) : "";
-}
-
 $("google").addEventListener("click", async function(){
   if(!sb) return authNote(cfgErr);
   var r = await sb.auth.signInWithOAuth({
@@ -1029,16 +972,14 @@ $("google").addEventListener("click", async function(){
 
 $("signup").addEventListener("click", async function(){
   if(!sb) return authNote(cfgErr);
-  var email = $("email").value.trim(), pw = $("pw").value, phone = tidyPhone($("phone").value);
+  var email = $("email").value.trim(), pw = $("pw").value;
   if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return toast("Enter a valid email address.");
   if(pw.length < 8) return toast("Password needs at least 8 characters.");
-  if(phone.length < 9) return toast("Enter the phone number we can fall back to.");
 
   busy(this,true);
-  /* Neon Auth keeps no custom user fields, so the phone waits here until the
-     profile row exists — ensureProfile() picks it up. The password is held
-     only so a verify that does not auto sign in can finish the job. */
-  pending = { email: email, pw: pw, phone: phone };
+  /* The password is held only so a verify that does not auto sign in can
+     finish the job. */
+  pending = { email: email, pw: pw };
   var r = await sb.auth.signUp({
     email: email, password: pw, options:{ emailRedirectTo: location.origin }
   });
@@ -1058,8 +999,8 @@ $("signin").addEventListener("click", async function(){
   busy(this,true);
   var r = await sb.auth.signInWithPassword({ email: email, password: pw });
   busy(this,false,"I already have an account");
-  if(r.error && r.error.code === "email_not_confirmed"){
-    pending = { email: email, pw: pw, phone: pending && pending.phone };
+  if(r.error && /not.?(verified|confirmed)/i.test((r.error.code||"")+" "+(r.error.message||""))){
+    pending = { email: email, pw: pw };
     await sb.auth.resend({ type:"signup", email: email });
     $("mailTo").textContent = email;
     return stage("gVerify");
@@ -1097,6 +1038,7 @@ $("signout").addEventListener("click", async function(){
   await pushForget();
   await sb.auth.signOut();
   me = null; cars = []; carsLoaded = false; declared = []; inbox = []; traced = null; adShown = {};
+  paintAvatar();
   $("sheet").hidden = true;
   stage("gAuth");
 });
@@ -1172,15 +1114,28 @@ $("clearPic").addEventListener("click", async function(){
 });
 
 /* ================= boot ================= */
+/* Google can send the driver back with ?error=... — say why, in plain words. */
+function oauthRefusal(){
+  var q = new URLSearchParams(location.search), code = q.get("error");
+  if(!code) return null;
+  try{ history.replaceState(null, "", location.pathname + location.hash); }catch(e){}
+  if(/link/i.test(code))
+    return "This email already has a password account that was never verified. Choose “I already have an account”, enter your password, verify the code we email you, then Google works too.";
+  return "Google sign-in did not go through. Try again, or use your email and password.";
+}
+
 async function afterGeo(){
   if(!sb){ stage("gAuth"); authNote(cfgErr); return; }
+  var refused = oauthRefusal();
   var r = await sb.auth.getSession();
   if(r.data && r.data.session) boot(r.data.session);
-  else stage("gAuth");
+  else { stage("gAuth"); if(refused) authNote(tr(refused)); }
 }
 
 async function boot(session){
   if(!session) return stage("gAuth");
+  /* Nothing of the last account on this phone may show for the next one. */
+  me = null; paintAvatar();
   var meta = session.user.user_metadata || {};
   me = {
     id: session.user.id,
@@ -1190,10 +1145,8 @@ async function boot(session){
   };
   await ensureProfile(session);
 
-  /* Google hands back no phone number, so anyone who signed in that way lands
-     here without one. The fallback call path is the whole reason we collect it. */
   var p = await sb.from("profiles")
-    .select("phone,display_name,avatar_url,is_admin").eq("id", me.id).maybeSingle();
+    .select("display_name,avatar_url,is_admin").eq("id", me.id).maybeSingle();
   if(p.error) toast(why(p.error,"Could not read your profile."));
 
   if(p.data){
@@ -1205,30 +1158,22 @@ async function boot(session){
     me.avatar = me.googleAvatar || null;
   }
 
-  if(!p.data || !p.data.phone) return stage("gPhone");
   enterApp();
 }
-
-$("savePhone").addEventListener("click", async function(){
-  var phone = tidyPhone($("phone2").value);
-  if(phone.length < 9) return toast("Enter a Malaysian mobile number.");
-  busy(this,true);
-  var r = await sb.from("profiles").update({ phone: phone }).eq("id", me.id);
-  busy(this,false,"Save and continue");
-  if(r.error) return toast(why(r.error,"Could not save that number."));
-  enterApp();
-});
 
 async function enterApp(){
   if(geo) paintPlace(); else $("topLoc").textContent = "📍 Location off";
   $("sheetName").textContent = me.name || (me.email||"").split("@")[0];
   $("sheetMail").textContent = me.email;
-  $("adminLink").hidden = !me.isAdmin;
+  /* Only the owner is offered the ads console. This hides a link; what actually
+     keeps everyone else out is profiles.is_admin, enforced by the database. */
+  $("adminLink").hidden = !(me.isAdmin && (me.email||"").toLowerCase() === OWNER_EMAIL);
   paintAvatar();
   stage("app");
   render();
   pushSync(true);
-  if(/[?&]tab=alerts\b/.test(location.search)) openTab("pI");
+  goTab(wantTab || tabFromUrl() || "pD");
+  wantTab = null;
   await Promise.all([refresh(), loadAds()]);
   render();
   clearInterval(poll);
@@ -1433,7 +1378,6 @@ async function ensureProfile(session){
   var u = session.user, meta = u.user_metadata || {};
   var row = { id: u.id };
   if(meta.displayName) row.display_name = meta.displayName;
-  if(pending && pending.phone && pending.email === u.email) row.phone = pending.phone;
   var r = await sb.from("profiles").upsert(row, { onConflict:"id" });
   if(!r.error) pending = null;
   if(r.error) toast(why(r.error,"Could not save your profile."));
@@ -1623,20 +1567,36 @@ function interstitial(done){
 }
 
 /* ================= tabs and inputs ================= */
+/* The bottom bar and the bell are plain links (/#pD /#pS /#pG /#pI), so the same
+   bar works on every page. Here they switch panels instead of reloading. */
 function goTab(pid){
-  Array.prototype.forEach.call(document.querySelectorAll(".tabs button"), function(x){
-    x.setAttribute("aria-selected", String(x.dataset.p===pid)); });
+  Array.prototype.forEach.call(document.querySelectorAll("a[data-p]"), function(x){
+    if(x.dataset.p === pid) x.setAttribute("aria-current","page"); else x.removeAttribute("aria-current");
+  });
   Array.prototype.forEach.call(document.querySelectorAll(".panel"), function(p){
     p.classList.toggle("on", p.id===pid); });
   window.scrollTo({top:0,behavior:"smooth"});
   if(pid === "pI") refresh();
 }
-Array.prototype.forEach.call(document.querySelectorAll(".tabs button"), function(b){
-  b.addEventListener("click", function(){ goTab(b.dataset.p); });
+var wantTab = null;   /* a tab asked for before sign-in is opened after it */
+document.addEventListener("click", function(ev){
+  var a = ev.target.closest && ev.target.closest("a[data-p]");
+  if(!a) return;
+  ev.preventDefault();
+  if(!me){ wantTab = a.dataset.p; return toast("Sign in first."); }
+  goTab(a.dataset.p);
 });
-function openTab(pid){
-  var b = document.querySelector('.tabs button[data-p="'+pid+'"]');
-  if(b) b.click();
+/* TA always means home: the Declare screen once signed in, the front door before. */
+$("homeLink").addEventListener("click", function(ev){
+  if(!me) return;
+  ev.preventDefault();
+  goTab("pD");
+});
+function openTab(pid){ goTab(pid); }
+function tabFromUrl(){
+  var m = /^#(pD|pI|pS|pG)$/.exec(location.hash);
+  if(m) return m[1];
+  return /[?&]tab=alerts\b/.test(location.search) ? "pI" : null;
 }
 $("addSlot").addEventListener("click", function(){
   var s = $("slot2");
@@ -1973,9 +1933,16 @@ function render(){
       }).join("")
     : '<div class="empty"><b>All clear</b><span>Nobody is blocking your car right now.</span></div>'+adCard("alert");
 
-  var live = inbox.filter(function(m){ return m.kind === "hot"; }).length;
-  var dot = $("dot");
-  dot.hidden = (live === 0); dot.textContent = live;
+  /* The bell's red dot: a block that is still open and has an urgent message
+     from the other driver. Cleared and expired blocks stop counting, so the
+     dot goes away when the block does. */
+  var live = order.filter(function(bid){
+    var b = blockIx[bid];
+    return b && b.status !== "cleared" && b.status !== "expired" &&
+      threads[bid].some(function(m){ return m.kind === "hot" && m.from_user !== me.id; });
+  }).length;
+  $("dot").hidden = (live === 0);
+  $("bell").setAttribute("aria-label", live ? "Alerts — something is waiting" : "Alerts");
   $("hz").classList.toggle("live", live > 0 || declared.length > 0);
 
   /* render() replaces whole subtrees, so the freshly built nodes need a pass. */

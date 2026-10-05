@@ -26,11 +26,6 @@
     font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--mute);
     display:block;margin:18px 0 7px}
   .wrap{width:100%;max-width:760px;flex:1;display:flex;flex-direction:column}
-  .top{background:var(--tarmac);color:#fff;padding:12px 16px;display:flex;
-    justify-content:space-between;align-items:center;gap:10px}
-  .top b{font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 125,'wght' 700;font-size:14px;text-transform:uppercase}
-  .top a,.top button{color:var(--hazard);background:none;border:1px solid #46422F;
-    font-size:11px;padding:5px 9px;text-decoration:none;cursor:pointer}
   main{padding:20px 16px 50px}
   h1{font-size:24px;margin-bottom:6px}
   .sub{color:var(--mute);font-size:13px;margin-bottom:4px;line-height:1.55}
@@ -71,17 +66,17 @@
   th{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--mute)}
   td.n{font-family:'JetBrains Mono',monospace;text-align:right}
 </style>
+<link rel="stylesheet" href="/chrome.css" />
 </head>
 <body>
 <div class="wrap">
-  <div class="top">
-    <b>Ads console</b>
-    <div style="display:flex;gap:8px;align-items:center">
-      <span class="mono" id="who" style="font-size:10px;color:#B5AF9C"></span>
-      <a href="/">← Back to the app</a>
+  <header class="appbar">
+    <a class="ta" href="/" aria-label="Tolong Alih — home">TA</a>
+    <span class="ttl">Ads console</span>
+    <div class="r">
+    <a class="bell" href="/#pI" aria-label="Alerts">🔔</a>
     </div>
-  </div>
-  <div class="hazard"></div>
+  </header>
 
   <div class="gate" id="gate"><p class="sub">Checking your access…</p></div>
 
@@ -138,6 +133,14 @@
 
 <div class="toast" id="toast"></div>
 
+<nav class="tabbar" aria-label="Main">
+  <a href="/#pD" data-p="pD"><span class="ic">🅿️</span><span class="tx">Declare</span></a>
+  <a href="/#pS" data-p="pS"><span class="ic">🔍</span><span class="tx">Trace</span></a>
+  <a href="/#pG" data-p="pG"><span class="ic">🚗</span><span class="tx">Garage</span></a>
+  <a href="/start.html"><span class="ic">❓</span><span class="tx">Help</span></a>
+  <a href="/about.html"><span class="ic">💬</span><span class="tx">Contact</span></a>
+</nav>
+
 <script src="/config.js"></script>
 <script src="/vendor/neon-js-0.7.0-beta.js"></script>
 <script>
@@ -160,6 +163,8 @@ function why(e,f){ return (e && (e.message||e.error_description)) || f; }
 function ymd(d){ return new Date(d).toISOString().slice(0,10); }
 function ringgit(sen){ return "RM"+((Number(sen)||0)/100).toFixed(0); }
 
+var OWNER_EMAIL = "weilies.chok@gmail.com";
+
 (async function start(){
   var s = await sb.auth.getSession();
   if(!s.data || !s.data.session){
@@ -168,7 +173,13 @@ function ringgit(sen){ return "RM"+((Number(sen)||0)/100).toFixed(0); }
     return;
   }
   var uid = s.data.session.user.id;
-  $("who").textContent = s.data.session.user.email;
+  /* Only the owner opens the console. The database's is_admin check below is
+     the real lock; this keeps the page from even offering itself to anyone else. */
+  if((s.data.session.user.email||"").toLowerCase() !== OWNER_EMAIL){
+    $("gate").innerHTML = '<p class="sub">The ads console is for the Tolong Alih owner only.</p>'+
+      '<a class="btn btn-hz" href="/" style="text-decoration:none;text-align:center">Open the app</a>';
+    return;
+  }
 
   var p = await sb.from("profiles").select("is_admin").eq("id", uid).maybeSingle();
   if(p.error || !p.data || !p.data.is_admin){

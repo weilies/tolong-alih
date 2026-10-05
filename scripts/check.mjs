@@ -107,6 +107,28 @@ for (const f of tracked) {
   for (const [re, what] of secretish) if (re.test(text)) fail(`${f} contains ${what}`);
 }
 
+// ---- 5. the shared frame ---------------------------------------------------
+// Every page wears the same sticky header and bottom bar (public/chrome.css), so
+// a driver can always get home and always reach the same five places. The bar's
+// links and labels must match on every page; only which one is current differs.
+const BAR_HREFS = ["/#pD", "/#pS", "/#pG", "/start.html", "/about.html"];
+const BAR_LABELS = ["Declare", "Trace", "Garage", "Help", "Contact"];
+for (const [page, html] of Object.entries(pageSource)) {
+  const where = `public/${page}`;
+  if (!/<link[^>]+href="\/chrome\.css"/.test(html)) fail(`${where} does not load /chrome.css`);
+  if (!/<header class="appbar">[\s\S]*?<a class="ta" href="\/"[^>]*>TA<\/a>/.test(html)) {
+    fail(`${where}: the header must start with <a class="ta" href="/">TA</a> so TA always goes home`);
+  }
+  const bar = html.match(/<nav class="tabbar"[^>]*>([\s\S]*?)<\/nav>/);
+  if (!bar) { fail(`${where} has no bottom bar (<nav class="tabbar">)`); continue; }
+  const hrefs = [...bar[1].matchAll(/<a href="([^"]+)"/g)].map((m) => m[1]);
+  const labels = [...bar[1].matchAll(/<span class="tx">([^<]+)<\/span>/g)].map((m) => m[1]);
+  if (hrefs.join() !== BAR_HREFS.join()) fail(`${where}: bottom bar links are ${hrefs.join(" ")}, expected ${BAR_HREFS.join(" ")}`);
+  if (labels.join() !== BAR_LABELS.join()) fail(`${where}: bottom bar labels are ${labels.join(", ")}, expected ${BAR_LABELS.join(", ")}`);
+  // The phone number was dropped on purpose (owner decision): no page asks for one.
+  if (/type="tel"/.test(html)) fail(`${where} has a phone input; sign-up no longer asks for a phone number`);
+}
+
 // ---- report ----------------------------------------------------------------
 if (failures.length) {
   for (const f of failures) console.error(`✗ ${f}`);

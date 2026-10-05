@@ -28,56 +28,38 @@
   .mono{font-family:'JetBrains Mono',monospace}
   .wrap{width:100%;max-width:560px;flex:1;display:flex;flex-direction:column}
 
-  .top{background:var(--tarmac);color:#fff;padding:11px 16px;display:flex;
-    justify-content:space-between;align-items:center;gap:10px}
-  .top .id{display:flex;align-items:center;gap:9px;min-width:0}
-  .top .mk{width:26px;height:26px;background:var(--hazard);color:var(--tarmac);
-    display:grid;place-items:center;font-size:13px;flex:none}
-  .top .nm{font-size:12.5px;font-weight:600;white-space:nowrap}
-  .top a{color:var(--hazard);font-size:12px;font-weight:600;text-decoration:none;white-space:nowrap}
-  .top a.back{font-size:13.5px;border:2px solid var(--hazard);padding:6px 10px}
   .flinks{display:flex;gap:18px;margin-top:9px}
   .flinks a{font-weight:600}
   .ver{display:block;margin-top:10px;font-family:'JetBrains Mono',monospace;font-size:10.5px}
   .ver a{color:var(--mute)}
-  .avatar{width:31px;height:31px;flex:none;border:2px solid var(--hazard);background:var(--signage);
-    color:#fff;cursor:pointer;padding:0;overflow:hidden;display:grid;place-items:center;
-    font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 100,'wght' 700;font-size:12px}
-  .avatar img{width:100%;height:100%;object-fit:cover;display:block}
-  .avatar.big{width:52px;height:52px;font-size:19px;border-width:3px;border-color:var(--tarmac)}
-  .sheet{position:fixed;inset:0;z-index:70;background:rgba(22,21,15,.6);
-    display:flex;align-items:flex-start;justify-content:flex-end;padding:56px 12px 0}
-  .sheet[hidden]{display:none}
-  .sheet-in{background:var(--signal);border:3px solid var(--tarmac);box-shadow:6px 6px 0 var(--hazard);
-    padding:16px;width:100%;max-width:290px}
-  .sheet .who{display:flex;gap:12px;align-items:center;margin-bottom:6px}
-  .sheet .who b{display:block;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .sheet .who span{display:block;font-size:11.5px;color:var(--mute);overflow:hidden;
-    text-overflow:ellipsis;white-space:nowrap}
-  .lang{position:fixed;top:9px;right:10px;z-index:90;cursor:pointer;
-    background:var(--tarmac);color:var(--hazard);border:2px solid var(--hazard);
-    font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 100,'wght' 700;
-    font-size:11px;letter-spacing:.1em;padding:5px 9px}
-  .lang:focus-visible{outline:2px solid var(--signage);outline-offset:2px}
 
   main{padding:24px 18px 34px}
   .lede{font-size:15px;line-height:1.6;color:#3B382E;margin-bottom:22px}
   .lede b{font-weight:600}
 
-  details{background:var(--signal);border:3px solid var(--tarmac);margin-bottom:14px}
-  details[open]{box-shadow:5px 5px 0 var(--tarmac)}
-  summary{padding:16px 17px;cursor:pointer;list-style:none;display:flex;
-    justify-content:space-between;align-items:center;gap:12px}
-  summary::-webkit-details-marker{display:none}
-  summary b{font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 125,'wght' 700;
-    font-size:17px;text-transform:uppercase}
-  summary .sign{font-family:'JetBrains Mono',monospace;font-size:19px;color:var(--mute);flex:none}
-  details[open] summary{border-bottom:3px solid var(--edge)}
-  details[open] summary .sign{color:var(--tarmac)}
-  .body{padding:16px 17px}
+  h1{font-size:28px;margin-bottom:10px}
+  .eyebrow{font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 100,'wght' 600;font-size:10.5px;
+    letter-spacing:.2em;text-transform:uppercase;color:var(--mute);margin-bottom:10px}
+  .quick{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:28px}
+
+  /* topics: closed rows, one open at a time */
+  .topic{background:var(--signal);border:2px solid var(--edge);margin-bottom:10px;scroll-margin-top:76px}
+  .topic[open]{border-color:var(--tarmac);border-left:6px solid var(--hazard)}
+  .topic summary{padding:15px 14px;cursor:pointer;list-style:none;display:flex;align-items:center;gap:12px}
+  .topic summary::-webkit-details-marker{display:none}
+  .topic summary:focus-visible{outline:3px solid var(--signage);outline-offset:-3px}
+  .topic summary .ic{flex:none;width:26px;text-align:center;font-size:20px;line-height:1}
+  .topic summary b{flex:1;min-width:0;font-size:15px;font-weight:600;line-height:1.3}
+  .topic summary .sign{flex:none;font-family:'JetBrains Mono',monospace;font-size:19px;color:var(--mute)}
+  .topic[open] summary{border-bottom:2px solid var(--edge)}
+  .topic[open] summary .sign{color:var(--tarmac)}
+  .body{padding:14px 14px 16px}
   .body h3{font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 100,'wght' 700;
     font-size:13px;letter-spacing:.06em;text-transform:uppercase;margin:18px 0 8px}
   .body h3:first-child{margin-top:0}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:6px}
+  .row2.one{grid-template-columns:1fr}
+  .row2 .btn,.quick .btn{margin-top:0;padding:13px 8px}
   p{font-size:14.5px;line-height:1.6;color:#3B382E;margin-bottom:11px}
   p.mute{color:var(--mute);font-size:13px}
   ul{margin:0 0 11px 18px}
@@ -89,6 +71,7 @@
     background:var(--signal);color:var(--tarmac);text-decoration:none;margin-top:10px}
   .btn-wa{background:#25D366}
   .btn-hz{background:var(--hazard)}
+  .btn-out{background:var(--signal)}
 
   .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:10px}
   .stat{background:var(--tarmac);color:#fff;padding:13px 12px}
@@ -107,54 +90,67 @@
   footer{padding:20px 18px calc(28px + env(safe-area-inset-bottom));
     color:var(--mute);font-size:12px;line-height:1.7;border-top:3px solid var(--edge)}
 </style>
+<link rel="stylesheet" href="/chrome.css" />
 </head>
 <body>
 <div class="wrap">
-  <div class="top">
-    <div class="id"><div class="mk">🚗</div><span class="nm">Tolong <b style="color:var(--hazard)">Alih</b></span></div>
-    <div class="id" style="flex:none">
-      <a href="/" class="back">← Back to the app</a>
-      <button class="avatar" id="avatarBtn" aria-haspopup="true" aria-expanded="false" aria-label="Your account">
-        <img id="avatarImg" alt="" hidden /><span id="avatarTxt">·</span>
-      </button>
+  <header class="appbar">
+    <a class="ta" href="/" aria-label="Tolong Alih — home">TA</a>
+    <span class="ttl">Contact</span>
+    <div class="r">
+    <a class="bell" href="/#pI" aria-label="Alerts">🔔</a>
+    <button class="lang" id="langBtn" lang="ms">BM</button>
     </div>
-  </div>
-
-  <div class="sheet" id="sheet" hidden>
-    <div class="sheet-in">
-      <div class="who">
-        <div class="avatar big"><img id="sheetImg" alt="" hidden /><span id="sheetTxt">·</span></div>
-        <div style="min-width:0"><b id="sheetName">Not signed in</b><span id="sheetMail">Tolong Alih</span></div>
-      </div>
-      <button class="btn" id="langRow">Bahasa Malaysia</button>
-      <a class="btn btn-hz" href="/" style="text-decoration:none">Open the app</a>
-    </div>
-  </div>
-  <div class="hazard"></div>
+  </header>
 
   <main>
-    <p class="lede"><b>Tolong Alih</b> connects two drivers by plate number when one blocks the
-    other in. Neither ever sees the other's phone number.</p>
+    <h1 class="disp">Contact us</h1>
+    <p class="lede">Pick a topic below, or message us straight away. We read everything.</p>
+    <div class="quick">
+      <a class="btn btn-wa" id="waQuick" href="#">WhatsApp</a>
+      <a class="btn btn-out" id="mailQuick" href="#">Email</a>
+    </div>
 
-    <details open>
-      <summary><b>Support</b><span class="sign">+</span></summary>
+    <p class="eyebrow">Common topics</p>
+
+    <details class="topic" id="t-plate" name="topic">
+      <summary><span class="ic">🚗</span><b>Someone else has my plate</b><span class="sign">+</span></summary>
       <div class="body">
-        <h3>Someone else has my plate</h3>
         <p>Almost always the previous owner, who never removed the car after selling it.</p>
         <p>Send us a photo of your <b>vehicle registration card (车卡 / geran)</b> showing the plate
         and your name. We verify, release it from their garage, and email you both. Usually same day.</p>
-        <a class="btn btn-wa" id="waPlate" href="#">WhatsApp us the 车卡</a>
-        <a class="btn" id="mailPlate" href="#">Email instead</a>
-
-        <h3>Anything else</h3>
-        <p>Bugs, wrong alerts, a driver behaving badly, or an idea for what we build next.</p>
-        <a class="btn btn-wa" id="waGeneral" href="#">WhatsApp support</a>
-        <a class="btn" id="mailGeneral" href="#">Email support</a>
+        <div class="row2">
+          <a class="btn btn-wa" id="waPlate" href="#">WhatsApp</a>
+          <a class="btn btn-out" id="mailPlate" href="#">Email</a>
+        </div>
       </div>
     </details>
 
-    <details>
-      <summary><b>Advertise with us</b><span class="sign">+</span></summary>
+    <details class="topic" id="t-report" name="topic">
+      <summary><span class="ic">🛠️</span><b>Report a problem or a driver</b><span class="sign">+</span></summary>
+      <div class="body">
+        <p>Bugs, wrong alerts, a driver behaving badly, or an idea for what we build next.</p>
+        <div class="row2">
+          <a class="btn btn-wa" id="waReport" href="#">WhatsApp</a>
+          <a class="btn btn-out" id="mailReport" href="#">Email</a>
+        </div>
+      </div>
+    </details>
+
+    <details class="topic" id="t-delete" name="topic">
+      <summary><span class="ic">🗑️</span><b>Delete my account or my data</b><span class="sign">+</span></summary>
+      <div class="body">
+        <p>Email us from the address you signed up with, so we know it is you. We will delete your
+        account, your plates and your messages, or send you a copy of your data first if you ask,
+        and tell you when it is done.</p>
+        <div class="row2 one">
+          <a class="btn btn-out" id="mailDelete" href="#">Email us to delete my account</a>
+        </div>
+      </div>
+    </details>
+
+    <details class="topic" id="t-ads" name="topic">
+      <summary><span class="ic">📣</span><b>Advertise with us</b><span class="sign">+</span></summary>
       <div class="body">
         <p>Tolong Alih reaches drivers standing next to their car, waiting, with nothing to do.
         A good moment to hear about the workshop or kopitiam down the road.</p>
@@ -176,57 +172,44 @@
         <div class="rate"><span>Waiting screen</span><b>RM40 / month</b></div>
         <div class="rate"><span>Both</span><b>RM55 / month</b></div>
 
-        <a class="btn btn-hz" id="waMerchant" href="#">WhatsApp us — book a slot</a>
-        <a class="btn" id="mailMerchant" href="#">Email us — send me the details</a>
+        <div class="row2">
+          <a class="btn btn-wa" id="waMerchant" href="#">WhatsApp</a>
+          <a class="btn btn-out" id="mailMerchant" href="#">Email</a>
+        </div>
       </div>
     </details>
 
-    <details>
-      <summary><b>Others</b><span class="sign">+</span></summary>
+    <details class="topic" id="t-about" name="topic">
+      <summary><span class="ic">ℹ️</span><b>About Tolong Alih</b><span class="sign">+</span></summary>
       <div class="body">
         <h3>Who we are</h3>
         <p>Next Novas is a small Malaysian studio building practical tools for everyday problems
         here. Tolong Alih is one of them.</p>
 
         <h3>Your data</h3>
-        <p>We hold your email, phone number and the plates you register. Your number exists only so
-        a driver can be reached when the app cannot reach them, and is never shown to another user.
-        Location confirms you are in Malaysia and tailors the app to where you are; coordinates are never shown
-        to other drivers.</p>
-        <p class="mute">Ask and we will export everything we hold on you, or delete your account
-        outright.</p>
-        <p><a href="/terms.html">Read our simple terms of use.</a> We never sell your data or your phone number.</p>
+        <p>We hold your email and the plates you register. We do not ask for a phone number. Location confirms you are in Malaysia and tailors the app to where you are; coordinates are never shown to other drivers.</p>
+        <p><a href="/terms.html">Read our simple terms of use.</a> We never sell your data.</p>
 
-        <h3>The four words</h3>
-        <p>Every action in Tolong Alih is one of four. We use the same word everywhere so nobody
-        has to guess what a button does.</p>
-        <ul>
-          <li><b>Declare</b> — you have double-parked and boxed someone in. Pick the car you are
-          driving, type the plate you are blocking, say how long you will be. If that plate is
-          registered, its owner is alerted within seconds. If it is not, nothing is wasted: they
-          can still find you by tracing.</li>
-          <li><b>Clear</b> — you have moved your car. Tap it and the other driver is told they are
-          free. We never ask them to confirm, because they might be a street away having lunch and
-          waiting for their tap would leave you stuck.</li>
-          <li><b>Flag</b> — the opposite case. They marked it cleared, you walk out, the car is
-          still there. Flag reopens the block, tells them to move, and records it against them.
-          Repeat offenders are how we find people abusing this.</li>
-          <li><b>Trace</b> — you are boxed in and got no alert, because your plate is not
-          registered. Enter their plate and yours, and if a matching block is open we connect you.
-          Both plates are required on purpose: it means the only person who can look up a car is
-          someone genuinely standing behind it, so this can never become a plate-lookup service.</li>
-        </ul>
+        <h3>How the buttons work</h3>
+        <p><a href="/start.html">See how Declare, Clear, Flag and Trace work →</a></p>
       </div>
     </details>
   </main>
 
   <footer>
-    <b>Tolong Alih</b> by Next Novas — declare when you box someone in, clear it when you move.
-    Neither driver ever sees the other's number.
+    <b>Tolong Alih</b> by Next Novas — declare when you box someone in, clear it when you move. Neither driver ever sees the other's name or email.
     <nav class="flinks"><a href="/">Open the app</a><a href="/start.html">Help</a><a href="/terms.html">Terms of use</a></nav>
     <small class="ver" id="ver"></small>
   </footer>
 </div>
+
+<nav class="tabbar" aria-label="Main">
+  <a href="/#pD" data-p="pD"><span class="ic">🅿️</span><span class="tx">Declare</span></a>
+  <a href="/#pS" data-p="pS"><span class="ic">🔍</span><span class="tx">Trace</span></a>
+  <a href="/#pG" data-p="pG"><span class="ic">🚗</span><span class="tx">Garage</span></a>
+  <a href="/start.html"><span class="ic">❓</span><span class="tx">Help</span></a>
+  <a href="/about.html" aria-current="page"><span class="ic">💬</span><span class="tx">Contact</span></a>
+</nav>
 
 <script src="/config.js"></script>
 <script>
@@ -252,18 +235,34 @@ if(ENV.release){
 function wa(t){ return "https://wa.me/"+waNumber()+"?text="+encodeURIComponent(t); }
 function mail(s,b){ return "mailto:"+address()+"?subject="+encodeURIComponent(s)+"&body="+encodeURIComponent(b); }
 
-var PLATE = "Hi Next Novas, my plate is already registered to someone else on Tolong Alih.\n\n"+
-  "My plate number is: \n\nI'm attaching a photo of my vehicle registration card (车卡).";
 var GENERAL = "Hi Next Novas, about Tolong Alih:\n\n";
+var REPORT = "Hi Next Novas, I'd like to report something on Tolong Alih.\n\n"+
+  "What happened:\nPlate involved (if any):\n";
 var MERCHANT = "Hi Next Novas, I'd like to advertise on Tolong Alih.\n\n"+
   "Business name:\nArea:\nWhat you'd like to promote:";
+var DELETE = "Hi Next Novas, please delete my Tolong Alih account and everything you hold on me.\n\n"+
+  "(Please also send me a copy of my data first: yes / no)";
 
-document.getElementById("waPlate").href      = wa(PLATE);
-document.getElementById("mailPlate").href    = mail("Plate transfer request", PLATE);
-document.getElementById("waGeneral").href    = wa(GENERAL);
-document.getElementById("mailGeneral").href  = mail("Tolong Alih support", GENERAL);
-document.getElementById("waMerchant").href   = wa(MERCHANT);
-document.getElementById("mailMerchant").href = mail("Advertising on Tolong Alih", MERCHANT);
+/* A link from Garage ("someone else has this plate") arrives as
+   /about.html#plate-ABC1234: open that topic with the plate filled in.
+   #plate #report #delete #ads #about open their topic too. */
+var TOPICS = { plate:"t-plate", report:"t-report", delete:"t-delete", ads:"t-ads", about:"t-about" };
+var hash = ""; try{ hash = decodeURIComponent(location.hash.replace(/^#/,"")); }catch(e){}
+var pm = /^plate-([A-Za-z0-9 ]{3,12})$/.exec(hash);
+var forPlate = pm ? pm[1].toUpperCase() : "";
+var PLATE = "Hi Next Novas, my plate is already registered to someone else on Tolong Alih.\n\n"+
+  "My plate number is: "+forPlate+"\n\nI'm attaching a photo of my vehicle registration card (车卡).";
+
+function link(id, href){ document.getElementById(id).href = href; }
+link("waQuick",     wa(GENERAL));
+link("mailQuick",   mail("Tolong Alih", GENERAL));
+link("waPlate",     wa(PLATE));
+link("mailPlate",   mail("Plate transfer request", PLATE));
+link("waReport",    wa(REPORT));
+link("mailReport",  mail("Tolong Alih report", REPORT));
+link("mailDelete",  mail("Delete my Tolong Alih account", DELETE));
+link("waMerchant",  wa(MERCHANT));
+link("mailMerchant",mail("Advertising on Tolong Alih", MERCHANT));
 
 
 /* ================= language =================
@@ -271,27 +270,24 @@ document.getElementById("mailMerchant").href = mail("Advertising on Tolong Alih"
    node so switching back is exact. The choice is shared with the app through
    the same localStorage key. */
 var MS = {
-  "connects two drivers by plate number when one blocks the other in. Neither ever sees the other's phone number.":"menghubungkan dua pemandu melalui nombor plat apabila seorang menghalang yang lain. Kedua-duanya tidak pernah melihat nombor telefon satu sama lain.",
-  "by Next Novas — declare when you box someone in, clear it when you move. Neither driver ever sees the other's number.":"oleh Next Novas — isytihar apabila anda menghalang seseorang, lepaskan apabila anda beredar. Kedua-dua pemandu tidak pernah melihat nombor satu sama lain.",
-  "Support":"Bantuan",
+  "Contact us":"Hubungi kami",
+  "Pick a topic below, or message us straight away. We read everything.":"Pilih topik di bawah, atau terus hantar mesej kepada kami. Kami baca semuanya.",
+  "WhatsApp":"WhatsApp",
+  "Email":"E-mel",
+  "Common topics":"Topik biasa",
   "Someone else has my plate":"Orang lain ada plat saya",
   "Almost always the previous owner, who never removed the car after selling it.":"Hampir selalu pemilik terdahulu, yang tidak membuang kereta itu selepas menjualnya.",
   "Send us a photo of your":"Hantar kepada kami gambar",
   "vehicle registration card (车卡 / geran)":"kad pendaftaran kenderaan (车卡 / geran)",
   "showing the plate and your name. We verify, release it from their garage, and email you both. Usually same day.":"yang menunjukkan plat dan nama anda. Kami sahkan, lepaskan daripada garaj mereka, dan e-mel kepada anda berdua. Biasanya hari yang sama.",
-  "WhatsApp us the 车卡":"WhatsApp 车卡 kepada kami",
-  "Email instead":"E-mel sahaja",
-  "Anything else":"Perkara lain",
+  "Report a problem or a driver":"Laporkan masalah atau pemandu",
   "Bugs, wrong alerts, a driver behaving badly, or an idea for what we build next.":"Pepijat, amaran salah, pemandu yang berkelakuan buruk, atau idea untuk apa kami bina seterusnya.",
-  "WhatsApp support":"WhatsApp bantuan",
-  "Email support":"E-mel bantuan",
+  "Delete my account or my data":"Padam akaun atau data saya",
+  "Email us from the address you signed up with, so we know it is you. We will delete your account, your plates and your messages, or send you a copy of your data first if you ask, and tell you when it is done.":"E-mel kami daripada alamat yang anda daftar, supaya kami tahu ia anda. Kami akan memadam akaun, plat dan mesej anda, atau menghantar salinan data anda dahulu jika anda minta, dan memberitahu anda apabila siap.",
+  "Email us to delete my account":"E-mel untuk padam akaun saya",
   "Advertise with us":"Beriklan dengan kami",
-  "Tolong Alih reaches drivers standing next to their car, waiting, with nothing to do.\n        A good moment to hear about the workshop or kopitiam down the road.":"Tolong Alih menjangkau pemandu yang sedang berdiri di sebelah kereta, menunggu, tanpa apa-apa untuk dibuat. Masa yang baik untuk mendengar tentang bengkel atau kopitiam berdekatan.",
+  "Tolong Alih reaches drivers standing next to their car, waiting, with nothing to do. A good moment to hear about the workshop or kopitiam down the road.":"Tolong Alih menjangkau pemandu yang sedang berdiri di sebelah kereta, menunggu, tanpa apa-apa untuk dibuat. Masa yang baik untuk mendengar tentang bengkel atau kopitiam berdekatan.",
   "How it works":"Cara ia berfungsi",
-  "Help":"Bantuan",
-  "Terms of use":"Syarat penggunaan",
-  "Read our simple terms of use.":"Baca syarat penggunaan kami yang ringkas.",
-  "We never sell your data or your phone number.":"Kami tidak pernah menjual data atau nombor telefon anda.",
   "Hyperlocal.":"Sangat setempat.",
   "Shown only to drivers inside the radius you choose.":"Ditunjukkan hanya kepada pemandu dalam radius yang anda pilih.",
   "Flat monthly fee.":"Bayaran bulanan tetap.",
@@ -301,33 +297,28 @@ var MS = {
   "Monthly report.":"Laporan bulanan.",
   "Impressions and clicks, straight from the platform.":"Tayangan dan klik, terus daripada platform.",
   "Founding rates":"Harga pengasas",
-  "Launch pricing while the driver base is still small. Whoever signs now keeps\n        this rate as it grows.":"Harga pelancaran sementara jumlah pemandu masih kecil. Sesiapa yang menyertai sekarang kekal dengan harga ini apabila ia berkembang.",
+  "Launch pricing while the driver base is still small. Whoever signs now keeps this rate as it grows.":"Harga pelancaran sementara jumlah pemandu masih kecil. Sesiapa yang menyertai sekarang kekal dengan harga ini apabila ia berkembang.",
   "Alerts feed":"Suapan amaran",
   "Waiting screen":"Skrin menunggu",
   "Both":"Kedua-duanya",
-  "WhatsApp us — book a slot":"WhatsApp kami — tempah slot",
-  "Email us — send me the details":"E-mel kami — hantar butiran",
-  "Others":"Lain-lain",
-  "Who we are":"Siapa kami",
-  "Next Novas is a small Malaysian studio building practical tools for everyday problems\n        here. Tolong Alih is one of them.":"Next Novas ialah studio kecil Malaysia yang membina alat praktikal untuk masalah harian di sini. Tolong Alih ialah salah satunya.",
-  "Your data":"Data anda",
-  "The four words":"Empat perkataan",
-  "Every action in Tolong Alih is one of four. We use the same word everywhere so nobody\n        has to guess what a button does.":"Setiap tindakan dalam Tolong Alih ialah satu daripada empat. Kami guna perkataan yang sama di mana-mana supaya tiada sesiapa perlu meneka fungsi butang.",
   "Just launched":"Baru dilancarkan",
-  "Declare":"Isytihar",
-  "Clear":"Lepas",
-  "Flag":"Tanda",
-  "Trace":"Jejak",
-  "— you have double-parked and boxed someone in. Pick the car you are driving, type the plate you are blocking, say how long you will be. If that plate is registered, its owner is alerted within seconds. If it is not, nothing is wasted: they can still find you by tracing.":"— anda telah letak kereta dua baris dan menghalang seseorang. Pilih kereta yang anda pandu, taip plat yang anda halang, nyatakan berapa lama. Jika plat itu berdaftar, pemiliknya dimaklumkan dalam beberapa saat. Jika tidak, tiada apa yang sia-sia: mereka masih boleh menjejaki anda.",
-  "— you have moved your car. Tap it and the other driver is told they are free. We never ask them to confirm, because they might be a street away having lunch and waiting for their tap would leave you stuck.":"— anda telah alihkan kereta. Ketuk dan pemandu lain diberitahu mereka bebas. Kami tidak pernah minta mereka sahkan, kerana mereka mungkin sedang makan di jalan sebelah dan menunggu ketukan mereka akan buat anda terperangkap.",
-  "— the opposite case. They marked it cleared, you walk out, the car is still there. Flag reopens the block, tells them to move, and records it against them. Repeat offenders are how we find people abusing this.":"— keadaan sebaliknya. Mereka tanda sudah lepas, anda keluar, kereta masih di situ. Tanda membuka semula halangan, suruh mereka beredar, dan merekodkannya terhadap mereka. Pesalah berulang inilah cara kami mengesan penyalahgunaan.",
-  "— you are boxed in and got no alert, because your plate is not registered. Enter their plate and yours, and if a matching block is open we connect you. Both plates are required on purpose: it means the only person who can look up a car is someone genuinely standing behind it, so this can never become a plate-lookup service.":"— anda terhalang dan tidak menerima amaran, kerana plat anda tidak berdaftar. Masukkan plat mereka dan plat anda, dan jika ada halangan yang sepadan kami hubungkan anda. Kedua-dua plat diperlukan dengan sengaja: ini bermakna satu-satunya orang yang boleh mencari kereta ialah orang yang benar-benar berdiri di belakangnya, jadi ini tidak akan menjadi perkhidmatan carian plat.",
-  "Home":"Utama",
-  "← Back to the app":"← Kembali ke aplikasi",
-  "How it works":"Cara ia berfungsi",
-  "Not signed in":"Belum log masuk",
+  "About Tolong Alih":"Tentang Tolong Alih",
+  "Who we are":"Siapa kami",
+  "Next Novas is a small Malaysian studio building practical tools for everyday problems here. Tolong Alih is one of them.":"Next Novas ialah studio kecil Malaysia yang membina alat praktikal untuk masalah harian di sini. Tolong Alih ialah salah satunya.",
+  "Your data":"Data anda",
+  "We hold your email and the plates you register. We do not ask for a phone number. Location confirms you are in Malaysia and tailors the app to where you are; coordinates are never shown to other drivers.":"Kami menyimpan e-mel dan plat yang anda daftarkan. Kami tidak meminta nombor telefon. Lokasi mengesahkan anda berada di Malaysia dan menyesuaikan aplikasi dengan tempat anda; koordinat tidak pernah ditunjukkan kepada pemandu lain.",
+  "Read our simple terms of use.":"Baca syarat penggunaan kami yang ringkas.",
+  "We never sell your data.":"Kami tidak pernah menjual data anda.",
+  "How the buttons work":"Cara butang berfungsi",
+  "See how Declare, Clear, Flag and Trace work →":"Lihat cara Isytihar, Lepas, Tanda dan Jejak berfungsi →",
+  "by Next Novas — declare when you box someone in, clear it when you move. Neither driver ever sees the other's name or email.":"oleh Next Novas — isytihar apabila anda menghalang seseorang, lepaskan apabila anda beredar. Kedua-dua pemandu tidak pernah nampak nama atau e-mel satu sama lain.",
   "Open the app":"Buka aplikasi",
-  "← Back to app":"← Kembali ke aplikasi"
+  "Help":"Bantuan",
+  "Terms of use":"Syarat penggunaan",
+  "Declare":"Isytihar",
+  "Trace":"Jejak",
+  "Garage":"Garaj",
+  "Contact":"Hubungi kami"
 };
 
 var LANG = "en";
@@ -356,34 +347,31 @@ function applyLang(){
     }
   });
   document.documentElement.lang = LANG;
-  var b = document.getElementById("langRow");
-  b.textContent = LANG === "ms" ? "English" : "Bahasa Malaysia";
+  var b = document.getElementById("langBtn");
+  b.textContent = LANG === "ms" ? "EN" : "BM";
   b.setAttribute("lang", LANG === "ms" ? "en" : "ms");
 }
 
-document.getElementById("langRow").addEventListener("click", function(){
+document.getElementById("langBtn").addEventListener("click", function(){
   LANG = LANG === "ms" ? "en" : "ms";
   try{ localStorage.setItem("alih.lang", LANG); }catch(e){}
   applyLang();
 });
 
-document.getElementById("avatarBtn").addEventListener("click", function(){
-  var open = document.getElementById("sheet").hidden;
-  document.getElementById("sheet").hidden = !open;
-  this.setAttribute("aria-expanded", String(open));
-});
-document.getElementById("sheet").addEventListener("click", function(ev){
-  if(ev.target === this){ this.hidden = true;
-    document.getElementById("avatarBtn").setAttribute("aria-expanded","false"); }
-});
-
 applyLang();
 
-/* Keep the +/- marker honest when a section is toggled. */
+/* The +/- marker follows each topic; one opens at a time (details[name]). */
 Array.prototype.forEach.call(document.querySelectorAll("details"), function(d){
   var mark = function(){ d.querySelector(".sign").textContent = d.open ? "−" : "+"; };
   d.addEventListener("toggle", mark); mark();
 });
+(function openFromLink(){
+  var id = pm ? "t-plate" : TOPICS[hash];
+  var d = id && document.getElementById(id);
+  if(!d) return;
+  d.open = true;
+  d.scrollIntoView({ block:"start" });
+})();
 
 /* Reach figures come from the platform, never a spreadsheet. Below a threshold
    the raw numbers mislead rather than inform, so say what is actually true. */

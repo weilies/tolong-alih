@@ -21,10 +21,17 @@ Solo project. Prefer boring, cheap, few dependencies. TypeScript/JavaScript.
 - **Frontend**: static HTML, no framework, no build step. `public/index.html` is
   the app; `public/start.html` explains it and walks through setup (install,
   sign up, add a plate) — a browser that has never opened the app and has no
-  session is sent there first (`localStorage["alih.seen"]`). The bottom tabs
-  are Declare, Alerts, Trace, Garage, Help (`start.html`) and Contact
-  (`about.html`); `terms.html` is the plain-words terms of use, linked from the
-  footer and sign-up. Never promise in it anything the app does not do — it says
+  session is sent there first (`localStorage["alih.seen"]`, set once the
+  welcome page is shown). **Every page wears the same frame** (`public/chrome.css`,
+  enforced by `scripts/check.mjs`): a sticky header — `TA` at left is always the
+  way home, BM/EN toggle at right, and in the app a bell (red dot while a live
+  block has an urgent message for you; this replaced the Alerts tab) and the
+  avatar — and a sticky bottom bar: Declare, Trace, Garage, Help (`start.html`),
+  Contact (`about.html`). Those links are plain `/#pD /#pS /#pG` anchors the app
+  turns into panel switches. `terms.html` is the plain-words terms of use,
+  linked from the footer and sign-up. The ads console link and `admin.html` are
+  for `weilies.chok@gmail.com` only (a hidden link; `profiles.is_admin` in the
+  database is the real lock). Never promise in it anything the app does not do — it says
   we never sell data or phone numbers, and that location goes to OpenStreetMap
   for the place name. Every page links back to the app. Its screenshots in
   `public/guide/` are the real app with Neon faked: `npx playwright test -c
@@ -150,7 +157,12 @@ RPCs too; do not loosen a policy to make a write work.
   Gate on country, not precision — fall back to IP-country if GPS fails indoors.
 - **Ads are direct-sold to local merchants**, self-hosted, first-party.
   Never a third-party ad network SDK.
-- Phone number is collected at signup for the fallback call path.
+- **No phone number.** Sign-up is email or Google only; asking for a phone was
+  friction (owner decision, October 2026). `profiles.phone` stays as an unused
+  column for accounts made before that; nothing reads or writes it, the check
+  script fails any `type="tel"` input, and the terms say we don't ask for one.
+  Without it there is no out-of-band way to reach a driver whose push is off, so
+  alerts rely on Web Push and the in-app list.
 
 ## Build order (highest value first)
 

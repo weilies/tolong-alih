@@ -5,16 +5,16 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="theme-color" content="#16150F" />
 <title>Terms of use · Tolong Alih</title>
-<meta name="description" content="Tolong Alih's terms of use in plain words. We never sell your data or your phone number." />
+<meta name="description" content="Tolong Alih's terms of use in plain words. We never sell your data." />
 <meta property="og:title" content="Tolong Alih — terms of use" />
-<meta property="og:description" content="The rules in plain words. We never sell your data or your phone number." />
+<meta property="og:description" content="The rules in plain words. We never sell your data." />
 <meta property="og:type" content="website" />
 <meta property="og:locale" content="en_MY" />
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100,600;125,700&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
 <style>
-  :root{--tarmac:#16150F;--hazard:#FFD200;--signage:#0B4DA2;--signal:#FFFFFF;--fog:#F2F0E9;
+  :root{--alert:#E03A17;--tarmac:#16150F;--hazard:#FFD200;--signage:#0B4DA2;--signal:#FFFFFF;--fog:#F2F0E9;
     --edge:#D8D4C6;--mute:#6E6A5E;--ink:#3B382E}
   *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
   html,body{background:var(--fog);color:var(--tarmac);
@@ -26,18 +26,6 @@
   .disp{font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 125,'wght' 700;
     text-transform:uppercase;line-height:1.05}
 
-  .top{background:var(--tarmac);color:#fff;padding:10px 16px;display:flex;
-    justify-content:space-between;align-items:center;gap:10px}
-  .brand{display:flex;align-items:center;gap:9px;font-size:13px;font-weight:600;white-space:nowrap;
-    color:#fff;text-decoration:none}
-  .brand .mk{width:26px;height:26px;background:var(--hazard);display:grid;place-items:center;font-size:13px}
-  .brand b{color:var(--hazard)}
-  .top .r{display:flex;gap:8px;align-items:center}
-  .top a.back{color:var(--hazard);font-size:13.5px;font-weight:600;text-decoration:none;white-space:nowrap;
-    border:2px solid var(--hazard);padding:6px 10px}
-  .lang{cursor:pointer;background:var(--tarmac);color:var(--hazard);border:2px solid var(--hazard);
-    font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 100,'wght' 700;font-size:11px;
-    letter-spacing:.1em;padding:4px 8px}
 
   main{padding:26px 18px 10px}
   h1{font-size:28px;margin-bottom:10px}
@@ -60,17 +48,18 @@
   .ver{display:block;margin-top:10px;font-family:'JetBrains Mono',monospace;font-size:10.5px}
   .ver a{color:var(--mute)}
 </style>
+<link rel="stylesheet" href="/chrome.css" />
 </head>
 <body>
 <div class="wrap">
-  <header class="top">
-    <a class="brand" href="/"><span class="mk">🚗</span><span>Tolong <b>Alih</b></span></a>
+  <header class="appbar">
+    <a class="ta" href="/" aria-label="Tolong Alih — home">TA</a>
+    <span class="ttl">Terms of use</span>
     <div class="r">
-      <a class="back" href="/">← Back to the app</a>
-      <button class="lang" id="langBtn" lang="ms">BM</button>
+    <a class="bell" href="/#pI" aria-label="Alerts">🔔</a>
+    <button class="lang" id="langBtn" lang="ms">BM</button>
     </div>
   </header>
-  <div class="hazard"></div>
 
   <main>
     <h1 class="disp">Terms of use</h1>
@@ -80,7 +69,7 @@
       <h2 class="disp">Our promise</h2>
       <ul>
         <li>We never sell your data.</li>
-        <li>We never sell, share or show your phone number. Other drivers never see it.</li>
+        <li>We don't ask for your phone number. If you gave us one before, we never sell, share or show it.</li>
         <li>No ad networks and no tracking scripts. Shops that advertise with us only see how many people viewed or tapped their ad, never who.</li>
       </ul>
     </div>
@@ -88,7 +77,6 @@
     <h2 class="disp">What we keep</h2>
     <ul>
       <li>Your name and email, from sign-up or from Google.</li>
-      <li>Your phone number.</li>
       <li>The car plates you add, the blocks you declare, and the messages in them.</li>
       <li>Your phone's alert address, so we can send you alerts.</li>
       <li>Where you were when you declared a block. Other drivers never see it.</li>
@@ -96,8 +84,7 @@
 
     <h2 class="disp">Who sees what</h2>
     <ul>
-      <li>The other driver sees your car plate and the short message, such as "back in 15 min". They do not see your name, email or phone number.</li>
-      <li>We use your phone number only to reach you if the app can't reach the other driver.</li>
+      <li>The other driver sees your car plate and the short message, such as "back in 15 min". They do not see your name or email.</li>
       <li>Our team can see the records, only to run the service and fix problems.</li>
       <li>The services that run the app handle your data for us: Cloudflare for hosting, Neon for the database in Singapore, and Google if you choose Google sign-in.</li>
       <li>To show the place name at the top of the app, your phone sends its approximate position to OpenStreetMap.</li>
@@ -107,7 +94,7 @@
     <h2 class="disp">Your choices</h2>
     <ul>
       <li>You can ask us to show you, correct or delete everything we keep about you. Deleting removes your account, your plates and your messages. For now we do it by hand: just message us on the Contact page.</li>
-      <li>You can remove a car in Garage, and turn alerts off in your phone's settings, at any time.</li>
+      <li>You can remove a car in Garage, and turn alerts off in your phone's settings, at any time. If you gave us a phone number before, ask us and we will delete it.</li>
     </ul>
 
     <h2 class="disp">Rules for using the app</h2>
@@ -140,6 +127,14 @@
   <small class="ver" id="ver"></small>
 </footer>
 
+<nav class="tabbar" aria-label="Main">
+  <a href="/#pD" data-p="pD"><span class="ic">🅿️</span><span class="tx">Declare</span></a>
+  <a href="/#pS" data-p="pS"><span class="ic">🔍</span><span class="tx">Trace</span></a>
+  <a href="/#pG" data-p="pG"><span class="ic">🚗</span><span class="tx">Garage</span></a>
+  <a href="/start.html"><span class="ic">❓</span><span class="tx">Help</span></a>
+  <a href="/about.html"><span class="ic">💬</span><span class="tx">Contact</span></a>
+</nav>
+
 <script src="/config.js"></script>
 <script>
 (function(){
@@ -163,24 +158,22 @@ var MS = {
   "Last updated 5 October 2026. These are the rules between you and Tolong Alih, written in plain words. Tolong Alih is run by Next Novas in Malaysia.":"Dikemas kini 5 Oktober 2026. Inilah peraturan antara anda dan Tolong Alih, ditulis dalam bahasa mudah. Tolong Alih dikendalikan oleh Next Novas di Malaysia.",
   "Our promise":"Janji kami",
   "We never sell your data.":"Kami tidak pernah menjual data anda.",
-  "We never sell, share or show your phone number. Other drivers never see it.":"Kami tidak pernah menjual, berkongsi atau menunjukkan nombor telefon anda. Pemandu lain tidak pernah nampak nombor itu.",
+  "We don't ask for your phone number. If you gave us one before, we never sell, share or show it.":"Kami tidak meminta nombor telefon anda. Jika anda pernah memberikannya, kami tidak pernah menjual, berkongsi atau menunjukkannya.",
   "No ad networks and no tracking scripts. Shops that advertise with us only see how many people viewed or tapped their ad, never who.":"Tiada rangkaian iklan dan tiada skrip penjejakan. Kedai yang mengiklan bersama kami hanya nampak berapa ramai yang melihat atau menekan iklan mereka, bukan siapa.",
   "What we keep":"Apa yang kami simpan",
   "Your name and email, from sign-up or from Google.":"Nama dan e-mel anda, daripada pendaftaran atau Google.",
-  "Your phone number.":"Nombor telefon anda.",
   "The car plates you add, the blocks you declare, and the messages in them.":"Plat kereta yang anda tambah, halangan yang anda isytihar, dan mesej di dalamnya.",
   "Your phone's alert address, so we can send you alerts.":"Alamat amaran telefon anda, supaya kami boleh menghantar amaran kepada anda.",
   "Where you were when you declared a block. Other drivers never see it.":"Di mana anda berada semasa mengisytihar halangan. Pemandu lain tidak pernah nampaknya.",
   "Who sees what":"Siapa nampak apa",
   "The other driver sees your car plate and the short message, such as \"back in 15 min\". They do not see your name, email or phone number.":"Pemandu lain nampak plat kereta anda dan mesej ringkas, seperti \"kembali dalam 15 min\". Mereka tidak nampak nama, e-mel atau nombor telefon anda.",
-  "We use your phone number only to reach you if the app can't reach the other driver.":"Kami guna nombor telefon anda hanya untuk menghubungi anda jika aplikasi gagal menghubungi pemandu lain.",
   "Our team can see the records, only to run the service and fix problems.":"Pasukan kami boleh melihat rekod, hanya untuk menjalankan perkhidmatan dan membetulkan masalah.",
   "The services that run the app handle your data for us: Cloudflare for hosting, Neon for the database in Singapore, and Google if you choose Google sign-in.":"Perkhidmatan yang menjalankan aplikasi mengendalikan data anda untuk kami: Cloudflare untuk pengehosan, Neon untuk pangkalan data di Singapura, dan Google jika anda pilih log masuk Google.",
   "To show the place name at the top of the app, your phone sends its approximate position to OpenStreetMap.":"Untuk menunjukkan nama tempat di bahagian atas aplikasi, telefon anda menghantar kedudukan anggarannya kepada OpenStreetMap.",
   "We share your information with others only if the law requires it.":"Kami berkongsi maklumat anda dengan pihak lain hanya jika undang-undang mewajibkannya.",
   "Your choices":"Pilihan anda",
   "You can ask us to show you, correct or delete everything we keep about you. Deleting removes your account, your plates and your messages. For now we do it by hand: just message us on the Contact page.":"Anda boleh minta kami tunjukkan, betulkan atau padam semua yang kami simpan tentang anda. Memadam akan membuang akaun, plat dan mesej anda. Buat masa ini kami buat secara manual: hantar mesej kepada kami di halaman Hubungi kami.",
-  "You can remove a car in Garage, and turn alerts off in your phone's settings, at any time.":"Anda boleh buang kereta di Garaj, dan matikan amaran dalam tetapan telefon anda, pada bila-bila masa.",
+  "You can remove a car in Garage, and turn alerts off in your phone's settings, at any time. If you gave us a phone number before, ask us and we will delete it.":"Anda boleh buang kereta di Garaj, dan matikan amaran dalam tetapan telefon anda, pada bila-bila masa. Jika anda pernah memberikan nombor telefon, minta kami dan kami akan memadamnya.",
   "Rules for using the app":"Peraturan menggunakan aplikasi",
   "Only add plates of cars you drive. Don't claim someone else's plate.":"Tambah plat kereta yang anda pandu sahaja. Jangan tuntut plat orang lain.",
   "Use Declare when you have really blocked someone. Use Trace only when you are really blocked in.":"Guna Isytihar apabila anda benar-benar menghalang seseorang. Guna Jejak hanya apabila anda benar-benar terhalang.",
@@ -198,7 +191,11 @@ var MS = {
   "by Next Novas":"oleh Next Novas",
   "Open the app":"Buka aplikasi",
   "Contact":"Hubungi kami",
-  "Help":"Bantuan"
+  "Help":"Bantuan",
+  "Declare":"Isytihar",
+  "Trace":"Jejak",
+  "Garage":"Garaj",
+  "The other driver sees your car plate and the short message, such as \"back in 15 min\". They do not see your name or email.":"Pemandu lain nampak plat kereta anda dan mesej ringkas, seperti \"kembali dalam 15 min\". Mereka tidak nampak nama atau e-mel anda."
 };
 var FLAT = {};
 Object.keys(MS).forEach(function(k){ FLAT[k.replace(/\s+/g," ").trim()] = MS[k]; });
