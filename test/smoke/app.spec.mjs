@@ -305,3 +305,14 @@ test("Google refusing an unverified email account says what to do, then the URL 
   await expect(page.getByText(/never verified/)).toBeVisible();
   expect(page.url()).not.toContain("error=");
 });
+
+test("an unverified email that signs in is sent to the six-digit code screen", async ({ page }) => {
+  await fakeNeon(page, { signedIn: false, unverified: true });
+  await page.goto("/");
+  await page.click("#askGeo");
+  await page.fill("#email", "new@example.my");
+  await page.fill("#pw", "longenough1");
+  await page.click("#signin");
+  await expect(page.locator("#gVerify")).toHaveClass(/\bon\b/);
+  await expect(page.locator("#mailTo")).toHaveText("new@example.my");
+});
