@@ -123,3 +123,22 @@ test("the footer shows the release the worker reports", async ({ page }) => {
   await expect(page.locator("#ver")).toContainText("dev");
   await expect(page.locator("#dot")).toBeHidden();
 });
+
+test("Help shows the launch note when the worker has no stats yet", async ({ page }) => {
+  await fakeNeon(page, { signedIn: false });
+  await page.goto("/about.html");
+  await page.getByText("Advertise with us").click();
+  await expect(page.locator("#statsBlock")).toContainText("Just launched");
+});
+
+test("Help shows the figures once the worker has them", async ({ page }) => {
+  await fakeNeon(page, { signedIn: false });
+  await page.route("**/api/stats", (r) => r.fulfill({
+    contentType: "application/json",
+    body: JSON.stringify({ drivers: 900, plates: 1500, declared: 4000, resolved: 3100, mau: 1234 }),
+  }));
+  await page.goto("/about.html");
+  await page.getByText("Advertise with us").click();
+  await expect(page.locator("#statsBlock")).toContainText("1.2K");
+  await expect(page.locator("#statsBlock")).toContainText("Plates registered");
+});
