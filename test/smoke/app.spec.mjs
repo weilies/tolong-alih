@@ -39,6 +39,7 @@ test("location in Malaysia leads to sign-in when there is no session", async ({ 
   await page.click("#askGeo");
   await expect(page.locator("#gAuth")).toHaveClass(/\bon\b/);
   await expect(page.locator("#google")).toBeVisible();
+  await expect(page.locator('#gAuth a[href="/terms.html"]')).toContainText("never sell your data");
 });
 
 test("a new driver with no car is guided to the Garage and back", async ({ page }) => {
@@ -106,7 +107,7 @@ test("a first-time visitor who is already signed in is not sent to the explainer
   await expect(page).toHaveURL(/\/$/);
 });
 
-for (const [path, label] of [["/start.html", /Skip to the app/], ["/about.html", /Back to the app/], ["/admin.html", /Back to the app/]]) {
+for (const [path, label] of [["/start.html", /Skip to the app/], ["/about.html", /Back to the app/], ["/admin.html", /Back to the app/], ["/terms.html", /Back to the app/]]) {
   test(`${path} has a visible way back to the app`, async ({ page }) => {
     await fakeNeon(page, { signedIn: false });
     await page.goto(path);
@@ -141,4 +142,29 @@ test("Help shows the figures once the worker has them", async ({ page }) => {
   await page.getByText("Advertise with us").click();
   await expect(page.locator("#statsBlock")).toContainText("1.2K");
   await expect(page.locator("#statsBlock")).toContainText("Plates registered");
+});
+
+test("bottom tabs are Declare, Alerts, Trace, Garage, Help and Contact, with no repeats elsewhere", async ({ page }) => {
+  await fakeNeon(page, { cars: [car("WXY 1234")] });
+  await signIn(page);
+  await expect(page.locator("nav.tabs .tx")).toHaveText(["Declare", "Alerts", "Trace", "Garage", "Help", "Contact"]);
+  await expect(page.locator("nav.tabs a", { hasText: "Help" })).toHaveAttribute("href", "/start.html");
+  await expect(page.locator("nav.tabs a", { hasText: "Contact" })).toHaveAttribute("href", "/about.html");
+  // the footer carries only the terms, and the account menu has no test alert
+  await expect(page.locator("footer .flinks a")).toHaveText(["Terms of use"]);
+  await page.click("#avatarBtn");
+  await expect(page.getByText("Send me a test alert")).toHaveCount(0);
+  await page.keyboard.press("Escape");
+  await page.locator("#sheet").click({ position: { x: 5, y: 5 } });
+  await page.locator("nav.tabs a", { hasText: "Help" }).click();
+  await expect(page).toHaveURL(/start/);
+});
+
+test("the terms page makes the promise and switches to BM", async ({ page }) => {
+  await fakeNeon(page, { signedIn: false });
+  await page.goto("/terms.html");
+  await expect(page.getByText("We never sell your data.")).toBeVisible();
+  await expect(page.getByText("We never sell, share or show your phone number.")).toBeVisible();
+  await page.click("#langBtn");
+  await expect(page.getByText("Kami tidak pernah menjual data anda.")).toBeVisible();
 });

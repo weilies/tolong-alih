@@ -21,8 +21,12 @@ Solo project. Prefer boring, cheap, few dependencies. TypeScript/JavaScript.
 - **Frontend**: static HTML, no framework, no build step. `public/index.html` is
   the app; `public/start.html` explains it and walks through setup (install,
   sign up, add a plate) — a browser that has never opened the app and has no
-  session is sent there first (`localStorage["alih.seen"]`). `about.html` is
-  Help & contact. Every page links back to the app. Its screenshots in
+  session is sent there first (`localStorage["alih.seen"]`). The bottom tabs
+  are Declare, Alerts, Trace, Garage, Help (`start.html`) and Contact
+  (`about.html`); `terms.html` is the plain-words terms of use, linked from the
+  footer and sign-up. Never promise in it anything the app does not do — it says
+  we never sell data or phone numbers, and that location goes to OpenStreetMap
+  for the place name. Every page links back to the app. Its screenshots in
   `public/guide/` are the real app with Neon faked: `npx playwright test -c
   test/guide` regenerates them after a UI change.
 - **Copy**: plain words a first-time driver understands. Keep the four verbs as
@@ -102,8 +106,9 @@ no yes. On `uat`, go ahead.
 - **Web Push on iPhone needs Add to Home Screen; on Android it needs Chrome
   itself** — browsers inside other apps (WebView) have no push. Android in
   desktop mode reports a Mac user agent; detect Android first.
-- **The user is often on a phone and alone.** Tests they run should work with
-  one person: delays before a test push, no "have someone declare".
+- **The user is usually alone, with a phone and a laptop.** Tests they run
+  should need no second person: one account signed in on each device. The old
+  "Send me a test alert" button was removed on purpose; do not bring it back.
 
 `src/worker.js` serves `/config.js` from its wrangler `vars` (the page reads
 `window.__ENV`), and proxies Neon Auth at `/api/auth/*` and the Data API at

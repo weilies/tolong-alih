@@ -68,10 +68,12 @@ the worker).
   so and do not guess. Read the Cloudflare worker with the Cloudflare MCP if
   connected.
 - `/config.js` must carry a non-null `vapidPublicKey` once push is set up.
-- Nothing touches a real phone from here. Hand the user the exact taps:
-  Android Chrome, open the site (not a link inside another app) → Allow alerts →
-  Allow → avatar menu → **Send me a test alert** → lock the phone, ~10 s.
-  iPhone: Safari → Share → Add to Home Screen → open from the icon → same.
+- Nothing touches a real phone from here. There is no self-test button any more
+  (removed on purpose), so a push test needs two accounts, each signed in on its
+  own device: A's phone or laptop declares a block on B's plate; B's device, locked,
+  should buzz within seconds. Hand the user those taps. Android Chrome: open the
+  site (not a link inside another app) → Allow alerts → Allow. iPhone: Safari →
+  Share → Add to Home Screen → open from the icon → same.
 
 ## 5. Report
 

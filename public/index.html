@@ -383,6 +383,7 @@
         <button class="btn btn-hz" id="signup">Create account</button>
         <button class="btn btn-flat" id="signin">I already have an account</button>
         <p class="note">We only use your phone number if the app can't reach the other driver. They never see it. By continuing, you agree we keep your plates and contact details to run the service. You can ask us to delete them any time.</p>
+        <p class="note"><a href="/terms.html" style="color:var(--signage);font-weight:600">Read our simple terms. We never sell your data or phone number.</a></p>
       </div>
     </div>
   </section>
@@ -449,7 +450,6 @@
         <label class="pickpic" for="avatarFile">Change photo</label>
         <input type="file" id="avatarFile" accept="image/*" hidden />
         <button class="btn btn-flat" id="langRow">Bahasa Malaysia</button>
-        <button class="btn btn-flat" id="pushTest" hidden>Send me a test alert</button>
         <a class="btn btn-flat" href="/start.html" style="text-decoration:none;text-align:center">How it works</a>
         <a class="btn btn-flat" id="adminLink" href="/admin.html" hidden style="text-decoration:none;text-align:center">Ads console</a>
         <button class="btn btn-stop" id="signout">Sign out</button>
@@ -536,7 +536,7 @@
     <footer>
       <b>Tolong Alih</b>
       <span>Tell drivers when you've blocked them. Get told when you're blocked. Phone numbers stay private.</span>
-      <nav class="flinks"><a href="/start.html">How it works</a><a href="/about.html">Help &amp; contact</a></nav>
+      <nav class="flinks"><a href="/terms.html">Terms of use</a></nav>
       <small class="ver" id="ver"></small>
     </footer>
 
@@ -545,7 +545,8 @@
       <button role="tab" data-p="pI"><span class="ic">🔔</span><span class="tx">Alerts</span><span class="dot" id="dot" hidden>0</span></button>
       <button role="tab" data-p="pS"><span class="ic">🔍</span><span class="tx">Trace</span></button>
       <button role="tab" data-p="pG"><span class="ic">🚗</span><span class="tx">Garage</span><span class="nudge" id="gNudge" hidden></span></button>
-      <a class="tab-link" href="/about.html"><span class="ic">💬</span><span class="tx">Help</span></a>
+      <a class="tab-link" href="/start.html"><span class="ic">❓</span><span class="tx">Help</span></a>
+      <a class="tab-link" href="/about.html"><span class="ic">💬</span><span class="tx">Contact</span></a>
     </nav>
   </div>
 </div>
@@ -683,7 +684,6 @@ var MS = {
   "Remove photo":"Buang gambar",
   "Ads console":"Konsol iklan",
   "Sign out":"Log keluar",
-  "Send me a test alert":"Hantar amaran ujian kepada saya",
   /* push */
   "Alerts are off":"Amaran dimatikan",
   "Turn on alerts so your phone rings when someone blocks your car — even when it's locked.":"Hidupkan amaran supaya telefon anda berbunyi apabila seseorang menghalang kereta anda — walaupun telefon dikunci.",
@@ -710,8 +710,6 @@ var MS = {
   "Alerts blocked — you won't be told when you're blocked in.":"Amaran disekat — anda tidak akan dimaklumkan apabila anda terhalang.",
   "Add Tolong Alih to your home screen for alerts":"Tambah Tolong Alih ke skrin utama untuk amaran",
   "Could not turn on alerts.":"Tidak dapat menghidupkan amaran.",
-  "Test coming in 10 seconds — lock your phone now":"Ujian tiba dalam 10 saat — kunci telefon anda sekarang",
-  "No device has alerts on yet.":"Belum ada peranti yang menghidupkan amaran.",
   /* declare */
   "Declare a block":"Isytihar halangan",
   "Double-parked and blocking someone's car? Tell them here. They get an alert on their phone right away.":"Parkir berganda dan menghalang kereta orang? Beritahu mereka di sini. Mereka terus menerima amaran di telefon.",
@@ -764,6 +762,9 @@ var MS = {
   /* tabs and chrome */
   "Declare":"Isytihar",
   "Help":"Bantuan",
+  "Contact":"Hubungi kami",
+  "Terms of use":"Syarat penggunaan",
+  "Read our simple terms. We never sell your data or phone number.":"Baca syarat kami yang ringkas. Kami tidak pernah menjual data atau nombor telefon anda.",
   "Sponsored":"Tajaan",
   "Sponsor message":"Mesej penaja",
   "Continue":"Teruskan",
@@ -772,7 +773,6 @@ var MS = {
   "About & contact us":"Tentang & hubungi kami",
   "Tell drivers when you've blocked them. Get told when you're blocked. Phone numbers stay private.":"Beritahu pemandu apabila anda menghalang mereka. Dapat amaran apabila anda dihalang. Nombor telefon kekal peribadi.",
   "How it works":"Cara ia berfungsi",
-  "Help & contact":"Bantuan & hubungi",
   /* toasts */
   "Location confirmed — Malaysia":"Lokasi disahkan — Malaysia",
   "Signed in with Google":"Log masuk dengan Google",
@@ -1331,7 +1331,6 @@ var UNBLOCK = {
 /* The red banner that stays until alerts are on. */
 function paintPush(){
   var st = pushState(), card = $("pushCard");
-  $("pushTest").hidden = st !== "granted";
   var body = {
     "default": [WARN, '<button class="btn btn-hz" id="pushOn">Allow alerts</button>'],
     "denied":  ["<p>To turn them back on:</p>" + UNBLOCK[OS], ""],
@@ -1428,20 +1427,6 @@ async function pushForget(){
     await sub.unsubscribe();
   }catch(e){}
 }
-
-$("pushTest").addEventListener("click", async function(){
-  busy(this,true);
-  try{
-    await pushSubscribe();
-    var s = await sb.auth.getSession();
-    var tok = s.data && s.data.session && s.data.session.access_token;
-    var res = await fetch("/api/push/test", { method:"POST", headers:{ authorization:"Bearer "+tok } });
-    var out = await res.json().catch(function(){ return {}; });
-    if(!res.ok) toast(out.error || "Could not send that.");
-    else toast(out.devices ? "Test coming in 10 seconds — lock your phone now" : "No device has alerts on yet.");
-  }catch(e){ toast(why(e,"Could not send that.")); }
-  busy(this,false,"Send me a test alert");
-});
 
 /* profiles has no insert trigger, so the client owns its own row. */
 async function ensureProfile(session){
