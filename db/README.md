@@ -81,12 +81,18 @@ RPCs too; do not loosen a policy to make a write work.
 ## Neon Auth settings (per branch)
 
 - Email + password, verify on sign-up with a six-digit **OTP**, verification
-  required, auto sign-in after verification. Console-only (Auth → Settings);
-  the MCP cannot set it. Until it is on, signup signs straight in — the client
-  handles both.
-- Google, shared credentials for now. Before production traffic, switch to the
-  Tolong Alih OAuth client in GCP project `cloud-xp` (Next Novas brand) and give
-  Google the Neon Auth callback URL shown in the Neon console.
+  required, auto sign-in after verification. **On for both `uat` and `main`.**
+  Console-only (Auth → Settings); the MCP cannot set it, and it is per branch,
+  so check both after any new branch. With it off, signup signs straight in.
+  Neon answers an unverified sign-in with 403 `EMAIL_NOT_VERIFIED`; the client
+  sends that user to the code screen.
+- Google: the Tolong Alih OAuth clients ("Tolong Alih UAT" and "Tolong Alih
+  Production") in the GCP project **Next Novas**, which holds the single consent
+  screen for every Next Novas app (name and logo "Next Novas", privacy and terms
+  on www.nextnovas.com, authorized domain `nextnovas.com`). Each client's
+  redirect URI is the callback Neon shows for that branch. A new app adds its own
+  client to the same project. Email accounts that are never verified cannot be
+  linked by a later Google sign-in; verifying first makes it one account.
 - Trusted origins: the environment's domain (`https://uat.alih.nextnovas.com`
   or `https://alih.nextnovas.com`). Localhost is allowed for `wrangler dev`.
 
