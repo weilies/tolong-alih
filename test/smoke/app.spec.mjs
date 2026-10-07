@@ -108,7 +108,7 @@ test("a first-time visitor who is already signed in is not sent to the explainer
 });
 
 // TA is the way home from every page, whatever is open.
-for (const path of ["/start.html", "/about.html", "/terms.html", "/admin.html"]) {
+for (const path of ["/start.html", "/about.html", "/terms.html", "/privacy.html", "/admin.html"]) {
   test(`${path}: TA goes home`, async ({ page }) => {
     await fakeNeon(page, { signedIn: false });
     await page.goto(path);
@@ -147,7 +147,7 @@ test("Help shows the figures once the worker has them", async ({ page }) => {
 
 test("every page has the same header and five-tab bar", async ({ page }) => {
   await fakeNeon(page, { signedIn: false });
-  for (const path of ["/start.html", "/about.html", "/terms.html", "/admin.html"]) {
+  for (const path of ["/start.html", "/about.html", "/terms.html", "/privacy.html", "/admin.html"]) {
     await page.goto(path);
     await expect(page.locator(".appbar .ta")).toHaveText("TA");
     await expect(page.locator(".tabbar .tx")).toHaveText(["Declare", "Trace", "Garage", "Help", "Contact"]);
@@ -215,7 +215,7 @@ test("the account menu has no language row, and the language toggle lives in the
   await page.locator("#sheet").click({ position: { x: 5, y: 5 } });
   await page.click("#langBtn");
   await expect(page.locator(".tabbar .tx").first()).toHaveText("Isytihar");
-  await expect(page.locator("footer .flinks a")).toHaveText(["Syarat penggunaan"]);
+  await expect(page.locator("footer .flinks a")).toHaveText(["Syarat penggunaan", "Dasar privasi"]);
 });
 
 test("a bottom-bar link from another page opens that tab, even after signing in", async ({ page }) => {
@@ -315,4 +315,17 @@ test("an unverified email that signs in is sent to the six-digit code screen", a
   await page.click("#signin");
   await expect(page.locator("#gVerify")).toHaveClass(/\bon\b/);
   await expect(page.locator("#mailTo")).toHaveText("new@example.my");
+});
+
+test("the privacy policy states the Google data use, links to terms, and switches to BM", async ({ page }) => {
+  await fakeNeon(page, { signedIn: false });
+  await page.goto("/privacy.html");
+  await expect(page.getByRole("heading", { name: "Privacy policy" })).toBeVisible();
+  await expect(page.getByText(/Google API Services User Data Policy/)).toBeVisible();
+  await expect(page.getByText("We never sell your data.")).toBeVisible();
+  await expect(page.locator("main a", { hasText: "terms of use" })).toHaveAttribute("href", "/terms.html");
+  await page.click("#langBtn");
+  await expect(page.getByRole("heading", { name: "Dasar privasi" })).toBeVisible();
+  await page.goto("/terms.html");
+  await expect(page.locator('main a[href="/privacy.html"]')).toBeVisible();
 });
