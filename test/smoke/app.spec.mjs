@@ -40,8 +40,8 @@ test("location in Malaysia leads to sign-in when there is no session", async ({ 
   await expect(page.locator("#gAuth")).toHaveClass(/\bon\b/);
   await expect(page.locator("#google")).toBeVisible();
   await expect(page.locator("#gAuth")).toContainText("We never sell your data.");
-  await expect(page.locator('#gAuth a[href="/terms.html"]')).toHaveText("Terms of use");
-  await expect(page.locator('#gAuth a[href="/privacy.html"]')).toHaveText("Privacy");
+  await expect(page.locator('#gAuth .note a[href="/terms.html"]')).toHaveText("Terms of use");
+  await expect(page.locator('#gAuth .note a[href="/privacy.html"]')).toHaveText("Privacy");
 });
 
 test("a new driver with no car is guided to the Garage and back", async ({ page }) => {
@@ -412,4 +412,49 @@ test("a closed block is frozen: it leaves Alerts, shows in History, and the conv
   await row.click();
   await expect(page.locator(`#ht-${OLD}`)).toContainText("OLD1111 is parked behind your WXY1234.");
   await expect(page.locator(`#ht-${OLD} input, #ht-${OLD} button`)).toHaveCount(0);
+});
+
+test("sign-up needs the consent tick; signing in does not; the tick is remembered", async ({ page }) => {
+  await fakeNeon(page, { signedIn: false });
+  await page.goto("/");
+  await page.click("#askGeo");
+  await expect(page.locator("#agreeRow")).toBeVisible();
+  await expect(page.locator("#signup")).toBeDisabled();
+  await expect(page.locator("#google")).toBeDisabled();
+  await expect(page.locator("#signin")).toBeEnabled();                 // signing in asks for nothing
+  await expect(page.locator("#agreeRow a")).toHaveCount(2);
+  await page.check("#agree");
+  await expect(page.locator("#signup")).toBeEnabled();
+  await expect(page.locator("#google")).toBeEnabled();
+  await page.evaluate(() => localStorage.setItem("alih.consent", "2026-10-07"));
+  await page.reload();                                                 // location is kept for the session
+  await expect(page.locator("#agreeRow")).toBeHidden();                // remembered on this phone
+  await expect(page.locator("#signup")).toBeEnabled();
+});
+
+test("an account that has not agreed to this version is asked once, and recorded", async ({ page }) => {
+  const net = await fakeNeon(page, { signedIn: true, consentVersion: null });
+  await page.goto("/");
+  await page.click("#askGeo");
+  await expect(page.locator("#gConsent")).toHaveClass(/\bon\b/);
+  await expect(page.locator("#agreeGo")).toBeDisabled();
+  await page.check("#agree2");
+  await page.click("#agreeGo");
+  await expect(page.locator("#app")).toHaveClass(/\bon\b/);
+  expect(net.rpc.some((c) => c.fn === "record_consent" && c.args.p_version === "2026-10-07")).toBe(true);
+});
+
+test("declaring a block names its place (road, area, city, state) afterwards, without waiting on it", async ({ page }) => {
+  const net = await fakeNeon(page, { cars: [car("WXY 1234")] });
+  await page.route("https://nominatim.openstreetmap.org/**", (r) => r.fulfill({
+    status: 200, contentType: "application/json",
+    body: JSON.stringify({ address: { road: "Jalan Ampang", suburb: "Ampang", city: "Kuala Lumpur", state: "Wilayah Persekutuan Kuala Lumpur" } }),
+  }));
+  await signIn(page);
+  await page.fill("#v1", "ABC 987");
+  await page.click("#declare");
+  await expect.poll(() => net.rpc.some((c) => c.fn === "tag_block_place")).toBe(true);
+  const tag = net.rpc.find((c) => c.fn === "tag_block_place");
+  expect(tag.args).toMatchObject({ p_road: "Jalan Ampang", p_area: "Ampang", p_city: "Kuala Lumpur", p_state: "Wilayah Persekutuan Kuala Lumpur" });
+  expect(Object.keys(tag.args)).not.toContain("p_lat");   // names only; the coordinates are already on the block
 });

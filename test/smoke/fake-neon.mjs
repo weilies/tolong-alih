@@ -11,6 +11,7 @@ export async function fakeNeon(page, {
   blocks = [],     // blocks those messages belong to
   targets = [],    // block_targets rows I am party to
   threads = {},    // block id -> rows `thread()` returns (the history of a closed block)
+  consentVersion = "2026-10-07", // the version of the terms this account agreed to; null = never
   firstVisit = false, // true: this browser has never opened the app
   unverified = false, // true: password sign-in is refused, as Neon Auth does for an unverified email
 } = {}) {
@@ -51,7 +52,7 @@ export async function fakeNeon(page, {
       return json({ block_id: "00000000-0000-0000-0000-000000000001", notified: 1, ok: true });
     }
     if (path === "profiles" && req.method() === "GET") {
-      return json({ phone, display_name: "Test Driver", avatar_url: null, is_admin: isAdmin });
+      return json({ phone, display_name: "Test Driver", avatar_url: null, is_admin: isAdmin, consent_version: consentVersion });
     }
     if (path === "cars" && req.method() === "GET") return json(state.cars);
     if (path === "blocks" && req.method() === "GET") {

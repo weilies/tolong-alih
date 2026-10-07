@@ -177,6 +177,15 @@ RPCs too; do not loosen a policy to make a write work.
   clear, inside the first 24 hours, at most twice per block. Messages are archived
   (`messages.archived_at`), never deleted, so both drivers read the whole
   conversation under History in Alerts, read-only.
+- **Consent and places** (owner decisions, October 2026). Creating an account, or
+  Continue with Google, needs a ticked box linking Terms and Privacy; signing in
+  does not. The tick is remembered per browser (`localStorage["alih.consent"]`) and
+  recorded per account (`profiles.consent_version`, `record_consent`); an account
+  without the current `CONSENT_V` is asked once before using the app. Bump
+  `CONSENT_V` whenever the terms or privacy change in a way people should re-agree to.
+  Every block keeps its coordinates plus road, area, city and state
+  (`tag_block_place`), so `block_area_stats()` can give totals by area and road to a
+  council. Totals only: never plates, names or accounts. The privacy page says so.
 - **No phone number.** Sign-up is email or Google only; asking for a phone was
   friction (owner decision, October 2026). `profiles.phone` stays as an unused
   column for accounts made before that; nothing reads or writes it, the check

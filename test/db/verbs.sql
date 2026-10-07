@@ -161,6 +161,28 @@ begin
     perform pg_temp.expect(false, 'a block flagged twice stays closed');
   exception when insufficient_privilege then null; end;
 
+  -- consent on record, and the place of a block named by its blocker only
+  perform pg_temp.as_driver('blocker');
+  perform record_consent('2026-10-07');
+  perform pg_temp.expect((select consent_version from profiles where id = 'blocker') = '2026-10-07', 'consent is recorded');
+  r := declare_block('WXY1234', array['ABC987'], 15);
+  perform tag_block_place((r->>'block_id')::uuid, 'Jalan Ampang', 'Ampang', 'Kuala Lumpur', 'Wilayah Persekutuan Kuala Lumpur');
+  perform pg_temp.expect((select place_road from blocks where id = (r->>'block_id')::uuid) = 'Jalan Ampang', 'the blocker can name the place of their block');
+  perform pg_temp.as_driver('victim');
+  begin
+    perform tag_block_place((r->>'block_id')::uuid, 'Elsewhere', null, null, null);
+    perform pg_temp.expect(false, 'only the blocker can name the place');
+  exception when insufficient_privilege then null; end;
+  begin
+    perform * from block_area_stats(30);
+    perform pg_temp.expect(false, 'a driver cannot read block_area_stats');
+  exception when insufficient_privilege then null; end;
+  perform pg_temp.as_driver('');
+  begin
+    perform record_consent('x');
+    perform pg_temp.expect(false, 'signed-out consent is refused');
+  exception when invalid_authorization_specification then null; end;
+
   raise notice 'verbs: all checks passed';
 end $$;
 
