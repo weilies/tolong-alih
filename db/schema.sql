@@ -141,6 +141,20 @@ create table if not exists trace_attempts (
 );
 create index if not exists trace_attempts_user_idx on trace_attempts (user_id, created_at desc);
 
+-- One row per driver per day they open the app, with the state they opened it from
+-- (never coordinates). It counts daily active drivers and shows merchants, in
+-- aggregate, which states drivers are in. Written only by log_visit(); read only
+-- by visit_stats() (admin). The Malaysia day, so a late-night session is one day.
+create table if not exists visits (
+  user_id    text not null,
+  day        date not null,
+  state      text,
+  first_seen timestamptz not null default now(),
+  last_seen  timestamptz not null default now(),
+  primary key (user_id, day)
+);
+create index if not exists visits_day_idx on visits (day, state);
+
 -- Web Push. One row per browser that said yes; a phone can outlive an account,
 -- so the endpoint is the key and a new sign-in on the same phone takes it over.
 create table if not exists push_subscriptions (
@@ -256,6 +270,7 @@ alter table advertisers    enable row level security;
 alter table ads            enable row level security;
 alter table ad_events      enable row level security;   -- no policies: function-only
 alter table trace_attempts enable row level security;   -- no policies: function-only
+alter table visits         enable row level security;   -- no policies: function-only
 alter table push_subscriptions enable row level security; -- no policies: function-only
 alter table push_config    enable row level security;   -- no policies: function-only
 
@@ -696,6 +711,46 @@ begin
   return query select * from ad_performance order by period desc, merchant;
 end $$;
 
+-- The app calls this when a signed-in driver opens it. One row per driver per
+-- day; a later call the same day only refreshes last_seen and fills a missing state.
+create or replace function log_visit(p_state text)
+returns json
+language plpgsql security definer
+set search_path = public
+as $$
+declare
+  v_uid   text := auth.user_id();
+  v_state text := nullif(left(btrim(coalesce(p_state, '')), 60), '');
+begin
+  if v_uid is null then
+    raise exception 'Sign in first.' using errcode = '28000';
+  end if;
+  insert into visits (user_id, day, state)
+  values (v_uid, (now() at time zone 'Asia/Kuala_Lumpur')::date, v_state)
+  on conflict (user_id, day) do update
+    set last_seen = now(),
+        state     = coalesce(visits.state, excluded.state);
+  return json_build_object('ok', true);
+end $$;
+
+-- Daily active drivers by state, newest first. Admins only; numbers, no people.
+create or replace function visit_stats(p_days int default 30)
+returns table (day date, state text, drivers bigint)
+language plpgsql stable security definer
+set search_path = public
+as $$
+begin
+  if not is_admin() then
+    raise exception 'Admins only.' using errcode = '42501';
+  end if;
+  return query
+    select v.day, coalesce(v.state, 'Unknown'), count(*)
+      from visits v
+     where v.day > (now() at time zone 'Asia/Kuala_Lumpur')::date - greatest(p_days, 1)
+     group by v.day, coalesce(v.state, 'Unknown')
+     order by v.day desc, count(*) desc;
+end $$;
+
 -- Totals only — nothing that identifies a person. Feeds the public About page.
 create or replace function public_stats()
 returns json language sql stable security definer
@@ -861,6 +916,8 @@ grant execute on function
   thread(uuid),
   log_ad_event(uuid, text, text),
   ad_report(),
+  log_visit(text),
+  visit_stats(int),
   push_subscribe(text, text, text),
   push_unsubscribe(text),
   push_mine(),

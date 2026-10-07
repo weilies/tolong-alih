@@ -347,7 +347,7 @@ test("the first screen pitches in short rotating lines, and a dot picks one", as
   await fakeNeon(page, { signedIn: false });
   await page.goto("/");
   const lines = page.locator("#gGeo .rl");
-  await expect(lines).toHaveCount(6);
+  await expect(lines).toHaveCount(5);
   await expect(page.locator("#gGeo .rl.on")).toHaveCount(1);
   await expect(page.locator("#gGeo .rl.on")).toContainText("Say sorry the easy way.");
   await page.locator("#rotDots button").nth(2).click();
@@ -359,7 +359,7 @@ test("the first screen pitches in short rotating lines, and a dot picks one", as
 test("Help opens with the same rotating pitch", async ({ page }) => {
   await fakeNeon(page, { signedIn: false });
   await page.goto("/start.html");
-  await expect(page.locator(".rot .rl")).toHaveCount(6);
+  await expect(page.locator(".rot .rl")).toHaveCount(5);
   await expect(page.locator(".rot .rl.on")).toHaveCount(1);
 });
 
@@ -367,4 +367,16 @@ test("no Facebook link shows until there is a real page", async ({ page }) => {
   await fakeNeon(page, { signedIn: false });
   await page.goto("/");
   await expect(page.locator("#fbLink")).toBeHidden();
+});
+
+test("opening the app signed in logs one visit with the state, once a day per browser", async ({ page }) => {
+  const net = await fakeNeon(page, { signedIn: true });
+  // The place lookup is off-box and blocked in tests, so the state is unknown: sent as null, never coordinates.
+  await signIn(page);
+  await expect.poll(() => net.rpc.filter((c) => c.fn === "log_visit").length).toBe(1);
+  const call = net.rpc.find((c) => c.fn === "log_visit");
+  expect(Object.keys(call.args)).toEqual(["p_state"]);
+  await page.reload();
+  await page.waitForTimeout(800);
+  expect(net.rpc.filter((c) => c.fn === "log_visit").length).toBe(1);
 });

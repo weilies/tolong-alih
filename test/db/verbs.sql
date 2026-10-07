@@ -99,6 +99,25 @@ begin
   perform pg_temp.expect((select status from blocks where blocker_id = 'e6') = 'disputed', 'a fresh flagged block stays flagged');
   perform pg_temp.expect((select status from blocks where blocker_id = 'e7') = 'cleared', 'a cleared block is left alone');
 
+  -- visits: one row per driver per day, state kept, never two rows
+  perform pg_temp.as_driver('blocker');
+  perform log_visit('Selangor');
+  perform log_visit('Johor');
+  perform pg_temp.expect((select count(*) from visits where user_id = 'blocker') = 1, 'two visits the same day make one row');
+  perform pg_temp.expect((select state from visits where user_id = 'blocker') = 'Selangor', 'the first state of the day is kept');
+  perform pg_temp.as_driver('victim');
+  perform log_visit(null);
+  perform pg_temp.expect((select state from visits where user_id = 'victim') is null, 'a visit with no state is stored without one');
+  begin
+    perform * from visit_stats(7);
+    perform pg_temp.expect(false, 'a driver cannot read visit_stats');
+  exception when insufficient_privilege then null; end;
+  perform pg_temp.as_driver('');
+  begin
+    perform log_visit('Selangor');
+    perform pg_temp.expect(false, 'a signed-out visit is refused');
+  exception when invalid_authorization_specification then null; end;
+
   raise notice 'verbs: all checks passed';
 end $$;
 
