@@ -28,8 +28,12 @@ Solo project. Prefer boring, cheap, few dependencies. TypeScript/JavaScript.
   block has an urgent message for you; this replaced the Alerts tab) and the
   avatar — and a sticky bottom bar: Declare, Trace, Garage, Help (`start.html`),
   Contact (`about.html`). Those links are plain `/#pD /#pS /#pG` anchors the app
-  turns into panel switches. `terms.html` is the plain-words terms of use,
-  linked from the footer and sign-up. The ads console link and `admin.html` are
+  turns into panel switches. `terms.html` and `privacy.html` are the plain-words terms of use and
+  privacy policy; every page's footer carries exactly those two links
+  ("Terms of use", "Privacy") and nothing else. The umbrella versions for all Next
+  Novas apps live on www.nextnovas.com (`/privacy`, `/terms`) and are what the
+  Google consent screen points at — change what the app keeps or shares here
+  and update both. The ads console link and `admin.html` are
   for `weilies.chok@gmail.com` only (a hidden link; `profiles.is_admin` in the
   database is the real lock). Never promise in it anything the app does not do — it says
   we never sell data or phone numbers, and that location goes to OpenStreetMap
@@ -100,6 +104,12 @@ the session before any `delete`, `update` without a narrow `where`, `drop`,
 `truncate` or `revoke`. Additive schema from `db/schema.sql` and reads need
 no yes. On `uat`, go ahead.
 
+**Production users are never deleted** (owner rule, October 2026, the app is
+launching): no deleting auth users, profiles, cars or blocks on `main`, and no
+cleanup scripts that do — not even test accounts, not even when asked in passing.
+Only the owner removes a production user, by hand. Test-account cleanup is for
+`uat` only.
+
 ### Lessons that cost a session
 
 - **The repo is public.** No keys in `wrangler*.jsonc`, commits or CI logs.
@@ -113,6 +123,10 @@ no yes. On `uat`, go ahead.
 - **Web Push on iPhone needs Add to Home Screen; on Android it needs Chrome
   itself** — browsers inside other apps (WebView) have no push. Android in
   desktop mode reports a Mac user agent; detect Android first.
+- **Neon Auth settings are per branch.** Email verification was once on for `main`
+  and off for `uat`, so UAT signed people straight in. After touching auth
+  settings, read both with `get_neon_auth_config` (branch ids in the Environments
+  section's Neon project, `wispy-union-37910963`).
 - **The user is usually alone, with a phone and a laptop.** Tests they run
   should need no second person: one account signed in on each device. The old
   "Send me a test alert" button was removed on purpose; do not bring it back.
@@ -167,7 +181,11 @@ RPCs too; do not loosen a policy to make a write work.
 ## Build order (highest value first)
 
 1. ~~**Wire auth**~~ — done (now Neon Auth). Google OAuth + email/password with
-   six-digit verification; phone captured at signup into `profiles.phone`.
+   six-digit verification, required on both environments (an unverified account
+   cannot sign in; the client sends it to the code screen). No phone. Google
+   sign-in uses the Next Novas OAuth client (one GCP project and one consent
+   screen for every Next Novas app, one client per app per environment), so the
+   consent screen says "Next Novas", not neon.tech.
 2. ~~**Replace the in-memory `DB` object**~~ — done. All four verbs, garage,
    inbox and ads read from Postgres. Alerts refresh on a 45s poll and on tab
    focus; Web Push replaces that.
@@ -188,7 +206,8 @@ RPCs too; do not loosen a policy to make a write work.
 - "Is this your car?" confirmation on the first block received. `cars.plate_norm`
   is uniquely indexed, so a squatter can claim a plate and take its alerts. This
   is the agreed mitigation — not document checks.
-- PDPA: privacy notice, consent log, data export, account deletion
+- PDPA: ~~privacy notice~~ (done, `privacy.html`); consent log, data export, account
+  deletion (by hand on request, within 30 days as the policy promises)
 - Abuse: block/report, rule for repeat `flag` against one driver
 - IP-country fallback when GPS fails
 - The CSP in `public/_headers` needs `script-src 'unsafe-inline'` because the app
