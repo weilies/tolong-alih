@@ -215,7 +215,7 @@ test("the account menu has no language row, and the language toggle lives in the
   await page.locator("#sheet").click({ position: { x: 5, y: 5 } });
   await page.click("#langBtn");
   await expect(page.locator(".tabbar .tx").first()).toHaveText("Isytihar");
-  await expect(page.locator("footer .flinks a")).toHaveText(["Syarat penggunaan", "Dasar privasi"]);
+  await expect(page.locator("footer .flinks a")).toHaveText(["Syarat penggunaan", "Privasi"]);
 });
 
 test("a bottom-bar link from another page opens that tab, even after signing in", async ({ page }) => {
@@ -328,4 +328,15 @@ test("the privacy policy states the Google data use, links to terms, and switche
   await expect(page.getByRole("heading", { name: "Dasar privasi" })).toBeVisible();
   await page.goto("/terms.html");
   await expect(page.locator('main a[href="/privacy.html"]')).toBeVisible();
+});
+
+test("every footer has the same two links, Terms of use and Privacy", async ({ page }) => {
+  await fakeNeon(page, { signedIn: false });
+  for (const path of ["/", "/start.html", "/about.html", "/terms.html", "/privacy.html"]) {
+    await page.goto(path);
+    const links = page.locator("footer nav a");
+    await expect(links, path).toHaveText(["Terms of use", "Privacy"]);
+    await expect(links.nth(0)).toHaveAttribute("href", "/terms.html");
+    await expect(links.nth(1)).toHaveAttribute("href", "/privacy.html");
+  }
 });
