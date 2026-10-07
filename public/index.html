@@ -179,6 +179,12 @@
   .row2{display:flex;gap:10px}
   .row2 .btn{flex:1}
 
+  .card.hist{margin-top:10px;border-width:2px}
+  .hrow{display:flex;justify-content:space-between;gap:10px;align-items:baseline;width:100%;padding:12px 14px;
+    background:none;border:0;text-align:left;cursor:pointer;font:inherit;color:var(--tarmac)}
+  .hrow .hwho{font-weight:600;font-size:14px}
+  .hrow .hmeta{font-size:12px;color:var(--mute);text-align:right}
+  .hbody{padding:0 14px 12px}
   .thread{margin:2px 0 12px}
   .line{margin-bottom:8px;padding:9px 11px;background:var(--fog);border-left:3px solid var(--edge)}
   .line.mine{background:#EAF2FF;border-left-color:var(--signage)}
@@ -456,6 +462,7 @@
         <h2 class="disp">Alerts</h2>
         <p class="sub">When someone blocks your car, or replies to you, it shows up here.</p>
         <div id="inbox"></div>
+        <div id="history"></div>
         <a class="fb" id="fbLink" href="#" target="_blank" rel="noopener" hidden>👍 Follow Tolong Alih on Facebook</a>
       </section>
 
@@ -584,7 +591,7 @@ var myPlate  = {};     /* block id -> which of my plates is boxed in */
 var ads      = [];
 var adShown  = {};     /* slot -> ad, so a re-render is not a fresh impression */
 var traced   = null;   /* { block, plate } from the last successful trace */
-var eta = 15, geo = null, poll = null;
+var eta = 15, geo = null, poll = null, hist = [];
 
 /* ================= utils ================= */
 function norm(v){ return (v||"").toUpperCase().replace(/[^A-Z0-9]/g,""); }
@@ -654,6 +661,16 @@ var MS = {
   "Blocked in, but no alert came? Type their plate and yours. We'll find the driver.":"Terhalang tetapi tiada amaran? Taip plat mereka dan plat anda. Kami cari pemandunya.",
   "Add every car you drive, so you get told if someone blocks it.":"Tambah setiap kereta yang anda pandu, supaya anda diberitahu jika ada yang menghalangnya.",
   "Tell them you've blocked them. Hear when you're blocked. Your number stays private.":"Beritahu mereka anda menghalang. Dengar apabila anda dihalang. Nombor anda kekal peribadi.",
+  "History":"Sejarah",
+  "Closed blocks are frozen. Nobody can message or flag them any more.":"Halangan yang sudah ditutup dibekukan. Tiada sesiapa boleh menghantar mesej atau menanda lagi.",
+  "You blocked":"Anda menghalang",
+  "blocked you":"menghalang anda",
+  "Cleared":"Dikosongkan",
+  "Expired":"Tamat",
+  "Loading…":"Memuatkan…",
+  "Could not load this conversation.":"Tidak dapat memuatkan perbualan ini.",
+  "No messages were sent on this one.":"Tiada mesej dihantar untuk yang ini.",
+  "This block is closed.":"Halangan ini sudah ditutup.",
   "Remove photo":"Buang gambar",
   "This email already has a password account that was never verified. Choose “I already have an account”, enter your password, verify the code we email you, then Google works too.":"Emel ini sudah ada akaun kata laluan yang belum disahkan. Pilih “I already have an account”, masukkan kata laluan, sahkan kod yang kami emel, kemudian Google pun boleh digunakan.",
   "Google sign-in did not go through. Try again, or use your email and password.":"Log masuk Google tidak berjaya. Cuba lagi, atau guna emel dan kata laluan.",
@@ -1450,9 +1467,15 @@ async function refresh(){
        to_user filter — otherwise every reply you sent is invisible to you. */
     sb.from("messages")
       .select("id,block_id,from_label,kind,body,created_at,from_user,is_typed")
-      .order("created_at", {ascending:false}).limit(200)
+      .order("created_at", {ascending:false}).limit(200),
+    /* Closed blocks, newest first: the history. Both drivers can read their own. */
+    sb.from("blocks")
+      .select("id,blocker_id,blocker_plate_norm,status,declared_at,cleared_at,block_targets(victim_plate_norm)")
+      .in("status", ["cleared","expired"])
+      .order("declared_at", {ascending:false}).limit(30)
   ]);
   var g = res[0], b = res[1], m = res[2];
+  hist = res[3].data || [];
   cars = g.data || []; err = err || g.error;
   if(!g.error) carsLoaded = true;
   declared = b.data || []; err = err || b.error;
@@ -1462,7 +1485,7 @@ async function refresh(){
   var ids = inbox.map(function(x){ return x.block_id; }).filter(Boolean);
   if(ids.length){
     var both = await Promise.all([
-      sb.from("blocks").select("id,blocker_id,status,blocker_plate_norm").in("id", ids),
+      sb.from("blocks").select("id,blocker_id,status,blocker_plate_norm,declared_at,cleared_at").in("id", ids),
       sb.from("block_targets").select("block_id,victim_plate_norm").in("block_id", ids)
     ]);
     (both[0].data||[]).forEach(function(x){ ix[x.id] = x; });
@@ -1751,11 +1774,34 @@ document.addEventListener("click", function(ev){
     case "soft":   doContact(id, myp, false, b); break;
     case "ad":     adClick(id); break;
     case "say":    doSay(id, myp, b); break;
+    case "hist":   toggleHist(id, b); break;
     case "rename": renameCar(id); break;
     case "rmcar":  removeCar(id); break;
     case "garage": goTab("pG"); setTimeout(function(){ $("newPlate").focus(); }, 250); break;
   }
 });
+
+/* Read-only: the whole conversation of a closed block, including what was archived. */
+async function toggleHist(id, btn){
+  var box = $("ht-"+id);
+  if(!box.hidden){ box.hidden = true; btn.setAttribute("aria-expanded","false"); return; }
+  box.hidden = false; btn.setAttribute("aria-expanded","true");
+  if(box.dataset.loaded) return;
+  box.innerHTML = '<p class="note">Loading…</p>';
+  var r = await sb.rpc("thread", { p_block: id });
+  if(r.error){ box.innerHTML = '<p class="note">Could not load this conversation.</p>'; return; }
+  var rows = r.data || [];
+  box.innerHTML = rows.length
+    ? '<div class="thread">'+rows.map(function(m){
+        return '<div class="line'+(m.mine?" mine":"")+'">'+
+          (m.is_typed ? "" : '<span class="who">'+esc(m.from_label)+'</span>')+
+          '<span class="txt">'+esc(m.body)+'</span>'+
+          '<span class="at">'+esc(hhmm(m.created_at))+'</span></div>';
+      }).join("")+'</div>'
+    : '<p class="note">No messages were sent on this one.</p>';
+  box.dataset.loaded = "1";
+  applyLang();
+}
 
 async function doSay(id, myp, btn){
   var box = document.querySelector('.sayin[data-say="'+id+'"]');
@@ -1930,6 +1976,16 @@ function render(){
   });
   order.reverse();
 
+  /* A block stays in Alerts while it is live, or for 30 minutes after a clear (the
+     window in which "Still blocking me" works). After that it is frozen and lives
+     in History below. */
+  order = order.filter(function(bid){
+    var b = blockIx[bid];
+    if(!b) return true;
+    if(b.status !== "cleared" && b.status !== "expired") return true;
+    return b.status === "cleared" && b.cleared_at && (Date.now() - new Date(b.cleared_at).getTime()) < 30*60*1000;
+  });
+
   $("inbox").innerHTML = order.length
     ? order.map(function(bid, i){
         var msgs = threads[bid], b = blockIx[bid], myp = myPlate[bid] || "";
@@ -1945,7 +2001,8 @@ function render(){
           '</div>';
         } else if(live && !theirs){
           acts = '<button class="btn btn-go" data-act="clear" data-id="'+esc(bid)+'">I\'ve moved — clear it</button>';
-        } else if(b && b.status === "cleared" && last.from_label === "All clear"){
+        } else if(b && b.status === "cleared" && last.from_label === "All clear" &&
+                  b.cleared_at && (Date.now() - new Date(b.cleared_at).getTime()) < 30*60*1000){
           acts = '<button class="btn btn-flat" data-act="flag" data-id="'+esc(bid)+'" data-plate="'+esc(myp)+'">Still blocking me</button>';
         }
 
@@ -1976,6 +2033,29 @@ function render(){
           '</div></div>' + (i===0 ? adCard("alert") : "");
       }).join("")
     : '<div class="empty"><b>All clear</b><span>Nobody is blocking your car right now.</span></div>'+adCard("alert");
+
+  /* History: closed blocks, frozen. Tap one to read what was said. */
+  var carPlates = cars.map(function(c){ return c.plate_norm; });
+  $("history").innerHTML = hist.length
+    ? '<span class="eyebrow" style="display:block;margin-top:30px">History</span>'+
+      '<p class="note" style="margin:6px 0 0">Closed blocks are frozen. Nobody can message or flag them any more.</p>'+
+      hist.map(function(h){
+        var mineB = h.blocker_id === me.id;
+        var their = (h.block_targets||[]).map(function(t){ return t.victim_plate_norm; })
+                      .filter(function(v){ return mineB || carPlates.indexOf(v) > -1; });
+        var who = mineB
+          ? '<span>You blocked</span> '+esc(their.join(" · ") || "someone")
+          : esc(h.blocker_plate_norm)+' <span>blocked you</span>';
+        var d = new Date(h.declared_at);
+        var when = d.toLocaleDateString(undefined,{day:"numeric",month:"short"})+" "+hhmm(h.declared_at);
+        var how = h.status === "cleared"
+          ? '<span>Cleared</span> · '+Math.max(1, Math.round((new Date(h.cleared_at) - d)/60000))+' min'
+          : '<span>Expired</span>';
+        return '<div class="card hist"><button class="hrow" data-act="hist" data-id="'+esc(h.id)+'" aria-expanded="false">'+
+          '<span class="hwho">'+who+'</span><span class="hmeta">'+esc(when)+' · '+how+'</span></button>'+
+          '<div class="hbody" id="ht-'+esc(h.id)+'" hidden></div></div>';
+      }).join("")
+    : "";
 
   /* The bell's red dot: a block that is still open and has an urgent message
      from the other driver. Cleared and expired blocks stop counting, so the
@@ -2047,7 +2127,7 @@ function markSeen(){ try{ localStorage.setItem(SEEN, "1"); }catch(e){} }
     ls.forEach(function(l,k){ l.classList.toggle("on", k===n); });
     [].forEach.call(dots.children, function(d,k){ d.setAttribute("aria-current", k===n ? "true" : "false"); });
   }
-  function run(){ clearInterval(t); if(!calm) t = setInterval(function(){ show((i+1)%ls.length); }, 4500); }
+  function run(){ clearInterval(t); if(!calm) t = setInterval(function(){ show((i+1)%ls.length); }, 8000); }
   ls.forEach(function(_,n){
     var b = document.createElement("button"); b.type = "button";
     b.setAttribute("aria-label", "Message "+(n+1)+" of "+ls.length);

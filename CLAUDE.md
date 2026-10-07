@@ -171,6 +171,12 @@ RPCs too; do not loosen a policy to make a write work.
   Gate on country, not precision — fall back to IP-country if GPS fails indoors.
 - **Ads are direct-sold to local merchants**, self-hosted, first-party.
   Never a third-party ad network SDK.
+- **Closed blocks are frozen** (owner decision, October 2026). Nobody can message
+  or ping about a block once it is over: `say` and `contact_blocker` need an open
+  block under 24 hours old, and `flag_block` works only within 30 minutes of the
+  clear, inside the first 24 hours, at most twice per block. Messages are archived
+  (`messages.archived_at`), never deleted, so both drivers read the whole
+  conversation under History in Alerts, read-only.
 - **No phone number.** Sign-up is email or Google only; asking for a phone was
   friction (owner decision, October 2026). `profiles.phone` stays as an unused
   column for accounts made before that; nothing reads or writes it, the check

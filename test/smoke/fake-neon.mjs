@@ -10,6 +10,7 @@ export async function fakeNeon(page, {
   messages = [],   // my inbox (Alerts tab)
   blocks = [],     // blocks those messages belong to
   targets = [],    // block_targets rows I am party to
+  threads = {},    // block id -> rows `thread()` returns (the history of a closed block)
   firstVisit = false, // true: this browser has never opened the app
   unverified = false, // true: password sign-in is refused, as Neon Auth does for an unverified email
 } = {}) {
@@ -46,6 +47,7 @@ export async function fakeNeon(page, {
 
     if (path.startsWith("rpc/")) {
       state.rpc.push({ fn: path.slice(4), args: req.postDataJSON() });
+      if (path === "rpc/thread") return json(threads[req.postDataJSON().p_block] || []);
       return json({ block_id: "00000000-0000-0000-0000-000000000001", notified: 1, ok: true });
     }
     if (path === "profiles" && req.method() === "GET") {
@@ -53,7 +55,12 @@ export async function fakeNeon(page, {
     }
     if (path === "cars" && req.method() === "GET") return json(state.cars);
     if (path === "blocks" && req.method() === "GET") {
-      return json(url.searchParams.has("blocker_id") ? declared : blocks);
+      if (url.searchParams.has("blocker_id")) return json(declared);
+      // the History query asks for closed blocks only
+      if ((url.searchParams.get("status") || "").includes("cleared")) {
+        return json(blocks.filter((b) => b.status === "cleared" || b.status === "expired"));
+      }
+      return json(blocks);
     }
     if (path === "block_targets" && req.method() === "GET") return json(targets);
     if (path === "messages" && req.method() === "GET") return json(messages);

@@ -380,3 +380,36 @@ test("opening the app signed in logs one visit with the state, once a day per br
   await page.waitForTimeout(800);
   expect(net.rpc.filter((c) => c.fn === "log_visit").length).toBe(1);
 });
+
+test("a closed block is frozen: it leaves Alerts, shows in History, and the conversation reads but cannot be answered", async ({ page }) => {
+  const OLD = "00000000-0000-0000-0000-0000000000c1";
+  const NEW = "00000000-0000-0000-0000-0000000000c2";
+  const hourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+  const justNow = new Date(Date.now() - 2 * 60 * 1000).toISOString();
+  await fakeNeon(page, {
+    cars: [car("WXY 1234")],
+    blocks: [
+      { id: OLD, blocker_id: "someone", status: "cleared", blocker_plate_norm: "OLD1111", declared_at: hourAgo, cleared_at: hourAgo, block_targets: [{ victim_plate_norm: "WXY1234" }] },
+      { id: NEW, blocker_id: "someone", status: "cleared", blocker_plate_norm: "NEW2222", declared_at: justNow, cleared_at: justNow, block_targets: [{ victim_plate_norm: "WXY1234" }] },
+    ],
+    targets: [{ block_id: OLD, victim_plate_norm: "WXY1234" }, { block_id: NEW, victim_plate_norm: "WXY1234" }],
+    messages: [
+      { id: "m1", block_id: OLD, from_label: "All clear", kind: "cool", is_typed: false, body: "OLD1111 has moved. You are free to go. Still stuck? Flag it below.", created_at: hourAgo, from_user: null },
+      { id: "m2", block_id: NEW, from_label: "All clear", kind: "cool", is_typed: false, body: "NEW2222 has moved. You are free to go. Still stuck? Flag it below.", created_at: justNow, from_user: null },
+    ],
+    threads: { [OLD]: [{ id: "t1", from_label: "Blocked in", body: "OLD1111 is parked behind your WXY1234.", kind: "hot", is_typed: false, mine: false, created_at: hourAgo }] },
+  });
+  await signIn(page);
+  await page.locator("#bell").click();
+  // a block cleared two minutes ago can still be flagged; one cleared an hour ago cannot, and has left Alerts
+  await expect(page.locator("#inbox")).toContainText("NEW2222");
+  await expect(page.locator("#inbox")).not.toContainText("OLD1111");
+  await expect(page.locator('#inbox [data-act="flag"]')).toHaveCount(1);
+  // the frozen one is in History, read only
+  await expect(page.locator("#history")).toContainText("History");
+  const row = page.locator('#history [data-act="hist"]').first();
+  await expect(row).toContainText("OLD1111");
+  await row.click();
+  await expect(page.locator(`#ht-${OLD}`)).toContainText("OLD1111 is parked behind your WXY1234.");
+  await expect(page.locator(`#ht-${OLD} input, #ht-${OLD} button`)).toHaveCount(0);
+});
