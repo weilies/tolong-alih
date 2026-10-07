@@ -331,12 +331,21 @@
     <div class="sign">
       <div class="hazard"></div>
       <div class="pad">
-        <div class="glyph">📍</div>
-        <h1 class="disp">Where are you?</h1>
-        <p>Tolong Alih is for drivers in Malaysia. We check your location once to confirm you're here.</p>
-        <button class="btn btn-hz" id="askGeo">Turn on location</button>
+        <h1 class="disp">Be the considerate driver.</h1>
+        <div class="rot" id="rot">
+          <div class="stack">
+            <div class="rl on"><span class="ri">🙏</span><div class="rt"><b>Say sorry the easy way.</b> A quick heads-up beats an angry honk.</div></div>
+            <div class="rl"><span class="ri">📵</span><div class="rt"><b>Your number stays yours.</b> They see your plate, nothing else. No name card on the dashboard.</div></div>
+            <div class="rl"><span class="ri">🌙</span><div class="rt"><b>No 2am calls.</b> A stranger can't ring you up to vent. Everything goes through the app.</div></div>
+            <div class="rl"><span class="ri">😌</span><div class="rt"><b>Running late? Tell them.</b> They see when you'll be back, and can wait calmly.</div></div>
+            <div class="rl"><span class="ri">🔍</span><div class="rt"><b>Blocked in yourself?</b> Type the plate and we find the driver. No shouting match.</div></div>
+            <div class="rl"><span class="ri">🎁</span><div class="rt"><b>Free for drivers.</b> Local shops pay for it, not you.</div></div>
+          </div>
+          <div class="rdots" id="rotDots"></div>
+        </div>
+        <button class="btn btn-hz" id="askGeo">Get started</button>
         <button class="btn btn-flat" id="mockGeo">Set location manually</button>
-        <p class="note" id="geoNote">Other drivers never see where you are.</p>
+        <p class="note" id="geoNote">Your phone will ask to share your location once. It only checks you're in Malaysia, and other drivers never see it.</p>
       </div>
     </div>
   </section>
@@ -347,9 +356,8 @@
     <div class="sign">
       <div class="hazard"></div>
       <div class="pad">
-        <div class="glyph blue" style="color:#fff">🔑</div>
-        <h1 class="disp">Sign in</h1>
-        <p>Your account links your car plate to you, so only you get its alerts.</p>
+        <h1 class="disp">Almost there.</h1>
+        <p>Make your free account. Your plate is how people reach you. Your name, email and number stay private.</p>
 
         <button class="btn" id="google"><span class="g">G</span>Continue with Google</button>
 
@@ -365,8 +373,8 @@
         <input id="pw" type="password" placeholder="At least 8 characters" autocomplete="current-password" />
         <button class="btn btn-hz" id="signup">Create account</button>
         <button class="btn btn-flat" id="signin">I already have an account</button>
-        <p class="note">By continuing, you agree we keep your email and the plates you add to run the service. You can ask us to delete them any time.</p>
-        <p class="note"><a href="/terms.html" style="color:var(--signage);font-weight:600">Read our simple terms. We never sell your data.</a></p>
+        <p class="note">We never sell your data.</p>
+        <p class="note"><a href="/terms.html" style="color:var(--signage);font-weight:600">Terms of use</a> · <a href="/privacy.html" style="color:var(--signage);font-weight:600">Privacy</a></p>
       </div>
     </div>
   </section>
@@ -379,12 +387,12 @@
       <div class="pad">
         <div class="glyph">✉️</div>
         <h1 class="disp">Check your email</h1>
-        <p>Six-digit code sent to <b id="mailTo" class="mono">you@email.com</b>. Verifying keeps fake plate claims out of Tolong Alih.</p>
+        <p>We sent a six-digit code to <b id="mailTo" class="mono">you@email.com</b>. It keeps fake plate claims out.</p>
         <span class="lbl eyebrow">Verification code</span>
         <input id="code" class="plate-in" placeholder="000000" maxlength="6" inputmode="numeric" autocomplete="one-time-code" />
         <button class="btn btn-hz" id="verify">Verify and continue</button>
         <button class="btn btn-flat" id="resend">Send it again</button>
-        <p class="note">Or just tap the link in that email.</p>
+        <p class="note">Nothing yet? Check your spam folder.</p>
       </div>
     </div>
   </section>
@@ -418,7 +426,7 @@
       <!-- DECLARE -->
       <section class="panel on" id="pD" role="tabpanel">
         <h2 class="disp">Declare a block</h2>
-        <p class="sub">Double-parked and blocking someone's car? Tell them here. They get an alert on their phone right away.</p>
+        <p class="sub">Blocking someone in? Tell them here. Their phone buzzes straight away.</p>
 
         <span class="lbl eyebrow">My car</span>
         <div id="pickCars"></div>
@@ -449,13 +457,13 @@
         <h2 class="disp">Alerts</h2>
         <p class="sub">When someone blocks your car, or replies to you, it shows up here.</p>
         <div id="inbox"></div>
-        <a class="fb" href="https://www.facebook.com/" target="_blank" rel="noopener">👍 Follow Tolong Alih on Facebook</a>
+        <a class="fb" id="fbLink" href="#" target="_blank" rel="noopener" hidden>👍 Follow Tolong Alih on Facebook</a>
       </section>
 
       <!-- TRACE -->
       <section class="panel" id="pS" role="tabpanel">
         <h2 class="disp">Trace</h2>
-        <p class="sub">Your car is blocked but you got no alert? Type their plate and yours to find the driver.</p>
+        <p class="sub">Blocked in, but no alert came? Type their plate and yours. We'll find the driver.</p>
         <span class="lbl eyebrow">Plate of the car blocking me</span>
         <input id="qB" class="plate-in" placeholder="ABC 1234" maxlength="12" autocomplete="off" />
         <span class="lbl eyebrow">My plate</span>
@@ -467,7 +475,7 @@
       <!-- GARAGE -->
       <section class="panel" id="pG" role="tabpanel">
         <h2 class="disp" id="gName">Garage</h2>
-        <p class="sub">Add every car you drive. This is how you get an alert when someone blocks your car.</p>
+        <p class="sub">Add every car you drive, so you get told if someone blocks it.</p>
         <div id="garage"></div>
         <span class="lbl eyebrow">Add a car</span>
         <input id="newPlate" class="plate-in" placeholder="JQY 2841" maxlength="12" autocomplete="off" />
@@ -489,7 +497,7 @@
 
     <footer>
       <b>Tolong Alih</b>
-      <span>Tell drivers when you've blocked them. Get told when you're blocked. Your details stay private.</span>
+      <span>Tell them you've blocked them. Hear when you're blocked. Your number stays private.</span>
       <nav class="flinks"><a href="/terms.html">Terms of use</a><a href="/privacy.html">Privacy</a></nav>
       <small class="ver" id="ver"></small>
     </footer>
@@ -599,21 +607,16 @@ function $(id){ return document.getElementById(id); }
    as the server wrote them. */
 var MS = {
   /* gate 1 */
-  "Where are you?":"Anda di mana?",
-  "Tolong Alih is for drivers in Malaysia. We check your location once to confirm you're here.":"Tolong Alih untuk pemandu di Malaysia. Kami semak lokasi anda sekali untuk memastikan anda berada di sini.",
   "Install Tolong Alih":"Pasang Tolong Alih",
   "Don't miss it when someone needs you to move, or you're blocked in.":"Jangan terlepas apabila seseorang perlu anda alihkan kereta, atau anda terhalang.",
   "Tap Share ⬆ then Add to Home Screen":"Ketuk Kongsi ⬆ kemudian Tambah ke Skrin Utama",
   "Install":"Pasang",
-  "Turn on location":"Hidupkan lokasi",
   "Set location manually":"Tetapkan lokasi sendiri",
   "Locating…":"Mencari lokasi…",
   "Still trying…":"Masih mencuba…",
   "Try again":"Cuba lagi",
-  "Other drivers never see where you are.":"Pemandu lain tidak akan nampak lokasi anda.",
   /* gate 2 */
   "Sign in":"Log masuk",
-  "Your account links your car plate to you, so only you get its alerts.":"Akaun anda mengikat plat kereta kepada anda, jadi hanya anda yang menerima amarannya.",
   "Continue with Google":"Teruskan dengan Google",
   "or":"atau",
   "Email":"E-mel",
@@ -621,16 +624,39 @@ var MS = {
   "At least 8 characters":"Sekurang-kurangnya 8 aksara",
   "Create account":"Buka akaun",
   "I already have an account":"Saya sudah ada akaun",
-  "By continuing, you agree we keep your email and the plates you add to run the service. You can ask us to delete them any time.":"Dengan meneruskan, anda bersetuju kami menyimpan e-mel dan plat yang anda tambah untuk menjalankan perkhidmatan ini. Anda boleh minta kami padamnya bila-bila masa.",
   /* gate 3 */
   "Check your email":"Semak e-mel anda",
   "Verification code":"Kod pengesahan",
   "Verify and continue":"Sahkan dan teruskan",
   "Send it again":"Hantar sekali lagi",
-  "Or just tap the link in that email.":"Atau tekan sahaja pautan dalam e-mel itu.",
   /* gate 4 */
   /* account sheet */
   "Change photo":"Tukar gambar",
+  "Say sorry the easy way.":"Minta maaf dengan cara mudah.",
+  "A quick heads-up beats an angry honk.":"Satu pemberitahuan ringkas lebih baik daripada hon yang marah.",
+  "Your number stays yours.":"Nombor anda kekal milik anda.",
+  "They see your plate, nothing else. No name card on the dashboard.":"Mereka hanya nampak plat anda, tiada yang lain. Tak perlu letak kad nama di dashboard.",
+  "No 2am calls.":"Tiada panggilan pukul 2 pagi.",
+  "A stranger can't ring you up to vent. Everything goes through the app.":"Orang yang tak dikenali tak boleh telefon anda untuk melepaskan marah. Semuanya melalui aplikasi.",
+  "Running late? Tell them.":"Lambat sikit? Beritahu mereka.",
+  "They see when you'll be back, and can wait calmly.":"Mereka nampak bila anda kembali, dan boleh menunggu dengan tenang.",
+  "Blocked in yourself?":"Anda pula yang terhalang?",
+  "Type the plate and we find the driver. No shouting match.":"Taip plat dan kami cari pemandunya. Tak perlu bergaduh.",
+  "Free for drivers.":"Percuma untuk pemandu.",
+  "Local shops pay for it, not you.":"Kedai tempatan yang membayar, bukan anda.",
+  "Be the considerate driver.":"Jadilah pemandu yang bertimbang rasa.",
+  "Get started":"Mula sekarang",
+  "Your phone will ask to share your location once. It only checks you're in Malaysia, and other drivers never see it.":"Telefon anda akan minta kongsi lokasi sekali sahaja. Ia hanya menyemak anda berada di Malaysia, dan pemandu lain tidak akan nampaknya.",
+  "Almost there.":"Hampir siap.",
+  "Make your free account. Your plate is how people reach you. Your name, email and number stay private.":"Buka akaun percuma anda. Plat anda ialah cara orang menghubungi anda. Nama, e-mel dan nombor anda kekal peribadi.",
+  "We never sell your data.":"Kami tidak pernah menjual data anda.",
+  "We sent a six-digit code to":"Kami hantar kod enam digit ke",
+  ". It keeps fake plate claims out.":". Ia menghalang tuntutan plat palsu.",
+  "Nothing yet? Check your spam folder.":"Belum nampak? Semak folder spam anda.",
+  "Blocking someone in? Tell them here. Their phone buzzes straight away.":"Menghalang kereta orang? Beritahu mereka di sini. Telefon mereka terus berbunyi.",
+  "Blocked in, but no alert came? Type their plate and yours. We'll find the driver.":"Terhalang tetapi tiada amaran? Taip plat mereka dan plat anda. Kami cari pemandunya.",
+  "Add every car you drive, so you get told if someone blocks it.":"Tambah setiap kereta yang anda pandu, supaya anda diberitahu jika ada yang menghalangnya.",
+  "Tell them you've blocked them. Hear when you're blocked. Your number stays private.":"Beritahu mereka anda menghalang. Dengar apabila anda dihalang. Nombor anda kekal peribadi.",
   "Remove photo":"Buang gambar",
   "This email already has a password account that was never verified. Choose “I already have an account”, enter your password, verify the code we email you, then Google works too.":"Emel ini sudah ada akaun kata laluan yang belum disahkan. Pilih “I already have an account”, masukkan kata laluan, sahkan kod yang kami emel, kemudian Google pun boleh digunakan.",
   "Google sign-in did not go through. Try again, or use your email and password.":"Log masuk Google tidak berjaya. Cuba lagi, atau guna emel dan kata laluan.",
@@ -664,7 +690,6 @@ var MS = {
   "Could not turn on alerts.":"Tidak dapat menghidupkan amaran.",
   /* declare */
   "Declare a block":"Isytihar halangan",
-  "Double-parked and blocking someone's car? Tell them here. They get an alert on their phone right away.":"Parkir berganda dan menghalang kereta orang? Beritahu mereka di sini. Mereka terus menerima amaran di telefon.",
   "My car":"Kereta saya",
   "Plate of the car I'm blocking":"Plat kereta yang saya halang",
   "Second plate":"Plat kedua",
@@ -687,7 +712,6 @@ var MS = {
   "Still blocking me":"Masih menghalang saya",
   /* trace */
   "Trace":"Jejak",
-  "Your car is blocked but you got no alert? Type their plate and yours to find the driver.":"Kereta anda dihalang tetapi tiada amaran? Taip plat mereka dan plat anda untuk mencari pemandunya.",
   "Plate of the car blocking me":"Plat kereta yang menghalang saya",
   "My plate":"Plat saya",
   "Find the driver":"Cari pemandu",
@@ -695,7 +719,6 @@ var MS = {
   /* garage */
   "Garage":"Garaj",
   "Your garage":"Garaj anda",
-  "Add every car you drive. This is how you get an alert when someone blocks your car.":"Tambah setiap kereta yang anda pandu. Inilah cara anda menerima amaran apabila seseorang menghalang kereta anda.",
   "No cars yet":"Belum ada kereta",
   "Add your plate below. Until you do, nobody can alert you when your car is blocked.":"Tambah plat anda di bawah. Selagi belum, tiada sesiapa boleh memberi amaran apabila kereta anda dihalang.",
   "Nothing to drive":"Tiada kereta",
@@ -726,7 +749,6 @@ var MS = {
   "Continue in":"Teruskan dalam",
   "Remove photo":"Buang gambar",
   "About & contact us":"Tentang & hubungi kami",
-  "Tell drivers when you've blocked them. Get told when you're blocked. Your details stay private.":"Beritahu pemandu apabila anda menghalang mereka. Dapat amaran apabila anda dihalang. Butiran anda kekal peribadi.",
   /* toasts */
   "Location confirmed — Malaysia":"Lokasi disahkan — Malaysia",
   "Signed in with Google":"Log masuk dengan Google",
@@ -940,7 +962,7 @@ $("askGeo").addEventListener("click", async function(){
     catch(e2){
       g = ipFallback();
       if(g){
-        btn.disabled = false; btn.textContent = "Turn on location";
+        btn.disabled = false; btn.textContent = "Get started";
         acceptGeo(g, "Located by network — "+g.place);
         return;
       }
@@ -953,7 +975,7 @@ $("askGeo").addEventListener("click", async function(){
       return;
     }
   }
-  btn.disabled = false; btn.textContent = "Turn on location";
+  btn.disabled = false; btn.textContent = "Get started";
   acceptGeo(g);
 });
 
@@ -1114,6 +1136,10 @@ $("clearPic").addEventListener("click", async function(){
   paintAvatar();
   toast("Photo removed");
 });
+
+/* The Facebook page link stays hidden until there is a real page: set FB_URL. */
+var FB_URL = "";
+if(FB_URL){ var fb = $("fbLink"); fb.href = FB_URL; fb.hidden = false; }
 
 /* ================= boot ================= */
 /* Google can send the driver back with ?error=... — say why, in plain words. */
@@ -1991,6 +2017,28 @@ function markSeen(){ try{ localStorage.setItem(SEEN, "1"); }catch(e){} }
   stage("gGeo");
 })();
 
+})();
+</script>
+<script>
+/* The pitch rotator: one short line at a time, tap a dot to pick, still when the
+   phone asks for less motion. */
+(function(){
+  var r = document.getElementById("rot"); if(!r) return;
+  var ls = [].slice.call(r.querySelectorAll(".rl")), dots = document.getElementById("rotDots"), i = 0, t = null;
+  var calm = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  function show(n){
+    i = n;
+    ls.forEach(function(l,k){ l.classList.toggle("on", k===n); });
+    [].forEach.call(dots.children, function(d,k){ d.setAttribute("aria-current", k===n ? "true" : "false"); });
+  }
+  function run(){ clearInterval(t); if(!calm) t = setInterval(function(){ show((i+1)%ls.length); }, 4500); }
+  ls.forEach(function(_,n){
+    var b = document.createElement("button"); b.type = "button";
+    b.setAttribute("aria-label", "Message "+(n+1)+" of "+ls.length);
+    b.addEventListener("click", function(){ show(n); run(); });
+    dots.appendChild(b);
+  });
+  show(0); run();
 })();
 </script>
 </body>
