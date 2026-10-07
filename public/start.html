@@ -468,7 +468,7 @@ applyLang();
     ls.forEach(function(l,k){ l.classList.toggle("on", k===n); });
     [].forEach.call(dots.children, function(d,k){ d.setAttribute("aria-current", k===n ? "true" : "false"); });
   }
-  function run(){ clearInterval(t); if(!calm) t = setInterval(function(){ show((i+1)%ls.length); }, 4500); }
+  function run(){ clearInterval(t); if(!calm) t = setInterval(function(){ show((i+1)%ls.length); }, 8000); }
   ls.forEach(function(_,n){
     var b = document.createElement("button"); b.type = "button";
     b.setAttribute("aria-label", "Message "+(n+1)+" of "+ls.length);

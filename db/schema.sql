@@ -169,6 +169,13 @@ create index if not exists push_subscriptions_user_idx on push_subscriptions (us
 -- messages doubles as the push outbox: the worker claims unsent rows after
 -- every verb. See push_drain().
 alter table messages add column if not exists pushed_at timestamptz;
+
+-- History, not deletion: when a block is cleared or flagged the earlier messages are
+-- archived, not deleted. Archived messages drop out of the inbox (policy below) but
+-- thread() still returns them, so both drivers can read the whole conversation later.
+alter table messages add column if not exists archived_at timestamptz;
+-- A block can be flagged at most twice; after that it stays closed.
+alter table blocks add column if not exists flags int not null default 0;
 create index if not exists messages_unpushed_idx on messages (created_at) where pushed_at is null;
 
 -- sha256 of the worker's push key, set per branch (db/README.md). Single row.
@@ -296,8 +303,10 @@ create policy read_targets on block_targets for select using (
 
 drop policy if exists my_messages on messages;
 create policy my_messages on messages for select using (
-  to_user = (select uid()) or from_user = (select uid())
-  or i_declared(block_id) or i_am_blocked(block_id)
+  archived_at is null and (
+    to_user = (select uid()) or from_user = (select uid())
+    or i_declared(block_id) or i_am_blocked(block_id)
+  )
 );
 
 drop policy if exists read_ads on ads;
@@ -402,7 +411,7 @@ begin
   end if;
 
   update blocks set status = 'cleared', cleared_at = now() where id = p_block;
-  delete from messages where block_id = p_block;
+  update messages set archived_at = now() where block_id = p_block and archived_at is null;
 
   insert into messages (block_id, to_user, from_label, kind, body)
   select distinct p_block, c.owner_id, 'All clear', 'cool',
@@ -441,13 +450,25 @@ begin
     return json_build_object('ok', true, 'already_open', true);
   end if;
 
+  -- A closed block is frozen. Flagging is for "they cleared it but are still
+  -- here", so it only works for 30 minutes after the clear, within 24 hours of the
+  -- declare, and at most twice. After that nobody can ping anybody about it.
+  if v_b.status = 'expired'
+     or v_b.declared_at < now() - interval '24 hours'
+     or v_b.cleared_at is null
+     or v_b.cleared_at < now() - interval '30 minutes'
+     or v_b.flags >= 2 then
+    raise exception 'This block is closed.' using errcode = '42501';
+  end if;
+
   update blocks
      set status     = 'disputed',
          cleared_at = null,
+         flags      = flags + 1,
          expires_at = greatest(expires_at, now() + interval '1 hour')
    where id = p_block;
 
-  delete from messages where block_id = p_block;
+  update messages set archived_at = now() where block_id = p_block and archived_at is null;
 
   insert into messages (block_id, to_user, from_label, kind, body)
   values (p_block, v_b.blocker_id, 'Still blocked', 'hot',
@@ -484,7 +505,9 @@ begin
     raise exception 'Sign in first.' using errcode = '28000';
   end if;
 
-  select * into v_b from blocks where id = p_block and status in ('open', 'disputed');
+  select * into v_b from blocks
+   where id = p_block and status in ('open', 'disputed')
+     and declared_at > now() - interval '24 hours';
   if v_b.id is null or not is_block_target(p_block, v_mine) then
     raise exception 'That block is not open, or it is not yours.' using errcode = '42501';
   end if;
@@ -575,7 +598,9 @@ begin
     raise exception 'Keep it under 300 characters.' using errcode = '22023';
   end if;
 
-  select * into v_b from blocks where id = p_block and status in ('open','disputed');
+  select * into v_b from blocks
+   where id = p_block and status in ('open','disputed')
+     and declared_at > now() - interval '24 hours';
   if v_b.id is null then
     raise exception 'That block is not open.' using errcode = '42501';
   end if;
@@ -854,6 +879,7 @@ begin
       update messages m set pushed_at = now()
        where m.id in (select x.id from messages x
                        where x.pushed_at is null and x.to_user is not null
+                         and x.archived_at is null
                          and x.created_at > now() - interval '10 minutes'
                        for update skip locked)
       returning m.block_id, m.to_user, m.kind, m.from_label, m.body, m.is_typed
