@@ -81,6 +81,24 @@ internal-only and locked to IAP, with the redirect URI unmodifiable, and that
 API is deprecated. The consent screen and client stay a console job. See
 `db/README.md`.
 
+## Analytics (Google Analytics 4)
+
+One GA4 property per Next Novas app; Tolong Alih's measurement id (`G-…`) goes in
+`wrangler.jsonc` as `GA_MEASUREMENT_ID` (empty = off; UAT is always off). Create the
+property in the GA console (Admin → Create → Property → Web stream for
+`alih.nextnovas.com`), turn Google signals off, set event data retention to 14
+months, then paste the id. The `analytics-mcp` server in `.mcp.json`
+([googleanalytics/google-analytics-mcp](https://github.com/googleanalytics/google-analytics-mcp))
+reads accounts, properties and reports so Claude can answer campaign questions; it
+is read-only and needs `pipx` plus Application Default Credentials with the
+`analytics.readonly` scope on your own machine:
+
+```bash
+gcloud auth application-default login \
+  --scopes https://www.googleapis.com/auth/analytics.readonly,https://www.googleapis.com/auth/cloud-platform
+export GOOGLE_PROJECT_ID=<your GCP project id>   # Google Analytics Admin + Data APIs enabled
+```
+
 ## Running it locally
 
 ```bash

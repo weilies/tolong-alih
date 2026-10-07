@@ -268,10 +268,10 @@ test("the ads console is offered only to the owner", async ({ page }) => {
 test("the terms page makes the promise and switches to BM", async ({ page }) => {
   await fakeNeon(page, { signedIn: false });
   await page.goto("/terms.html");
-  await expect(page.getByText("We never sell your data.")).toBeVisible();
+  await expect(page.getByText(/No ad networks, and we never sell your data/)).toBeVisible();
   await expect(page.getByText(/We don't ask for your phone number/)).toBeVisible();
   await page.click("#langBtn");
-  await expect(page.getByText("Kami tidak pernah menjual data anda.")).toBeVisible();
+  await expect(page.getByText(/Tiada rangkaian iklan, dan kami tidak pernah menjual data anda/)).toBeVisible();
 });
 
 test("contact page: topics start closed, open one at a time, and deep links open the right one", async ({ page }) => {
@@ -324,7 +324,7 @@ test("the privacy policy states the Google data use, links to terms, and switche
   await page.goto("/privacy.html");
   await expect(page.getByRole("heading", { name: "Privacy policy" })).toBeVisible();
   await expect(page.getByText(/Google API Services User Data Policy/)).toBeVisible();
-  await expect(page.getByText("We never sell your data.")).toBeVisible();
+  await expect(page.getByText(/No ad networks, and we never sell your data/)).toBeVisible();
   await expect(page.locator("main a", { hasText: "terms of use" })).toHaveAttribute("href", "/terms.html");
   await page.click("#langBtn");
   await expect(page.getByRole("heading", { name: "Dasar privasi" })).toBeVisible();
@@ -426,7 +426,7 @@ test("sign-up needs the consent tick; signing in does not; the tick is remembere
   await page.check("#agree");
   await expect(page.locator("#signup")).toBeEnabled();
   await expect(page.locator("#google")).toBeEnabled();
-  await page.evaluate(() => localStorage.setItem("alih.consent", "2026-10-07"));
+  await page.evaluate(() => localStorage.setItem("alih.consent", "2026-10-08"));
   await page.reload();                                                 // location is kept for the session
   await expect(page.locator("#agreeRow")).toBeHidden();                // remembered on this phone
   await expect(page.locator("#signup")).toBeEnabled();
@@ -441,7 +441,7 @@ test("an account that has not agreed to this version is asked once, and recorded
   await page.check("#agree2");
   await page.click("#agreeGo");
   await expect(page.locator("#app")).toHaveClass(/\bon\b/);
-  expect(net.rpc.some((c) => c.fn === "record_consent" && c.args.p_version === "2026-10-07")).toBe(true);
+  expect(net.rpc.some((c) => c.fn === "record_consent" && c.args.p_version === "2026-10-08")).toBe(true);
 });
 
 test("declaring a block names its place (road, area, city, state) afterwards, without waiting on it", async ({ page }) => {
@@ -457,4 +457,44 @@ test("declaring a block names its place (road, area, city, state) afterwards, wi
   const tag = net.rpc.find((c) => c.fn === "tag_block_place");
   expect(tag.args).toMatchObject({ p_road: "Jalan Ampang", p_area: "Ampang", p_city: "Kuala Lumpur", p_state: "Wilayah Persekutuan Kuala Lumpur" });
   expect(Object.keys(tag.args)).not.toContain("p_lat");   // names only; the coordinates are already on the block
+});
+
+test("analytics stays off with no measurement id, and never loads on UAT or the admin page", async ({ page }) => {
+  const hits = [];
+  page.on("request", (r) => { if (/googletagmanager|google-analytics/.test(r.url())) hits.push(r.url()); });
+  await fakeNeon(page, { signedIn: false });
+  for (const path of ["/admin.html", "/start.html", "/terms.html", "/about.html", "/privacy.html"]) await page.goto(path);
+  expect(hits).toEqual([]);
+  await expect.poll(() => page.evaluate(() => typeof window.track)).toBe("function");   // a safe no-op, still callable
+});
+
+test("with a measurement id, Google Analytics loads on the public pages with ads features off, and not on admin", async ({ page }) => {
+  await fakeNeon(page, { signedIn: false });
+  await page.route("**/config.js", (r) => r.fulfill({
+    contentType: "application/javascript",
+    body: 'window.__ENV={"env":"production","authUrl":location.origin+"/api/auth","dataApiUrl":location.origin+"/api/rest","ga":"G-TEST123456","release":"dev","ip":{}};',
+  }));
+  const loaded = [];
+  await page.route("https://www.googletagmanager.com/**", (r) => { loaded.push(r.request().url()); r.fulfill({ status: 200, contentType: "application/javascript", body: "" }); });
+  await page.goto("/privacy.html");
+  await expect.poll(() => loaded.length).toBe(1);
+  expect(loaded[0]).toContain("id=G-TEST123456");
+  const cfg = await page.evaluate(() => window.dataLayer.map((a) => Array.from(a)));
+  const config = cfg.find((a) => a[0] === "config");
+  expect(config[2]).toMatchObject({ allow_google_signals: false, allow_ad_personalization_signals: false });
+  const consent = cfg.find((a) => a[0] === "consent");
+  expect(consent[2]).toMatchObject({ ad_storage: "denied", ad_user_data: "denied", ad_personalization: "denied" });
+  loaded.length = 0;
+  await page.goto("/admin.html");
+  await page.waitForTimeout(500);
+  expect(loaded).toEqual([]);
+});
+
+test("the privacy page discloses Google Analytics and the promises no longer deny it", async ({ page }) => {
+  await fakeNeon(page, { signedIn: false });
+  await page.goto("/privacy.html");
+  await expect(page.getByRole("heading", { name: "Analytics (Google Analytics)" })).toBeVisible();
+  await expect(page.getByText("no tracking scripts")).toHaveCount(0);
+  await page.goto("/terms.html");
+  await expect(page.getByText(/We use Google Analytics to count visits/)).toBeVisible();
 });
