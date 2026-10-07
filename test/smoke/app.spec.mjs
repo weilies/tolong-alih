@@ -28,9 +28,9 @@ test("first load asks for location, and BM switches the copy", async ({ page }) 
   await fakeNeon(page, { signedIn: false });
   await page.goto("/");
   await expect(page.locator("#gGeo")).toHaveClass(/\bon\b/);
-  await expect(page.locator("#askGeo")).toHaveText("Turn on location");
+  await expect(page.locator("#askGeo")).toHaveText("Get started");
   await page.click("#langBtn");
-  await expect(page.locator("#askGeo")).toHaveText("Hidupkan lokasi");
+  await expect(page.locator("#askGeo")).toHaveText("Mula sekarang");
 });
 
 test("location in Malaysia leads to sign-in when there is no session", async ({ page }) => {
@@ -39,7 +39,9 @@ test("location in Malaysia leads to sign-in when there is no session", async ({ 
   await page.click("#askGeo");
   await expect(page.locator("#gAuth")).toHaveClass(/\bon\b/);
   await expect(page.locator("#google")).toBeVisible();
-  await expect(page.locator('#gAuth a[href="/terms.html"]')).toContainText("never sell your data");
+  await expect(page.locator("#gAuth")).toContainText("We never sell your data.");
+  await expect(page.locator('#gAuth a[href="/terms.html"]')).toHaveText("Terms of use");
+  await expect(page.locator('#gAuth a[href="/privacy.html"]')).toHaveText("Privacy");
 });
 
 test("a new driver with no car is guided to the Garage and back", async ({ page }) => {
@@ -339,4 +341,30 @@ test("every footer has the same two links, Terms of use and Privacy", async ({ p
     await expect(links.nth(0)).toHaveAttribute("href", "/terms.html");
     await expect(links.nth(1)).toHaveAttribute("href", "/privacy.html");
   }
+});
+
+test("the first screen pitches in short rotating lines, and a dot picks one", async ({ page }) => {
+  await fakeNeon(page, { signedIn: false });
+  await page.goto("/");
+  const lines = page.locator("#gGeo .rl");
+  await expect(lines).toHaveCount(6);
+  await expect(page.locator("#gGeo .rl.on")).toHaveCount(1);
+  await expect(page.locator("#gGeo .rl.on")).toContainText("Say sorry the easy way.");
+  await page.locator("#rotDots button").nth(2).click();
+  await expect(page.locator("#gGeo .rl.on")).toContainText("No 2am calls.");
+  await page.click("#langBtn");
+  await expect(page.locator("#gGeo .rl.on")).toContainText("Tiada panggilan pukul 2 pagi.");
+});
+
+test("Help opens with the same rotating pitch", async ({ page }) => {
+  await fakeNeon(page, { signedIn: false });
+  await page.goto("/start.html");
+  await expect(page.locator(".rot .rl")).toHaveCount(6);
+  await expect(page.locator(".rot .rl.on")).toHaveCount(1);
+});
+
+test("no Facebook link shows until there is a real page", async ({ page }) => {
+  await fakeNeon(page, { signedIn: false });
+  await page.goto("/");
+  await expect(page.locator("#fbLink")).toBeHidden();
 });
