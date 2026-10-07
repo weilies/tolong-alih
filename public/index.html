@@ -339,7 +339,6 @@
             <div class="rl"><span class="ri">🌙</span><div class="rt"><b>No 2am calls.</b> A stranger can't ring you up to vent. Everything goes through the app.</div></div>
             <div class="rl"><span class="ri">😌</span><div class="rt"><b>Running late? Tell them.</b> They see when you'll be back, and can wait calmly.</div></div>
             <div class="rl"><span class="ri">🔍</span><div class="rt"><b>Blocked in yourself?</b> Type the plate and we find the driver. No shouting match.</div></div>
-            <div class="rl"><span class="ri">🎁</span><div class="rt"><b>Free for drivers.</b> Local shops pay for it, not you.</div></div>
           </div>
           <div class="rdots" id="rotDots"></div>
         </div>
@@ -357,7 +356,7 @@
       <div class="hazard"></div>
       <div class="pad">
         <h1 class="disp">Almost there.</h1>
-        <p>Make your free account. Your plate is how people reach you. Your name, email and number stay private.</p>
+        <p>Make your account. Your plate is how people reach you. Your name, email and number stay private.</p>
 
         <button class="btn" id="google"><span class="g">G</span>Continue with Google</button>
 
@@ -642,13 +641,11 @@ var MS = {
   "They see when you'll be back, and can wait calmly.":"Mereka nampak bila anda kembali, dan boleh menunggu dengan tenang.",
   "Blocked in yourself?":"Anda pula yang terhalang?",
   "Type the plate and we find the driver. No shouting match.":"Taip plat dan kami cari pemandunya. Tak perlu bergaduh.",
-  "Free for drivers.":"Percuma untuk pemandu.",
-  "Local shops pay for it, not you.":"Kedai tempatan yang membayar, bukan anda.",
   "Be the considerate driver.":"Jadilah pemandu yang bertimbang rasa.",
   "Get started":"Mula sekarang",
   "Your phone will ask to share your location once. It only checks you're in Malaysia, and other drivers never see it.":"Telefon anda akan minta kongsi lokasi sekali sahaja. Ia hanya menyemak anda berada di Malaysia, dan pemandu lain tidak akan nampaknya.",
   "Almost there.":"Hampir siap.",
-  "Make your free account. Your plate is how people reach you. Your name, email and number stay private.":"Buka akaun percuma anda. Plat anda ialah cara orang menghubungi anda. Nama, e-mel dan nombor anda kekal peribadi.",
+  "Make your account. Your plate is how people reach you. Your name, email and number stay private.":"Buka akaun anda. Plat anda ialah cara orang menghubungi anda. Nama, e-mel dan nombor anda kekal peribadi.",
   "We never sell your data.":"Kami tidak pernah menjual data anda.",
   "We sent a six-digit code to":"Kami hantar kod enam digit ke",
   ". It keeps fake plate claims out.":". Ia menghalang tuntutan plat palsu.",
@@ -858,11 +855,11 @@ function readGeo(){ try{ var s=sessionStorage.getItem("alih.geo"); return s?JSON
    reverse geocoder is free and needs no key; the result is cached per session
    because the fix barely moves and their policy asks for restraint. Purely
    cosmetic — everything still works when it fails. */
-async function describe(g){
-  var key = "alih.place."+g.lat.toFixed(3)+","+g.lng.toFixed(3);
+async function lookup(g){
+  var key = "alih.place2."+g.lat.toFixed(3)+","+g.lng.toFixed(3);
   try{
     var hit = sessionStorage.getItem(key);
-    if(hit) return hit;
+    if(hit) return JSON.parse(hit);
   }catch(e){}
 
   try{
@@ -875,11 +872,12 @@ async function describe(g){
       a.suburb || a.neighbourhood || a.village || a.town || a.city_district,
       a.city || a.town || a.state
     ].filter(Boolean).filter(function(v,i,arr){ return arr.indexOf(v)===i; }).slice(0,2).join(", ");
-    if(!name) return null;
-    try{ sessionStorage.setItem(key, name); }catch(e){}
-    return name;
+    var out = { name: name || null, state: a.state || null };
+    try{ sessionStorage.setItem(key, JSON.stringify(out)); }catch(e){}
+    return out;
   }catch(e){ return null; }
 }
+async function describe(g){ var r = await lookup(g); return r && r.name; }
 
 async function paintPlace(){
   if(!geo) return;
@@ -1189,6 +1187,23 @@ async function boot(session){
   enterApp();
 }
 
+/* Once a day per browser, tell the database the state this driver opened the app
+   from (the state's name only, never coordinates), so daily active drivers can be
+   counted and shown to merchants by state. Best effort: nothing waits on it. */
+async function logVisit(){
+  try{
+    var today = new Date().toISOString().slice(0,10), key = "alih.visit";
+    if(localStorage.getItem(key) === me.id+"|"+today) return;
+    var state = null;
+    if(geo){
+      var l = await lookup(geo);
+      state = (l && l.state) || (geo.inMY ? null : "Outside Malaysia");
+    }
+    var r = await sb.rpc("log_visit", { p_state: state });
+    if(!r.error) localStorage.setItem(key, me.id+"|"+today);
+  }catch(e){}
+}
+
 async function enterApp(){
   if(geo) paintPlace(); else $("topLoc").textContent = "📍 Location off";
   $("sheetName").textContent = me.name || (me.email||"").split("@")[0];
@@ -1200,6 +1215,7 @@ async function enterApp(){
   stage("app");
   render();
   pushSync(true);
+  logVisit();
   goTab(wantTab || tabFromUrl() || "pD");
   wantTab = null;
   await Promise.all([refresh(), loadAds()]);
