@@ -363,10 +363,14 @@ test("Help opens with the same rotating pitch", async ({ page }) => {
   await expect(page.locator(".rot .rl.on")).toHaveCount(1);
 });
 
-test("no Facebook link shows until there is a real page", async ({ page }) => {
-  await fakeNeon(page, { signedIn: false });
-  await page.goto("/");
-  await expect(page.locator("#fbLink")).toBeHidden();
+test("the Facebook page is linked in the account menu, the Alerts panel and Contact", async ({ page }) => {
+  const FB = "https://www.facebook.com/profile.php?id=61594912663127";
+  await fakeNeon(page, { cars: [car("WXY 1234")] });
+  await signIn(page);
+  await expect(page.locator("#fbMenu")).toHaveAttribute("href", FB);
+  await expect(page.locator("#fbLink")).toHaveAttribute("href", FB);
+  await page.goto("/about.html");
+  await expect(page.locator("#fbQuick")).toHaveAttribute("href", FB);
 });
 
 test("opening the app signed in logs one visit with the state, once a day per browser", async ({ page }) => {

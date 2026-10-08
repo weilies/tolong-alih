@@ -40,6 +40,7 @@
   h1{font-size:28px;margin-bottom:10px}
   .eyebrow{font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 100,'wght' 600;font-size:10.5px;
     letter-spacing:.2em;text-transform:uppercase;color:var(--mute);margin-bottom:10px}
+  .fbbtn{display:block;text-align:center;margin:-14px 0 28px;padding:13px 8px}
   .quick{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:28px}
 
   /* topics: closed rows, one open at a time */
@@ -110,6 +111,7 @@
       <a class="btn btn-wa" id="waQuick" href="#">WhatsApp</a>
       <a class="btn btn-out" id="mailQuick" href="#">Email</a>
     </div>
+    <a class="btn btn-out fbbtn" id="fbQuick" href="https://www.facebook.com/profile.php?id=61594912663127" target="_blank" rel="noopener">👍 Follow Tolong Alih on Facebook</a>
 
     <p class="eyebrow">Common topics</p>
 
@@ -271,6 +273,7 @@ link("mailMerchant",mail("Advertising on Tolong Alih", MERCHANT));
    node so switching back is exact. The choice is shared with the app through
    the same localStorage key. */
 var MS = {
+  "👍 Follow Tolong Alih on Facebook":"👍 Ikuti Tolong Alih di Facebook",
   "Contact us":"Hubungi kami",
   "Pick a topic below, or message us straight away. We read everything.":"Pilih topik di bawah, atau terus hantar mesej kepada kami. Kami baca semuanya.",
   "WhatsApp":"WhatsApp",

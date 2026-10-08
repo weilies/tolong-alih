@@ -437,6 +437,7 @@
         <label class="pickpic" for="avatarFile">Change photo</label>
         <input type="file" id="avatarFile" accept="image/*" hidden />
         <a class="btn btn-flat" id="adminLink" href="/admin.html" hidden style="text-decoration:none;text-align:center">Ads console</a>
+        <a class="fb" id="fbMenu" href="#" target="_blank" rel="noopener" hidden>👍 Follow Tolong Alih on Facebook</a>
         <button class="btn btn-stop" id="signout">Sign out</button>
       </div>
     </div>
@@ -696,6 +697,7 @@ var MS = {
   "By creating an account or continuing with Google, you agree to our":"Dengan membuka akaun atau meneruskan dengan Google, anda bersetuju dengan",
   "have been updated. In short: we never sell your data, and any totals we share are by area, never plates, names or accounts. By continuing, you agree to them.":"telah dikemas kini. Ringkasnya: kami tidak pernah menjual data anda, dan sebarang jumlah yang dikongsi adalah mengikut kawasan, bukan plat, nama atau akaun. Dengan meneruskan, anda bersetuju dengannya.",
   "and":"dan",
+  "👍 Follow Tolong Alih on Facebook":"👍 Ikuti Tolong Alih di Facebook",
   "Remove photo":"Buang gambar",
   "This email already has a password account that was never verified. Choose “I already have an account”, enter your password, verify the code we email you, then Google works too.":"Emel ini sudah ada akaun kata laluan yang belum disahkan. Pilih “I already have an account”, masukkan kata laluan, sahkan kod yang kami emel, kemudian Google pun boleh digunakan.",
   "Google sign-in did not go through. Try again, or use your email and password.":"Log masuk Google tidak berjaya. Cuba lagi, atau guna emel dan kata laluan.",
@@ -1206,8 +1208,8 @@ $("clearPic").addEventListener("click", async function(){
 });
 
 /* The Facebook page link stays hidden until there is a real page: set FB_URL. */
-var FB_URL = "";
-if(FB_URL){ var fb = $("fbLink"); fb.href = FB_URL; fb.hidden = false; }
+var FB_URL = "https://www.facebook.com/profile.php?id=61594912663127";
+if(FB_URL){ ["fbLink","fbMenu"].forEach(function(id){ var a = $(id); a.href = FB_URL; a.hidden = false; }); }
 
 /* ================= boot ================= */
 /* Google can send the driver back with ?error=... — say why, in plain words. */
