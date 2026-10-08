@@ -177,6 +177,16 @@ RPCs too; do not loosen a policy to make a write work.
   clear, inside the first 24 hours, at most twice per block. Messages are archived
   (`messages.archived_at`), never deleted, so both drivers read the whole
   conversation under History in Alerts, read-only.
+- **Analytics is Google Analytics 4, one property per Next Novas app** (owner
+  decision, October 2026, for marketing campaigns). The app's own measurement id
+  goes in `wrangler.jsonc` `GA_MEASUREMENT_ID` (production only; UAT must stay
+  empty, `scripts/check.mjs` enforces it); `public/analytics.js` loads it on the
+  public pages, never on `admin.html`, with Google's ad features off, a host-only
+  cookie, and Do Not Track / Global Privacy Control respected. Events carry no
+  plate, name, email or position (`sign_up`, `login`, `declare_block`, `trace`).
+  The privacy page, terms and www.nextnovas.com `/privacy` disclose it; do not
+  reintroduce "no tracking scripts". The analytics MCP in `.mcp.json` only *reads*
+  (`analytics.readonly`): it cannot create properties or streams.
 - **Consent and places** (owner decisions, October 2026). Creating an account, or
   Continue with Google, needs a ticked box linking Terms and Privacy; signing in
   does not. The tick is remembered per browser (`localStorage["alih.consent"]`) and

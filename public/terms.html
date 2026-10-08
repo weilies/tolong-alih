@@ -70,7 +70,7 @@
       <ul>
         <li>We never sell your data.</li>
         <li>We don't ask for your phone number. If you gave us one before, we never sell, share or show it.</li>
-        <li>No ad networks and no tracking scripts. Shops that advertise with us only see how many people viewed or tapped their ad, never who.</li>
+        <li>No ad networks, and we never sell your data. Shops that advertise with us only see how many people viewed or tapped their ad, never who. We use Google Analytics to count visits, as the privacy policy explains.</li>
       </ul>
     </div>
 
@@ -87,7 +87,7 @@
     <ul>
       <li>The other driver sees your car plate and the short message, such as "back in 15 min". They do not see your name or email.</li>
       <li>Our team can see the records, only to run the service and fix problems.</li>
-      <li>The services that run the app handle your data for us: Cloudflare for hosting, Neon for the database in Singapore, and Google if you choose Google sign-in.</li>
+      <li>The services that run the app handle your data for us: Cloudflare for hosting, Neon for the database in Singapore, and Google for analytics and, if you choose it, sign-in.</li>
       <li>To show the place name at the top of the app, your phone sends its approximate position to OpenStreetMap.</li>
       <li>We may share totals by area with councils to help plan parking, never plates, names or accounts.</li>
       <li>We share your information with others only if the law requires it.</li>
@@ -141,6 +141,7 @@
 </nav>
 
 <script src="/config.js"></script>
+<script src="/analytics.js"></script>
 <script>
 (function(){
 "use strict";
@@ -165,7 +166,7 @@ var MS = {
   "Our promise":"Janji kami",
   "We never sell your data.":"Kami tidak pernah menjual data anda.",
   "We don't ask for your phone number. If you gave us one before, we never sell, share or show it.":"Kami tidak meminta nombor telefon anda. Jika anda pernah memberikannya, kami tidak pernah menjual, berkongsi atau menunjukkannya.",
-  "No ad networks and no tracking scripts. Shops that advertise with us only see how many people viewed or tapped their ad, never who.":"Tiada rangkaian iklan dan tiada skrip penjejakan. Kedai yang mengiklan bersama kami hanya nampak berapa ramai yang melihat atau menekan iklan mereka, bukan siapa.",
+  "No ad networks, and we never sell your data. Shops that advertise with us only see how many people viewed or tapped their ad, never who. We use Google Analytics to count visits, as the privacy policy explains.":"Tiada rangkaian iklan, dan kami tidak pernah menjual data anda. Kedai yang mengiklan bersama kami hanya nampak berapa ramai yang melihat atau menekan iklan mereka, bukan siapa. Kami guna Google Analytics untuk mengira lawatan, seperti yang diterangkan dalam dasar privasi.",
   "What we keep":"Apa yang kami simpan",
   "Your name and email, from sign-up or from Google.":"Nama dan e-mel anda, daripada pendaftaran atau Google.",
   "The car plates you add, the blocks you declare, and the messages in them.":"Plat kereta yang anda tambah, halangan yang anda isytihar, dan mesej di dalamnya.",
@@ -175,7 +176,7 @@ var MS = {
   "Who sees what":"Siapa nampak apa",
   "The other driver sees your car plate and the short message, such as \"back in 15 min\". They do not see your name, email or phone number.":"Pemandu lain nampak plat kereta anda dan mesej ringkas, seperti \"kembali dalam 15 min\". Mereka tidak nampak nama, e-mel atau nombor telefon anda.",
   "Our team can see the records, only to run the service and fix problems.":"Pasukan kami boleh melihat rekod, hanya untuk menjalankan perkhidmatan dan membetulkan masalah.",
-  "The services that run the app handle your data for us: Cloudflare for hosting, Neon for the database in Singapore, and Google if you choose Google sign-in.":"Perkhidmatan yang menjalankan aplikasi mengendalikan data anda untuk kami: Cloudflare untuk pengehosan, Neon untuk pangkalan data di Singapura, dan Google jika anda pilih log masuk Google.",
+  "The services that run the app handle your data for us: Cloudflare for hosting, Neon for the database in Singapore, and Google for analytics and, if you choose it, sign-in.":"Perkhidmatan yang menjalankan aplikasi mengendalikan data anda untuk kami: Cloudflare untuk pengehosan, Neon untuk pangkalan data di Singapura, dan Google untuk analitik dan, jika anda pilih, log masuk.",
   "To show the place name at the top of the app, your phone sends its approximate position to OpenStreetMap.":"Untuk menunjukkan nama tempat di bahagian atas aplikasi, telefon anda menghantar kedudukan anggarannya kepada OpenStreetMap.",
   "We may share totals by area with councils to help plan parking, never plates, names or accounts.":"Kami mungkin berkongsi jumlah mengikut kawasan dengan majlis untuk membantu merancang parkir, tidak sekali-kali plat, nama atau akaun.",
   "We share your information with others only if the law requires it.":"Kami berkongsi maklumat anda dengan pihak lain hanya jika undang-undang mewajibkannya.",

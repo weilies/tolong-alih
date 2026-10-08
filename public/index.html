@@ -582,6 +582,7 @@
 <div class="toast" id="toast"></div>
 
 <script src="/config.js"></script>
+<script src="/analytics.js"></script>
 <script src="/vendor/neon-js-0.7.0-beta.js"></script>
 <script>
 (function(){
@@ -1042,7 +1043,7 @@ function authNote(msg){
 /* Consent. Ticking is required to create an account or to continue with Google,
    once per device (remembered in this browser). The account itself records which
    version it agreed to, so signing in again, even on another phone, never asks. */
-var CONSENT_V = "2026-10-07";
+var CONSENT_V = "2026-10-08";
 function consentLocal(){ try{ return localStorage.getItem("alih.consent") === CONSENT_V; }catch(e){ return false; } }
 function agreed(){ return consentLocal() || $("agree").checked; }
 function syncAgree(){
@@ -1068,6 +1069,7 @@ $("google").addEventListener("click", async function(){
   if(!sb) return authNote(cfgErr);
   if(!agreed()) return toast("Tick the box to agree first.");
   rememberConsent();
+  track("login", { method: "google" });
   var r = await sb.auth.signInWithOAuth({
     provider:"google",
     options:{ redirectTo: location.origin }
@@ -1083,6 +1085,7 @@ $("signup").addEventListener("click", async function(){
   if(pw.length < 8) return toast("Password needs at least 8 characters.");
 
   rememberConsent();
+  track("sign_up", { method: "email" });
   busy(this,true);
   /* The password is held only so a verify that does not auto sign in can
      finish the job. */
@@ -1798,6 +1801,7 @@ async function commit(byPlate, vs, btn){
   busy(btn,false,"Declare block");
   if(r.error) return toast(why(r.error,"Could not declare that block."));
 
+  track("declare_block");
   var n = (r.data && r.data.notified) || 0;
   toast(vs.length > 1
     ? "Blocked "+vs.length+" cars — "+n+" notified"
@@ -1961,6 +1965,7 @@ $("trace").addEventListener("click", async function(){
   busy(btn,false,"Find the driver");
 
   if(r.error){ out.innerHTML=""; return toast(why(r.error,"Trace failed.")); }
+  track("trace");
 
   if(!r.data || !r.data.found){
     traced = null;

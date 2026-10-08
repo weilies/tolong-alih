@@ -70,7 +70,7 @@
       <ul>
         <li>We never sell your data.</li>
         <li>We don't ask for your phone number, and we don't use your information for ads aimed at you.</li>
-        <li>No ad networks and no tracking scripts. Shops that advertise with us only see how many people viewed or tapped their ad, never who.</li>
+        <li>No ad networks, and we never sell your data. Shops that advertise with us only see how many people viewed or tapped their ad, never who.</li>
       </ul>
     </div>
 
@@ -93,14 +93,23 @@
     <ul>
       <li>The other driver sees your car plate and the short message, such as "back in 15 min". They do not see your name or email.</li>
       <li>Our team can see the records, only to run the service and fix problems.</li>
-      <li>The services that run the app handle your data for us: Cloudflare for hosting (they also keep the ordinary request logs any host does), Neon for the database in Singapore, and Google if you choose Google sign-in.</li>
+      <li>The services that run the app handle your data for us: Cloudflare for hosting (they also keep the ordinary request logs any host does), Neon for the database in Singapore, and Google for analytics (below) and for Google sign-in if you choose it.</li>
       <li>We may share totals with local councils and other public bodies to help plan parking, for example how many blocks happened on a road, and how long they lasted. Never plates, names, emails or accounts.</li>
       <li>To show the place name, your phone sends its approximate position to OpenStreetMap.</li>
       <li>We share your information with others only if the law requires it.</li>
     </ul>
 
+    <h2 class="disp">Analytics (Google Analytics)</h2>
+    <p>We use Google Analytics to see how people find and use Tolong Alih, so we can improve it and tell which posts and links bring people in. Google receives the pages you open, your device, browser and language, your approximate area (from your connection, not from GPS), how you reached us (for example a link or a post), and a random ID kept in a cookie. We never send your name, email, car plate or exact position.</p>
+    <ul>
+      <li>We switch off Google's advertising features: no ad personalisation, and no linking to your Google account.</li>
+      <li>Google keeps this data for up to 14 months. Its cookies (named _ga and _ga_…) last up to two years and belong to this app's address only.</li>
+      <li>Each Next Novas app has its own separate analytics, so one app's numbers are never mixed with another's.</li>
+      <li>We respect your browser's Do Not Track and Global Privacy Control settings. You can also install <a href="https://tools.google.com/dlpage/gaoptout" target="_blank" rel="noopener">Google's opt-out add-on</a>, or tell us on the Contact page.</li>
+    </ul>
+
     <h2 class="disp">Cookies and storage on your phone</h2>
-    <p>We use a sign-in cookie to keep you signed in, and your browser's storage to remember your language and that you have seen the welcome page. That is all. We use no advertising or analytics cookies.</p>
+    <p>We use a sign-in cookie to keep you signed in, and your browser's storage to remember your language and that you have seen the welcome page. Google Analytics adds its own cookies (see below). We use no advertising cookies.</p>
 
     <h2 class="disp">How long we keep it</h2>
     <p>We keep your account and records until you ask us to delete them. A block ends on its own, but its record stays in your history until you delete it or ask us to. Alert addresses are removed when you sign out of a phone.</p>
@@ -141,6 +150,7 @@
 </nav>
 
 <script src="/config.js"></script>
+<script src="/analytics.js"></script>
 <script>
 (function(){
 "use strict";
@@ -165,7 +175,7 @@ var MS = {
   "Our promise":"Janji kami",
   "We never sell your data.":"Kami tidak pernah menjual data anda.",
   "We don't ask for your phone number, and we don't use your information for ads aimed at you.":"Kami tidak meminta nombor telefon anda, dan kami tidak menggunakan maklumat anda untuk iklan yang disasarkan kepada anda.",
-  "No ad networks and no tracking scripts. Shops that advertise with us only see how many people viewed or tapped their ad, never who.":"Tiada rangkaian iklan dan tiada skrip penjejakan. Kedai yang mengiklan bersama kami hanya nampak berapa ramai yang melihat atau menekan iklan mereka, bukan siapa.",
+  "No ad networks, and we never sell your data. Shops that advertise with us only see how many people viewed or tapped their ad, never who.":"Tiada rangkaian iklan, dan kami tidak pernah menjual data anda. Kedai yang mengiklan bersama kami hanya nampak berapa ramai yang melihat atau menekan iklan mereka, bukan siapa.",
   "What we keep, and why":"Apa yang kami simpan, dan mengapa",
   "Your name and email.":"Nama dan e-mel anda.",
   "From sign-up, or from Google if you choose Google sign-in. We use them to make your account and to sign you in.":"Daripada pendaftaran, atau Google jika anda pilih log masuk Google. Kami guna untuk membuat akaun anda dan melog masuk anda.",
@@ -188,12 +198,20 @@ var MS = {
   "Who sees what":"Siapa nampak apa",
   "The other driver sees your car plate and the short message, such as \"back in 15 min\". They do not see your name or email.":"Pemandu lain nampak plat kereta anda dan mesej ringkas, seperti \"kembali dalam 15 min\". Mereka tidak nampak nama atau e-mel anda.",
   "Our team can see the records, only to run the service and fix problems.":"Pasukan kami boleh melihat rekod, hanya untuk menjalankan perkhidmatan dan membetulkan masalah.",
-  "The services that run the app handle your data for us: Cloudflare for hosting (they also keep the ordinary request logs any host does), Neon for the database in Singapore, and Google if you choose Google sign-in.":"Perkhidmatan yang menjalankan aplikasi mengendalikan data anda untuk kami: Cloudflare untuk pengehosan (mereka juga menyimpan log permintaan biasa seperti mana-mana hos), Neon untuk pangkalan data di Singapura, dan Google jika anda pilih log masuk Google.",
+  "The services that run the app handle your data for us: Cloudflare for hosting (they also keep the ordinary request logs any host does), Neon for the database in Singapore, and Google for analytics (below) and for Google sign-in if you choose it.":"Perkhidmatan yang menjalankan aplikasi mengendalikan data anda untuk kami: Cloudflare untuk pengehosan (mereka juga menyimpan log permintaan biasa seperti mana-mana hos), Neon untuk pangkalan data di Singapura, dan Google untuk analitik (di bawah) dan untuk log masuk Google jika anda pilih.",
   "We may share totals with local councils and other public bodies to help plan parking, for example how many blocks happened on a road, and how long they lasted. Never plates, names, emails or accounts.":"Kami mungkin berkongsi jumlah dengan majlis tempatan dan badan awam lain untuk membantu merancang parkir, contohnya berapa banyak halangan berlaku di sesebuah jalan, dan berapa lama. Tidak sekali-kali plat, nama, e-mel atau akaun.",
   "To show the place name, your phone sends its approximate position to OpenStreetMap.":"Untuk menunjukkan nama tempat, telefon anda menghantar kedudukan anggarannya kepada OpenStreetMap.",
   "We share your information with others only if the law requires it.":"Kami berkongsi maklumat anda dengan pihak lain hanya jika undang-undang mewajibkannya.",
+  "Analytics (Google Analytics)":"Analitik (Google Analytics)",
+  "We use Google Analytics to see how people find and use Tolong Alih, so we can improve it and tell which posts and links bring people in. Google receives the pages you open, your device, browser and language, your approximate area (from your connection, not from GPS), how you reached us (for example a link or a post), and a random ID kept in a cookie. We never send your name, email, car plate or exact position.":"Kami guna Google Analytics untuk melihat bagaimana orang menemui dan menggunakan Tolong Alih, supaya kami boleh menambah baiknya dan tahu siaran dan pautan mana yang membawa orang masuk. Google menerima halaman yang anda buka, peranti, pelayar dan bahasa anda, kawasan anggaran anda (daripada sambungan anda, bukan GPS), bagaimana anda sampai kepada kami (contohnya pautan atau siaran), dan ID rawak dalam kuki. Kami tidak pernah menghantar nama, e-mel, plat kereta atau kedudukan tepat anda.",
+  "We switch off Google's advertising features: no ad personalisation, and no linking to your Google account.":"Kami mematikan ciri pengiklanan Google: tiada pemperibadian iklan, dan tiada pautan ke akaun Google anda.",
+  "Google keeps this data for up to 14 months. Its cookies (named _ga and _ga_…) last up to two years and belong to this app's address only.":"Google menyimpan data ini sehingga 14 bulan. Kukinya (bernama _ga dan _ga_…) kekal sehingga dua tahun dan hanya milik alamat aplikasi ini.",
+  "Each Next Novas app has its own separate analytics, so one app's numbers are never mixed with another's.":"Setiap aplikasi Next Novas mempunyai analitik berasingan, jadi angka satu aplikasi tidak pernah bercampur dengan yang lain.",
+  "We respect your browser's Do Not Track and Global Privacy Control settings. You can also install":"Kami menghormati tetapan Do Not Track dan Global Privacy Control pelayar anda. Anda juga boleh memasang",
+  "Google's opt-out add-on":"alat tambah opt-out Google",
+  ", or tell us on the Contact page.":", atau beritahu kami di halaman Hubungi kami.",
   "Cookies and storage on your phone":"Kuki dan storan pada telefon anda",
-  "We use a sign-in cookie to keep you signed in, and your browser's storage to remember your language and that you have seen the welcome page. That is all. We use no advertising or analytics cookies.":"Kami guna kuki log masuk untuk mengekalkan anda log masuk, dan storan pelayar anda untuk mengingati bahasa anda dan bahawa anda sudah melihat halaman alu-aluan. Itu sahaja. Kami tidak guna kuki pengiklanan atau analitik.",
+  "We use a sign-in cookie to keep you signed in, and your browser's storage to remember your language and that you have seen the welcome page. Google Analytics adds its own cookies (see below). We use no advertising cookies.":"Kami guna kuki log masuk untuk mengekalkan anda log masuk, dan storan pelayar anda untuk mengingati bahasa anda dan bahawa anda sudah melihat halaman alu-aluan. Google Analytics menambah kukinya sendiri (lihat di bawah). Kami tidak guna kuki pengiklanan.",
   "How long we keep it":"Berapa lama kami menyimpannya",
   "We keep your account and records until you ask us to delete them. A block ends on its own, but its record stays in your history until you delete it or ask us to. Alert addresses are removed when you sign out of a phone.":"Kami simpan akaun dan rekod anda sehingga anda minta kami padamkannya. Halangan tamat dengan sendiri, tetapi rekodnya kekal dalam sejarah anda sehingga anda memadamkannya atau meminta kami berbuat demikian. Alamat amaran dibuang apabila anda log keluar daripada telefon.",
   "Your choices":"Pilihan anda",
