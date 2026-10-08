@@ -99,6 +99,9 @@ gcloud auth application-default login \
 export GOOGLE_PROJECT_ID=<your GCP project id>   # Google Analytics Admin + Data APIs enabled
 ```
 
+If `pipx` complains about the `uv` version, run `export PIPX_DEFAULT_BACKEND=pip` first.
+Tolong Alih's property id (the `G-…` measurement id) is in `wrangler.jsonc`.
+
 ## Running it locally
 
 ```bash
