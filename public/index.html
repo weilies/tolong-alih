@@ -96,10 +96,8 @@
   input::placeholder{font-family:'Instrument Sans',sans-serif;font-weight:400;letter-spacing:0;text-transform:none;color:#A9A493;font-size:15px}
   input:focus{outline:none;box-shadow:inset 0 0 0 3px var(--hazard)}
   .note{font-size:12px;color:var(--mute);margin-top:10px;line-height:1.55}
-  .agree{display:flex;gap:11px;align-items:flex-start;margin-top:16px;font-size:13.5px;line-height:1.5;color:var(--ink);cursor:pointer}
-  .agree[hidden]{display:none}
-  .agree input{width:22px;height:22px;flex:none;margin-top:1px;padding:0;accent-color:var(--tarmac)}
-  .agree a{color:var(--signage);font-weight:600}
+  .gate p.agreeline{font-size:12.5px;line-height:1.5;color:var(--mute);margin-top:14px}
+  .agreeline a,.gate p a{color:var(--signage);font-weight:600}
 
   /* ---------- app shell ---------- */
   #app{display:none;flex-direction:column;flex:1}
@@ -368,10 +366,7 @@
         <h1 class="disp">Almost there.</h1>
         <p>Make your account. Your plate is how people reach you. Your name, email and number stay private.</p>
 
-        <label class="agree" id="agreeRow">
-          <input type="checkbox" id="agree" />
-          <span>I agree to the <a href="/terms.html" target="_blank" rel="noopener">Terms of use</a> and <a href="/privacy.html" target="_blank" rel="noopener">Privacy</a>.</span>
-        </label>
+        <p class="agreeline">By creating an account or continuing with Google, you agree to our <a href="/terms.html" target="_blank" rel="noopener">Terms of use</a> and <a href="/privacy.html" target="_blank" rel="noopener">Privacy</a>.</p>
 
         <button class="btn" id="google"><span class="g">G</span>Continue with Google</button>
 
@@ -418,12 +413,8 @@
       <div class="hazard"></div>
       <div class="pad">
         <h1 class="disp">One last thing.</h1>
-        <p>Please read and agree to our Terms of use and Privacy. In short: we never sell your data, and any totals we share are by area, never plates, names or accounts.</p>
-        <label class="agree">
-          <input type="checkbox" id="agree2" />
-          <span>I agree to the <a href="/terms.html" target="_blank" rel="noopener">Terms of use</a> and <a href="/privacy.html" target="_blank" rel="noopener">Privacy</a>.</span>
-        </label>
-        <button class="btn btn-hz" id="agreeGo" disabled>Agree and continue</button>
+        <p><a href="/terms.html" target="_blank" rel="noopener">Terms of use</a> and <a href="/privacy.html" target="_blank" rel="noopener">Privacy</a> have been updated. In short: we never sell your data, and any totals we share are by area, never plates, names or accounts. By continuing, you agree to them.</p>
+        <button class="btn btn-hz" id="agreeGo">Agree and continue</button>
         <button class="btn btn-flat" id="agreeOut">Sign out</button>
       </div>
     </div>
@@ -699,13 +690,12 @@ var MS = {
   "Could not load this conversation.":"Tidak dapat memuatkan perbualan ini.",
   "No messages were sent on this one.":"Tiada mesej dihantar untuk yang ini.",
   "This block is closed.":"Halangan ini sudah ditutup.",
-  "I agree to the":"Saya bersetuju dengan",
-  "and":"dan",
-  "Tick the box to agree first.":"Tanda kotak untuk bersetuju dahulu.",
   "One last thing.":"Satu perkara lagi.",
-  "Please read and agree to our Terms of use and Privacy. In short: we never sell your data, and any totals we share are by area, never plates, names or accounts.":"Sila baca dan setuju dengan Syarat penggunaan dan Privasi kami. Ringkasnya: kami tidak pernah menjual data anda, dan sebarang jumlah yang dikongsi adalah mengikut kawasan, bukan plat, nama atau akaun.",
   "Agree and continue":"Setuju dan teruskan",
   "Could not save that. Try again.":"Tidak dapat menyimpannya. Cuba lagi.",
+  "By creating an account or continuing with Google, you agree to our":"Dengan membuka akaun atau meneruskan dengan Google, anda bersetuju dengan",
+  "have been updated. In short: we never sell your data, and any totals we share are by area, never plates, names or accounts. By continuing, you agree to them.":"telah dikemas kini. Ringkasnya: kami tidak pernah menjual data anda, dan sebarang jumlah yang dikongsi adalah mengikut kawasan, bukan plat, nama atau akaun. Dengan meneruskan, anda bersetuju dengannya.",
+  "and":"dan",
   "Remove photo":"Buang gambar",
   "This email already has a password account that was never verified. Choose “I already have an account”, enter your password, verify the code we email you, then Google works too.":"Emel ini sudah ada akaun kata laluan yang belum disahkan. Pilih “I already have an account”, masukkan kata laluan, sahkan kod yang kami emel, kemudian Google pun boleh digunakan.",
   "Google sign-in did not go through. Try again, or use your email and password.":"Log masuk Google tidak berjaya. Cuba lagi, atau guna emel dan kata laluan.",
@@ -1040,21 +1030,15 @@ function authNote(msg){
   if(p) p.innerHTML = '<b style="color:var(--alert)">'+esc(msg)+'</b>';
 }
 
-/* Consent. Ticking is required to create an account or to continue with Google,
-   once per device (remembered in this browser). The account itself records which
-   version it agreed to, so signing in again, even on another phone, never asks. */
+/* Consent, the way most sign-up screens do it: a line of plain words with the links
+   right above the buttons. Creating an account or continuing with Google is the
+   agreement; the browser remembers it (so signing in again never shows anything) and
+   the account records which version it agreed to. An account without the current
+   version is asked once, with a single "Agree and continue" button. */
 var CONSENT_V = "2026-10-08";
 function consentLocal(){ try{ return localStorage.getItem("alih.consent") === CONSENT_V; }catch(e){ return false; } }
-function agreed(){ return consentLocal() || $("agree").checked; }
-function syncAgree(){
-  $("agreeRow").hidden = consentLocal();
-  $("google").disabled = $("signup").disabled = !agreed();
-}
-$("agree").addEventListener("change", syncAgree);
 function rememberConsent(){ try{ localStorage.setItem("alih.consent", CONSENT_V); }catch(e){} }
-syncAgree();
 
-$("agree2").addEventListener("change", function(){ $("agreeGo").disabled = !this.checked; });
 $("agreeGo").addEventListener("click", async function(){
   busy(this,true);
   var r = await sb.rpc("record_consent", { p_version: CONSENT_V });
@@ -1067,7 +1051,6 @@ $("agreeOut").addEventListener("click", function(){ $("signout").click(); });
 
 $("google").addEventListener("click", async function(){
   if(!sb) return authNote(cfgErr);
-  if(!agreed()) return toast("Tick the box to agree first.");
   rememberConsent();
   track("login", { method: "google" });
   var r = await sb.auth.signInWithOAuth({
@@ -1079,7 +1062,6 @@ $("google").addEventListener("click", async function(){
 
 $("signup").addEventListener("click", async function(){
   if(!sb) return authNote(cfgErr);
-  if(!agreed()) return toast("Tick the box to agree first.");
   var email = $("email").value.trim(), pw = $("pw").value;
   if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return toast("Enter a valid email address.");
   if(pw.length < 8) return toast("Password needs at least 8 characters.");
@@ -1150,7 +1132,6 @@ $("signout").addEventListener("click", async function(){
   me = null; cars = []; carsLoaded = false; declared = []; inbox = []; traced = null; adShown = {};
   paintAvatar();
   $("sheet").hidden = true;
-  syncAgree();
   stage("gAuth");
 });
 

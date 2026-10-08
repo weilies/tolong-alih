@@ -177,6 +177,8 @@ RPCs too; do not loosen a policy to make a write work.
   clear, inside the first 24 hours, at most twice per block. Messages are archived
   (`messages.archived_at`), never deleted, so both drivers read the whole
   conversation under History in Alerts, read-only.
+- **The audience is Malaysia only** (owner decision): no EU or UK targeting, so no
+  cookie banner. Revisit before any campaign aimed at EU/UK residents.
 - **Analytics is Google Analytics 4, one property per Next Novas app** (owner
   decision, October 2026, for marketing campaigns). The app's own measurement id
   goes in `wrangler.jsonc` `GA_MEASUREMENT_ID` (production only; UAT must stay
@@ -187,11 +189,14 @@ RPCs too; do not loosen a policy to make a write work.
   The privacy page, terms and www.nextnovas.com `/privacy` disclose it; do not
   reintroduce "no tracking scripts". The analytics MCP in `.mcp.json` only *reads*
   (`analytics.readonly`): it cannot create properties or streams.
-- **Consent and places** (owner decisions, October 2026). Creating an account, or
-  Continue with Google, needs a ticked box linking Terms and Privacy; signing in
-  does not. The tick is remembered per browser (`localStorage["alih.consent"]`) and
+- **Consent and places** (owner decisions, October 2026). Sign-up works like
+  Facebook's: no tick box, one line above the buttons ("By creating an account or
+  continuing with Google, you agree to our Terms of use and Privacy") with both links.
+  Pressing Create account or Continue with Google is the agreement; signing in
+  shows nothing. It is remembered per browser (`localStorage["alih.consent"]`) and
   recorded per account (`profiles.consent_version`, `record_consent`); an account
-  without the current `CONSENT_V` is asked once before using the app. Bump
+  without the current `CONSENT_V` is asked once, with a single "Agree and continue"
+  button. Bump
   `CONSENT_V` whenever the terms or privacy change in a way people should re-agree to.
   Every block keeps its coordinates plus road, area, city and state
   (`tag_block_place`), so `block_area_stats()` can give totals by area and road to a

@@ -414,22 +414,22 @@ test("a closed block is frozen: it leaves Alerts, shows in History, and the conv
   await expect(page.locator(`#ht-${OLD} input, #ht-${OLD} button`)).toHaveCount(0);
 });
 
-test("sign-up needs the consent tick; signing in does not; the tick is remembered", async ({ page }) => {
+test("sign-up states the agreement in one line with links, no tick box; creating an account remembers it", async ({ page }) => {
   await fakeNeon(page, { signedIn: false });
   await page.goto("/");
   await page.click("#askGeo");
-  await expect(page.locator("#agreeRow")).toBeVisible();
-  await expect(page.locator("#signup")).toBeDisabled();
-  await expect(page.locator("#google")).toBeDisabled();
-  await expect(page.locator("#signin")).toBeEnabled();                 // signing in asks for nothing
-  await expect(page.locator("#agreeRow a")).toHaveCount(2);
-  await page.check("#agree");
+  await expect(page.locator("#gAuth input[type=checkbox]")).toHaveCount(0);       // nothing to tick
+  await expect(page.locator(".agreeline")).toContainText("By creating an account or continuing with Google, you agree to our");
+  await expect(page.locator('.agreeline a[href="/terms.html"]')).toHaveText("Terms of use");
+  await expect(page.locator('.agreeline a[href="/privacy.html"]')).toHaveText("Privacy");
   await expect(page.locator("#signup")).toBeEnabled();
   await expect(page.locator("#google")).toBeEnabled();
-  await page.evaluate(() => localStorage.setItem("alih.consent", "2026-10-08"));
-  await page.reload();                                                 // location is kept for the session
-  await expect(page.locator("#agreeRow")).toBeHidden();                // remembered on this phone
-  await expect(page.locator("#signup")).toBeEnabled();
+  await expect(page.locator("#signin")).toBeEnabled();
+  expect(await page.evaluate(() => localStorage.getItem("alih.consent"))).toBeNull();
+  await page.fill("#email", "new@example.my");
+  await page.fill("#pw", "longenough1");
+  await page.click("#signup");
+  expect(await page.evaluate(() => localStorage.getItem("alih.consent"))).toBe("2026-10-08");   // the action is the agreement
 });
 
 test("an account that has not agreed to this version is asked once, and recorded", async ({ page }) => {
@@ -437,8 +437,8 @@ test("an account that has not agreed to this version is asked once, and recorded
   await page.goto("/");
   await page.click("#askGeo");
   await expect(page.locator("#gConsent")).toHaveClass(/\bon\b/);
-  await expect(page.locator("#agreeGo")).toBeDisabled();
-  await page.check("#agree2");
+  await expect(page.locator("#gConsent input[type=checkbox]")).toHaveCount(0);
+  await expect(page.locator("#agreeGo")).toBeEnabled();                              // one click, no tick
   await page.click("#agreeGo");
   await expect(page.locator("#app")).toHaveClass(/\bon\b/);
   expect(net.rpc.some((c) => c.fn === "record_consent" && c.args.p_version === "2026-10-08")).toBe(true);
