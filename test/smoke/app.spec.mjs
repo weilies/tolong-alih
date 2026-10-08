@@ -28,9 +28,9 @@ test("first load asks for location, and BM switches the copy", async ({ page }) 
   await fakeNeon(page, { signedIn: false });
   await page.goto("/");
   await expect(page.locator("#gGeo")).toHaveClass(/\bon\b/);
-  await expect(page.locator("#askGeo")).toHaveText("Turn on location");
+  await expect(page.locator("#askGeo")).toHaveText("Get started");
   await page.click("#langBtn");
-  await expect(page.locator("#askGeo")).toHaveText("Hidupkan lokasi");
+  await expect(page.locator("#askGeo")).toHaveText("Mula sekarang");
 });
 
 test("location in Malaysia leads to sign-in when there is no session", async ({ page }) => {
@@ -39,7 +39,9 @@ test("location in Malaysia leads to sign-in when there is no session", async ({ 
   await page.click("#askGeo");
   await expect(page.locator("#gAuth")).toHaveClass(/\bon\b/);
   await expect(page.locator("#google")).toBeVisible();
-  await expect(page.locator('#gAuth a[href="/terms.html"]')).toContainText("never sell your data");
+  await expect(page.locator("#gAuth")).toContainText("We never sell your data.");
+  await expect(page.locator('#gAuth .note a[href="/terms.html"]')).toHaveText("Terms of use");
+  await expect(page.locator('#gAuth .note a[href="/privacy.html"]')).toHaveText("Privacy");
 });
 
 test("a new driver with no car is guided to the Garage and back", async ({ page }) => {
@@ -266,10 +268,10 @@ test("the ads console is offered only to the owner", async ({ page }) => {
 test("the terms page makes the promise and switches to BM", async ({ page }) => {
   await fakeNeon(page, { signedIn: false });
   await page.goto("/terms.html");
-  await expect(page.getByText("We never sell your data.")).toBeVisible();
+  await expect(page.getByText(/No ad networks, and we never sell your data/)).toBeVisible();
   await expect(page.getByText(/We don't ask for your phone number/)).toBeVisible();
   await page.click("#langBtn");
-  await expect(page.getByText("Kami tidak pernah menjual data anda.")).toBeVisible();
+  await expect(page.getByText(/Tiada rangkaian iklan, dan kami tidak pernah menjual data anda/)).toBeVisible();
 });
 
 test("contact page: topics start closed, open one at a time, and deep links open the right one", async ({ page }) => {
@@ -322,7 +324,7 @@ test("the privacy policy states the Google data use, links to terms, and switche
   await page.goto("/privacy.html");
   await expect(page.getByRole("heading", { name: "Privacy policy" })).toBeVisible();
   await expect(page.getByText(/Google API Services User Data Policy/)).toBeVisible();
-  await expect(page.getByText("We never sell your data.")).toBeVisible();
+  await expect(page.getByText(/No ad networks, and we never sell your data/)).toBeVisible();
   await expect(page.locator("main a", { hasText: "terms of use" })).toHaveAttribute("href", "/terms.html");
   await page.click("#langBtn");
   await expect(page.getByRole("heading", { name: "Dasar privasi" })).toBeVisible();
@@ -339,4 +341,164 @@ test("every footer has the same two links, Terms of use and Privacy", async ({ p
     await expect(links.nth(0)).toHaveAttribute("href", "/terms.html");
     await expect(links.nth(1)).toHaveAttribute("href", "/privacy.html");
   }
+});
+
+test("the first screen pitches in short rotating lines, and a dot picks one", async ({ page }) => {
+  await fakeNeon(page, { signedIn: false });
+  await page.goto("/");
+  const lines = page.locator("#gGeo .rl");
+  await expect(lines).toHaveCount(5);
+  await expect(page.locator("#gGeo .rl.on")).toHaveCount(1);
+  await expect(page.locator("#gGeo .rl.on")).toContainText("Say sorry the easy way.");
+  await page.locator("#rotDots button").nth(2).click();
+  await expect(page.locator("#gGeo .rl.on")).toContainText("No 2am calls.");
+  await page.click("#langBtn");
+  await expect(page.locator("#gGeo .rl.on")).toContainText("Tiada panggilan pukul 2 pagi.");
+});
+
+test("Help opens with the same rotating pitch", async ({ page }) => {
+  await fakeNeon(page, { signedIn: false });
+  await page.goto("/start.html");
+  await expect(page.locator(".rot .rl")).toHaveCount(5);
+  await expect(page.locator(".rot .rl.on")).toHaveCount(1);
+});
+
+test("the Facebook page is linked in the account menu, the Alerts panel and Contact", async ({ page }) => {
+  const FB = "https://www.facebook.com/profile.php?id=61594912663127";
+  await fakeNeon(page, { cars: [car("WXY 1234")] });
+  await signIn(page);
+  await expect(page.locator("#fbMenu")).toHaveAttribute("href", FB);
+  await expect(page.locator("#fbLink")).toHaveAttribute("href", FB);
+  await page.goto("/about.html");
+  await expect(page.locator("#fbQuick")).toHaveAttribute("href", FB);
+});
+
+test("opening the app signed in logs one visit with the state, once a day per browser", async ({ page }) => {
+  const net = await fakeNeon(page, { signedIn: true });
+  // The place lookup is off-box and blocked in tests, so the state is unknown: sent as null, never coordinates.
+  await signIn(page);
+  await expect.poll(() => net.rpc.filter((c) => c.fn === "log_visit").length).toBe(1);
+  const call = net.rpc.find((c) => c.fn === "log_visit");
+  expect(Object.keys(call.args)).toEqual(["p_state"]);
+  await page.reload();
+  await page.waitForTimeout(800);
+  expect(net.rpc.filter((c) => c.fn === "log_visit").length).toBe(1);
+});
+
+test("a closed block is frozen: it leaves Alerts, shows in History, and the conversation reads but cannot be answered", async ({ page }) => {
+  const OLD = "00000000-0000-0000-0000-0000000000c1";
+  const NEW = "00000000-0000-0000-0000-0000000000c2";
+  const hourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+  const justNow = new Date(Date.now() - 2 * 60 * 1000).toISOString();
+  await fakeNeon(page, {
+    cars: [car("WXY 1234")],
+    blocks: [
+      { id: OLD, blocker_id: "someone", status: "cleared", blocker_plate_norm: "OLD1111", declared_at: hourAgo, cleared_at: hourAgo, block_targets: [{ victim_plate_norm: "WXY1234" }] },
+      { id: NEW, blocker_id: "someone", status: "cleared", blocker_plate_norm: "NEW2222", declared_at: justNow, cleared_at: justNow, block_targets: [{ victim_plate_norm: "WXY1234" }] },
+    ],
+    targets: [{ block_id: OLD, victim_plate_norm: "WXY1234" }, { block_id: NEW, victim_plate_norm: "WXY1234" }],
+    messages: [
+      { id: "m1", block_id: OLD, from_label: "All clear", kind: "cool", is_typed: false, body: "OLD1111 has moved. You are free to go. Still stuck? Flag it below.", created_at: hourAgo, from_user: null },
+      { id: "m2", block_id: NEW, from_label: "All clear", kind: "cool", is_typed: false, body: "NEW2222 has moved. You are free to go. Still stuck? Flag it below.", created_at: justNow, from_user: null },
+    ],
+    threads: { [OLD]: [{ id: "t1", from_label: "Blocked in", body: "OLD1111 is parked behind your WXY1234.", kind: "hot", is_typed: false, mine: false, created_at: hourAgo }] },
+  });
+  await signIn(page);
+  await page.locator("#bell").click();
+  // a block cleared two minutes ago can still be flagged; one cleared an hour ago cannot, and has left Alerts
+  await expect(page.locator("#inbox")).toContainText("NEW2222");
+  await expect(page.locator("#inbox")).not.toContainText("OLD1111");
+  await expect(page.locator('#inbox [data-act="flag"]')).toHaveCount(1);
+  // the frozen one is in History, read only
+  await expect(page.locator("#history")).toContainText("History");
+  const row = page.locator('#history [data-act="hist"]').first();
+  await expect(row).toContainText("OLD1111");
+  await row.click();
+  await expect(page.locator(`#ht-${OLD}`)).toContainText("OLD1111 is parked behind your WXY1234.");
+  await expect(page.locator(`#ht-${OLD} input, #ht-${OLD} button`)).toHaveCount(0);
+});
+
+test("sign-up states the agreement in one line with links, no tick box; creating an account remembers it", async ({ page }) => {
+  await fakeNeon(page, { signedIn: false });
+  await page.goto("/");
+  await page.click("#askGeo");
+  await expect(page.locator("#gAuth input[type=checkbox]")).toHaveCount(0);       // nothing to tick
+  await expect(page.locator(".agreeline")).toContainText("By creating an account or continuing with Google, you agree to our");
+  await expect(page.locator('.agreeline a[href="/terms.html"]')).toHaveText("Terms of use");
+  await expect(page.locator('.agreeline a[href="/privacy.html"]')).toHaveText("Privacy");
+  await expect(page.locator("#signup")).toBeEnabled();
+  await expect(page.locator("#google")).toBeEnabled();
+  await expect(page.locator("#signin")).toBeEnabled();
+  expect(await page.evaluate(() => localStorage.getItem("alih.consent"))).toBeNull();
+  await page.fill("#email", "new@example.my");
+  await page.fill("#pw", "longenough1");
+  await page.click("#signup");
+  expect(await page.evaluate(() => localStorage.getItem("alih.consent"))).toBe("2026-10-08");   // the action is the agreement
+});
+
+test("an account that has not agreed to this version is asked once, and recorded", async ({ page }) => {
+  const net = await fakeNeon(page, { signedIn: true, consentVersion: null });
+  await page.goto("/");
+  await page.click("#askGeo");
+  await expect(page.locator("#gConsent")).toHaveClass(/\bon\b/);
+  await expect(page.locator("#gConsent input[type=checkbox]")).toHaveCount(0);
+  await expect(page.locator("#agreeGo")).toBeEnabled();                              // one click, no tick
+  await page.click("#agreeGo");
+  await expect(page.locator("#app")).toHaveClass(/\bon\b/);
+  expect(net.rpc.some((c) => c.fn === "record_consent" && c.args.p_version === "2026-10-08")).toBe(true);
+});
+
+test("declaring a block names its place (road, area, city, state) afterwards, without waiting on it", async ({ page }) => {
+  const net = await fakeNeon(page, { cars: [car("WXY 1234")] });
+  await page.route("https://nominatim.openstreetmap.org/**", (r) => r.fulfill({
+    status: 200, contentType: "application/json",
+    body: JSON.stringify({ address: { road: "Jalan Ampang", suburb: "Ampang", city: "Kuala Lumpur", state: "Wilayah Persekutuan Kuala Lumpur" } }),
+  }));
+  await signIn(page);
+  await page.fill("#v1", "ABC 987");
+  await page.click("#declare");
+  await expect.poll(() => net.rpc.some((c) => c.fn === "tag_block_place")).toBe(true);
+  const tag = net.rpc.find((c) => c.fn === "tag_block_place");
+  expect(tag.args).toMatchObject({ p_road: "Jalan Ampang", p_area: "Ampang", p_city: "Kuala Lumpur", p_state: "Wilayah Persekutuan Kuala Lumpur" });
+  expect(Object.keys(tag.args)).not.toContain("p_lat");   // names only; the coordinates are already on the block
+});
+
+test("analytics stays off with no measurement id, and never loads on UAT or the admin page", async ({ page }) => {
+  const hits = [];
+  page.on("request", (r) => { if (/googletagmanager|google-analytics/.test(r.url())) hits.push(r.url()); });
+  await fakeNeon(page, { signedIn: false });
+  for (const path of ["/admin.html", "/start.html", "/terms.html", "/about.html", "/privacy.html"]) await page.goto(path);
+  expect(hits).toEqual([]);
+  await expect.poll(() => page.evaluate(() => typeof window.track)).toBe("function");   // a safe no-op, still callable
+});
+
+test("with a measurement id, Google Analytics loads on the public pages with ads features off, and not on admin", async ({ page }) => {
+  await fakeNeon(page, { signedIn: false });
+  await page.route("**/config.js", (r) => r.fulfill({
+    contentType: "application/javascript",
+    body: 'window.__ENV={"env":"production","authUrl":location.origin+"/api/auth","dataApiUrl":location.origin+"/api/rest","ga":"G-TEST123456","release":"dev","ip":{}};',
+  }));
+  const loaded = [];
+  await page.route("https://www.googletagmanager.com/**", (r) => { loaded.push(r.request().url()); r.fulfill({ status: 200, contentType: "application/javascript", body: "" }); });
+  await page.goto("/privacy.html");
+  await expect.poll(() => loaded.length).toBe(1);
+  expect(loaded[0]).toContain("id=G-TEST123456");
+  const cfg = await page.evaluate(() => window.dataLayer.map((a) => Array.from(a)));
+  const config = cfg.find((a) => a[0] === "config");
+  expect(config[2]).toMatchObject({ allow_google_signals: false, allow_ad_personalization_signals: false });
+  const consent = cfg.find((a) => a[0] === "consent");
+  expect(consent[2]).toMatchObject({ ad_storage: "denied", ad_user_data: "denied", ad_personalization: "denied" });
+  loaded.length = 0;
+  await page.goto("/admin.html");
+  await page.waitForTimeout(500);
+  expect(loaded).toEqual([]);
+});
+
+test("the privacy page discloses Google Analytics and the promises no longer deny it", async ({ page }) => {
+  await fakeNeon(page, { signedIn: false });
+  await page.goto("/privacy.html");
+  await expect(page.getByRole("heading", { name: "Analytics (Google Analytics)" })).toBeVisible();
+  await expect(page.getByText("no tracking scripts")).toHaveCount(0);
+  await page.goto("/terms.html");
+  await expect(page.getByText(/We use Google Analytics to count visits/)).toBeVisible();
 });

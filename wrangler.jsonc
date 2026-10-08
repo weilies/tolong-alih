@@ -7,6 +7,9 @@
   // worker is only reachable on its workers.dev subdomain.
   "routes": [{ "pattern": "alih.nextnovas.com", "custom_domain": true }],
   "vars": {
+    // Google Analytics 4 measurement id (G-XXXXXXXXXX) of this app's own property.
+    // Empty = analytics off. Public by design, so it can live here. UAT stays empty.
+    "GA_MEASUREMENT_ID": "G-1VQPH6GVMX",
     "APP_ENV": "production",
     // Neon project `tolong-alih`, branch `main`. Neither is a secret: the worker
     // proxies both from /api/auth and /api/rest, and RLS guards the data.

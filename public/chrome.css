@@ -51,3 +51,18 @@ body{padding-bottom:calc(66px + env(safe-area-inset-bottom))}
 .tabbar a:focus-visible{outline:3px solid var(--hazard);outline-offset:-5px}
 .tabbar .nudge{position:absolute;top:7px;right:calc(50% - 16px);width:9px;height:9px;background:var(--hazard);border-radius:50%}
 .tabbar .nudge[hidden]{display:none}
+
+/* ---------- the pitch rotator: one short line at a time (app + Help) ---------- */
+.rot{margin:16px 0 4px}
+.rot .stack{display:grid}
+.rot .rl{grid-area:1/1;display:flex;gap:13px;align-items:flex-start;opacity:0;visibility:hidden;
+  transition:opacity .4s,visibility .4s;background:#F2F0E9;border-left:6px solid #FFD200;padding:15px 14px}
+.rot .rl.on{opacity:1;visibility:visible}
+.rot .ri{font-size:28px;line-height:1;flex:none}
+.rot .rt{font-size:15px;line-height:1.45;color:#3B382E;text-align:left}
+.rot .rt b{display:block;font-size:17px;line-height:1.25;color:#16150F;margin-bottom:3px}
+.rot .rdots{display:flex;justify-content:center;gap:2px;margin-top:6px}
+.rot .rdots button{width:24px;height:24px;padding:0;margin:0;border:0;background:none;cursor:pointer;box-shadow:none}
+.rot .rdots button::before{content:"";display:block;width:10px;height:10px;margin:auto;border:2px solid #16150F;border-radius:50%}
+.rot .rdots button[aria-current="true"]::before{background:#FFD200}
+@media (prefers-reduced-motion:reduce){.rot .rl{transition:none}}

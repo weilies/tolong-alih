@@ -171,6 +171,36 @@ RPCs too; do not loosen a policy to make a write work.
   Gate on country, not precision — fall back to IP-country if GPS fails indoors.
 - **Ads are direct-sold to local merchants**, self-hosted, first-party.
   Never a third-party ad network SDK.
+- **Closed blocks are frozen** (owner decision, October 2026). Nobody can message
+  or ping about a block once it is over: `say` and `contact_blocker` need an open
+  block under 24 hours old, and `flag_block` works only within 30 minutes of the
+  clear, inside the first 24 hours, at most twice per block. Messages are archived
+  (`messages.archived_at`), never deleted, so both drivers read the whole
+  conversation under History in Alerts, read-only.
+- **The audience is Malaysia only** (owner decision): no EU or UK targeting, so no
+  cookie banner. Revisit before any campaign aimed at EU/UK residents.
+- **Analytics is Google Analytics 4, one property per Next Novas app** (owner
+  decision, October 2026, for marketing campaigns). The app's own measurement id
+  goes in `wrangler.jsonc` `GA_MEASUREMENT_ID` (production only; UAT must stay
+  empty, `scripts/check.mjs` enforces it); `public/analytics.js` loads it on the
+  public pages, never on `admin.html`, with Google's ad features off, a host-only
+  cookie, and Do Not Track / Global Privacy Control respected. Events carry no
+  plate, name, email or position (`sign_up`, `login`, `declare_block`, `trace`).
+  The privacy page, terms and www.nextnovas.com `/privacy` disclose it; do not
+  reintroduce "no tracking scripts". The analytics MCP in `.mcp.json` only *reads*
+  (`analytics.readonly`): it cannot create properties or streams.
+- **Consent and places** (owner decisions, October 2026). Sign-up works like
+  Facebook's: no tick box, one line above the buttons ("By creating an account or
+  continuing with Google, you agree to our Terms of use and Privacy") with both links.
+  Pressing Create account or Continue with Google is the agreement; signing in
+  shows nothing. It is remembered per browser (`localStorage["alih.consent"]`) and
+  recorded per account (`profiles.consent_version`, `record_consent`); an account
+  without the current `CONSENT_V` is asked once, with a single "Agree and continue"
+  button. Bump
+  `CONSENT_V` whenever the terms or privacy change in a way people should re-agree to.
+  Every block keeps its coordinates plus road, area, city and state
+  (`tag_block_place`), so `block_area_stats()` can give totals by area and road to a
+  council. Totals only: never plates, names or accounts. The privacy page says so.
 - **No phone number.** Sign-up is email or Google only; asking for a phone was
   friction (owner decision, October 2026). `profiles.phone` stays as an unused
   column for accounts made before that; nothing reads or writes it, the check

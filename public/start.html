@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="theme-color" content="#16150F" />
 <title>How it works · Tolong Alih</title>
-<meta name="description" content="Blocked in by a double-parked car? Tolong Alih tells the other driver using only the car plate. No contact details shared. Set up in 3 minutes." />
+<meta name="description" content="Double-parked or blocked in? Tolong Alih tells the other driver using only the car plate. No contact details shared. Set up in 3 minutes." />
 <meta property="og:title" content="Tolong Alih — how it works" />
 <meta property="og:description" content="Reach the driver who blocked you, using only their car plate." />
 <meta property="og:type" content="website" />
@@ -107,8 +107,17 @@
   <main>
     <!-- ================= what it is ================= -->
     <section>
-      <h1 class="disp">Blocked in by a double-parked car?</h1>
-      <p class="lede">Tolong Alih lets you reach the other driver using <b>only their car plate</b>. No contact details are shared, ever.</p>
+      <h1 class="disp">Double-parked? Blocked in? Sort it politely.</h1>
+      <div class="rot" id="rot">
+          <div class="stack">
+            <div class="rl on"><span class="ri">🙏</span><div class="rt"><b>Say sorry the easy way.</b> A quick heads-up beats an angry honk.</div></div>
+            <div class="rl"><span class="ri">📵</span><div class="rt"><b>Your number stays yours.</b> They see your plate, nothing else. No name card on the dashboard.</div></div>
+            <div class="rl"><span class="ri">🌙</span><div class="rt"><b>No 2am calls.</b> A stranger can't ring you up to vent. Everything goes through the app.</div></div>
+            <div class="rl"><span class="ri">😌</span><div class="rt"><b>Running late? Tell them.</b> They see when you'll be back, and can wait calmly.</div></div>
+            <div class="rl"><span class="ri">🔍</span><div class="rt"><b>Blocked in yourself?</b> Type the plate and we find the driver. No shouting match.</div></div>
+          </div>
+          <div class="rdots" id="rotDots"></div>
+        </div>
       <a class="cta" href="#setup">Set up in 3 minutes</a>
       <a class="quiet" href="/" data-start>I've used it before — open the app</a>
     </section>
@@ -148,7 +157,6 @@
         <ul>
           <li>Neither driver ever sees the other's name or email.</li>
           <li>Blocked but got no alert? Use <b>Trace</b>: type their plate and yours, and we'll find them.</li>
-          <li>Free for drivers.</li>
         </ul>
       </div>
     </section>
@@ -289,6 +297,7 @@
 </nav>
 
 <script src="/config.js"></script>
+<script src="/analytics.js"></script>
 <script>
 (function(){
 "use strict";
@@ -331,10 +340,17 @@ if(ENV.release){
 /* ---- language: same approach and storage key as the app ---- */
 var MS = {
   "Skip to the app →":"Terus ke aplikasi →",
-  "Blocked in by a double-parked car?":"Kereta anda dihalang parkir berganda?",
-  "Tolong Alih lets you reach the other driver using":"Tolong Alih membolehkan anda menghubungi pemandu itu menggunakan",
-  "only their car plate":"plat kereta mereka sahaja",
-  ". No contact details are shared, ever.":". Tiada butiran hubungan dikongsi, sama sekali.",
+  "Say sorry the easy way.":"Minta maaf dengan cara mudah.",
+  "A quick heads-up beats an angry honk.":"Satu pemberitahuan ringkas lebih baik daripada hon yang marah.",
+  "Your number stays yours.":"Nombor anda kekal milik anda.",
+  "They see your plate, nothing else. No name card on the dashboard.":"Mereka hanya nampak plat anda, tiada yang lain. Tak perlu letak kad nama di dashboard.",
+  "No 2am calls.":"Tiada panggilan pukul 2 pagi.",
+  "A stranger can't ring you up to vent. Everything goes through the app.":"Orang yang tak dikenali tak boleh telefon anda untuk melepaskan marah. Semuanya melalui aplikasi.",
+  "Running late? Tell them.":"Lambat sikit? Beritahu mereka.",
+  "They see when you'll be back, and can wait calmly.":"Mereka nampak bila anda kembali, dan boleh menunggu dengan tenang.",
+  "Blocked in yourself?":"Anda pula yang terhalang?",
+  "Type the plate and we find the driver. No shouting match.":"Taip plat dan kami cari pemandunya. Tak perlu bergaduh.",
+  "Double-parked? Blocked in? Sort it politely.":"Parkir berganda? Terhalang? Selesaikan dengan sopan.",
   "Set up in 3 minutes":"Sedia dalam 3 minit",
   "I've used it before — open the app":"Saya pernah guna — buka aplikasi",
   "How it works":"Cara ia berfungsi",
@@ -356,7 +372,6 @@ var MS = {
   "Blocked but got no alert? Use":"Dihalang tetapi tiada amaran? Guna",
   "Trace":"Jejak",
   ": type their plate and yours, and we'll find them.":": taip plat mereka dan plat anda, kami akan cari mereka.",
-  "Free for drivers.":"Percuma untuk pemandu.",
   "Do this once, now — not when you're already stuck in a car park.":"Buat sekali, sekarang — bukan ketika anda sudah tersangkut di tempat letak kereta.",
   "Step 1 · Put Tolong Alih on your home screen":"Langkah 1 · Letak Tolong Alih di skrin utama",
   "So alerts reach you even when your phone is locked. On iPhone, alerts only work after this step.":"Supaya amaran sampai walaupun telefon dikunci. Di iPhone, amaran hanya berfungsi selepas langkah ini.",
@@ -440,6 +455,28 @@ $("langBtn").addEventListener("click", function(){
   applyLang();
 });
 applyLang();
+})();
+</script>
+<script>
+/* The pitch rotator: one short line at a time, tap a dot to pick, still when the
+   phone asks for less motion. */
+(function(){
+  var r = document.getElementById("rot"); if(!r) return;
+  var ls = [].slice.call(r.querySelectorAll(".rl")), dots = document.getElementById("rotDots"), i = 0, t = null;
+  var calm = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  function show(n){
+    i = n;
+    ls.forEach(function(l,k){ l.classList.toggle("on", k===n); });
+    [].forEach.call(dots.children, function(d,k){ d.setAttribute("aria-current", k===n ? "true" : "false"); });
+  }
+  function run(){ clearInterval(t); if(!calm) t = setInterval(function(){ show((i+1)%ls.length); }, 8000); }
+  ls.forEach(function(_,n){
+    var b = document.createElement("button"); b.type = "button";
+    b.setAttribute("aria-label", "Message "+(n+1)+" of "+ls.length);
+    b.addEventListener("click", function(){ show(n); run(); });
+    dots.appendChild(b);
+  });
+  show(0); run();
 })();
 </script>
 </body>

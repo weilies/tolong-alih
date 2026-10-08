@@ -8,6 +8,17 @@
         "--config",
         "${HOME}/.config/gcloud-mcp/acl.json"
       ]
+    },
+    "analytics-mcp": {
+      "command": "pipx",
+      "args": [
+        "run",
+        "analytics-mcp"
+      ],
+      "env": {
+        "GOOGLE_APPLICATION_CREDENTIALS": "${GOOGLE_APPLICATION_CREDENTIALS:-}",
+        "GOOGLE_PROJECT_ID": "${GOOGLE_PROJECT_ID:-}"
+      }
     }
   }
 }

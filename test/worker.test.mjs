@@ -199,3 +199,12 @@ test("a failed refresh leaves the old stats in place", async () => {
     caches.restore();
   }
 });
+
+test("/config.js offers the Google Analytics id only when it is well formed", async () => {
+  const cfgOf = async (env) => JSON.parse((await (await worker.fetch(new Request("https://x/config.js"), env, ctx())).text())
+    .replace(/^window\.__ENV=/, "").replace(/;$/, ""));
+  assert.equal((await cfgOf({ ...ENV })).ga, null);
+  assert.equal((await cfgOf({ ...ENV, GA_MEASUREMENT_ID: "" })).ga, null);
+  assert.equal((await cfgOf({ ...ENV, GA_MEASUREMENT_ID: "UA-123" })).ga, null);
+  assert.equal((await cfgOf({ ...ENV, GA_MEASUREMENT_ID: "G-ABC123XYZ9" })).ga, "G-ABC123XYZ9");
+});

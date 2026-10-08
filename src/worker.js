@@ -249,6 +249,9 @@ export default {
         // Stamped by the deploy workflow (release-YYYY.MM.DD-N on production,
         // uat-YYYY.MM.DD-N on UAT); the page footer shows it.
         release: env.RELEASE || "dev",
+        // Google Analytics measurement id for this app. Empty or malformed means
+        // analytics is off (always so on UAT). Not a secret: it ships in the page.
+        ga: /^G-[A-Z0-9]{6,14}$/.test(env.GA_MEASUREMENT_ID || "") ? env.GA_MEASUREMENT_ID : null,
         commit: env.COMMIT || null,
         ip: {
           country: cf.country || null,

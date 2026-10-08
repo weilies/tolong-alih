@@ -89,6 +89,11 @@ if (prod && uat) {
   same("NEON_DATA_API_URL", (c) => c.vars?.NEON_DATA_API_URL);
   if (prod.vars?.APP_ENV !== "production") fail(`wrangler.jsonc APP_ENV is ${prod.vars?.APP_ENV}, expected production`);
   if (uat.vars?.APP_ENV !== "uat") fail(`wrangler.uat.jsonc APP_ENV is ${uat.vars?.APP_ENV}, expected uat`);
+  // Analytics: this app's own GA4 id on production only. UAT must stay empty so test
+  // traffic never lands in the real numbers; production is empty or a G- id.
+  if (uat.vars?.GA_MEASUREMENT_ID) fail("wrangler.uat.jsonc sets GA_MEASUREMENT_ID; UAT must never send analytics");
+  const gaProd = prod.vars?.GA_MEASUREMENT_ID;
+  if (gaProd && !/^G-[A-Z0-9]{6,14}$/.test(gaProd)) fail(`wrangler.jsonc GA_MEASUREMENT_ID is "${gaProd}", expected empty or G-XXXXXXXXXX`);
   for (const [f, c] of [["wrangler.jsonc", prod], ["wrangler.uat.jsonc", uat]]) {
     if (c.vars?.VAPID_PRIVATE_KEY) fail(`${f} carries VAPID_PRIVATE_KEY in vars — it must be a worker secret`);
   }
@@ -125,6 +130,10 @@ for (const [page, html] of Object.entries(pageSource)) {
   const labels = [...bar[1].matchAll(/<span class="tx">([^<]+)<\/span>/g)].map((m) => m[1]);
   if (hrefs.join() !== BAR_HREFS.join()) fail(`${where}: bottom bar links are ${hrefs.join(" ")}, expected ${BAR_HREFS.join(" ")}`);
   if (labels.join() !== BAR_LABELS.join()) fail(`${where}: bottom bar labels are ${labels.join(", ")}, expected ${BAR_LABELS.join(", ")}`);
+  // Analytics loads on the public pages, never on the owner's console.
+  const loadsGa = /<script src="\/analytics\.js">/.test(html);
+  if (page === "admin.html" && loadsGa) fail(`${where} loads analytics.js; the admin console must not be tracked`);
+  if (page !== "admin.html" && !loadsGa) fail(`${where} does not load /analytics.js`);
   // The phone number was dropped on purpose (owner decision): no page asks for one.
   if (/type="tel"/.test(html)) fail(`${where} has a phone input; sign-up no longer asks for a phone number`);
 }

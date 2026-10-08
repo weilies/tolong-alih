@@ -64,8 +64,11 @@ begin
   perform pg_temp.as_driver('victim');
   perform flag_block(v_block, 'ABC987');
   perform pg_temp.expect((select status from blocks where id = v_block) = 'disputed', 'flag reopens as disputed');
-  select count(*) into n from messages where block_id = v_block and to_user = 'blocker' and kind = 'hot';
+  select count(*) into n from messages where block_id = v_block and to_user = 'blocker' and kind = 'hot' and archived_at is null;
   perform pg_temp.expect(n = 1, 'blocker is told they are still blocking');
+  select count(*) into n from thread(v_block);
+  perform pg_temp.expect(n >= 4, 'earlier messages are kept as history, not deleted');
+  perform pg_temp.expect((select count(*) from messages where block_id = v_block and archived_at is not null) >= 2, 'cleared and flagged messages are archived');
 
   -- trace rate limit: 2 used above, 8 more allowed, the 11th refused
   for i in 1..8 loop perform trace_block('WXY1234', 'ABC987'); end loop;
@@ -98,6 +101,87 @@ begin
   perform pg_temp.expect((select status from blocks where blocker_id = 'e5') = 'open', 'a fresh open block stays open');
   perform pg_temp.expect((select status from blocks where blocker_id = 'e6') = 'disputed', 'a fresh flagged block stays flagged');
   perform pg_temp.expect((select status from blocks where blocker_id = 'e7') = 'cleared', 'a cleared block is left alone');
+
+  -- visits: one row per driver per day, state kept, never two rows
+  perform pg_temp.as_driver('blocker');
+  perform log_visit('Selangor');
+  perform log_visit('Johor');
+  perform pg_temp.expect((select count(*) from visits where user_id = 'blocker') = 1, 'two visits the same day make one row');
+  perform pg_temp.expect((select state from visits where user_id = 'blocker') = 'Selangor', 'the first state of the day is kept');
+  perform pg_temp.as_driver('victim');
+  perform log_visit(null);
+  perform pg_temp.expect((select state from visits where user_id = 'victim') is null, 'a visit with no state is stored without one');
+  begin
+    perform * from visit_stats(7);
+    perform pg_temp.expect(false, 'a driver cannot read visit_stats');
+  exception when insufficient_privilege then null; end;
+  perform pg_temp.as_driver('');
+  begin
+    perform log_visit('Selangor');
+    perform pg_temp.expect(false, 'a signed-out visit is refused');
+  exception when invalid_authorization_specification then null; end;
+
+  -- freeze: a closed block cannot be flagged or messaged, and history stays readable
+  insert into blocks (blocker_id, blocker_plate_norm, status, declared_at, cleared_at, expires_at) values
+    ('blocker', 'FRZ1111', 'cleared', now() - interval '2 hours', now() - interval '1 hour', now() + interval '1 hour'),
+    ('blocker', 'FRZ2222', 'cleared', now() - interval '20 minutes', now() - interval '10 minutes', now() + interval '1 hour'),
+    ('blocker', 'FRZ3333', 'expired', now() - interval '5 minutes', null, now() - interval '1 minute'),
+    ('blocker', 'FRZ4444', 'cleared', now() - interval '26 hours', now() - interval '10 minutes', now() - interval '20 hours');
+  insert into block_targets (block_id, victim_plate_norm)
+    select id, 'ABC987' from blocks where blocker_plate_norm like 'FRZ%';
+  perform pg_temp.as_driver('victim');
+  begin
+    perform flag_block((select id from blocks where blocker_plate_norm = 'FRZ1111'), 'ABC987');
+    perform pg_temp.expect(false, 'flag is refused more than 30 minutes after the clear');
+  exception when insufficient_privilege then null; end;
+  begin
+    perform flag_block((select id from blocks where blocker_plate_norm = 'FRZ3333'), 'ABC987');
+    perform pg_temp.expect(false, 'flag is refused on an expired block');
+  exception when insufficient_privilege then null; end;
+  begin
+    perform flag_block((select id from blocks where blocker_plate_norm = 'FRZ4444'), 'ABC987');
+    perform pg_temp.expect(false, 'flag is refused once the block is over 24 hours old');
+  exception when insufficient_privilege then null; end;
+  perform flag_block((select id from blocks where blocker_plate_norm = 'FRZ2222'), 'ABC987');
+  perform pg_temp.expect((select status from blocks where blocker_plate_norm = 'FRZ2222') = 'disputed', 'a fresh clear can still be flagged');
+  begin
+    perform contact_blocker((select id from blocks where blocker_plate_norm = 'FRZ1111'), 'ABC987', true);
+    perform pg_temp.expect(false, 'a cleared block cannot be messaged');
+  exception when insufficient_privilege then null; end;
+  update blocks set status = 'open', cleared_at = null, declared_at = now() - interval '25 hours', expires_at = now() + interval '1 hour'
+   where blocker_plate_norm = 'FRZ4444';
+  begin
+    perform contact_blocker((select id from blocks where blocker_plate_norm = 'FRZ4444'), 'ABC987', true);
+    perform pg_temp.expect(false, 'a block past 24 hours cannot be messaged even if nobody closed it');
+  exception when insufficient_privilege then null; end;
+  -- flag cap: two flags and it stays closed
+  update blocks set status = 'cleared', cleared_at = now(), flags = 2 where blocker_plate_norm = 'FRZ2222';
+  begin
+    perform flag_block((select id from blocks where blocker_plate_norm = 'FRZ2222'), 'ABC987');
+    perform pg_temp.expect(false, 'a block flagged twice stays closed');
+  exception when insufficient_privilege then null; end;
+
+  -- consent on record, and the place of a block named by its blocker only
+  perform pg_temp.as_driver('blocker');
+  perform record_consent('2026-10-07');
+  perform pg_temp.expect((select consent_version from profiles where id = 'blocker') = '2026-10-07', 'consent is recorded');
+  r := declare_block('WXY1234', array['ABC987'], 15);
+  perform tag_block_place((r->>'block_id')::uuid, 'Jalan Ampang', 'Ampang', 'Kuala Lumpur', 'Wilayah Persekutuan Kuala Lumpur');
+  perform pg_temp.expect((select place_road from blocks where id = (r->>'block_id')::uuid) = 'Jalan Ampang', 'the blocker can name the place of their block');
+  perform pg_temp.as_driver('victim');
+  begin
+    perform tag_block_place((r->>'block_id')::uuid, 'Elsewhere', null, null, null);
+    perform pg_temp.expect(false, 'only the blocker can name the place');
+  exception when insufficient_privilege then null; end;
+  begin
+    perform * from block_area_stats(30);
+    perform pg_temp.expect(false, 'a driver cannot read block_area_stats');
+  exception when insufficient_privilege then null; end;
+  perform pg_temp.as_driver('');
+  begin
+    perform record_consent('x');
+    perform pg_temp.expect(false, 'signed-out consent is refused');
+  exception when invalid_authorization_specification then null; end;
 
   raise notice 'verbs: all checks passed';
 end $$;

@@ -141,6 +141,33 @@ create table if not exists trace_attempts (
 );
 create index if not exists trace_attempts_user_idx on trace_attempts (user_id, created_at desc);
 
+-- Consent on record: which version of the terms and privacy policy this driver
+-- agreed to, and when. Written only by record_consent().
+alter table profiles add column if not exists consent_at      timestamptz;
+alter table profiles add column if not exists consent_version text;
+
+-- Where each block happened, by name, so blocks can be counted by area and road
+-- (for example to help a council plan parking). The coordinates are already on the
+-- block; these are the reverse-geocoded names the app sends right after declare.
+alter table blocks add column if not exists place_road  text;
+alter table blocks add column if not exists place_area  text;
+alter table blocks add column if not exists place_city  text;
+alter table blocks add column if not exists place_state text;
+
+-- One row per driver per day they open the app, with the state they opened it from
+-- (never coordinates). It counts daily active drivers and shows merchants, in
+-- aggregate, which states drivers are in. Written only by log_visit(); read only
+-- by visit_stats() (admin). The Malaysia day, so a late-night session is one day.
+create table if not exists visits (
+  user_id    text not null,
+  day        date not null,
+  state      text,
+  first_seen timestamptz not null default now(),
+  last_seen  timestamptz not null default now(),
+  primary key (user_id, day)
+);
+create index if not exists visits_day_idx on visits (day, state);
+
 -- Web Push. One row per browser that said yes; a phone can outlive an account,
 -- so the endpoint is the key and a new sign-in on the same phone takes it over.
 create table if not exists push_subscriptions (
@@ -155,6 +182,13 @@ create index if not exists push_subscriptions_user_idx on push_subscriptions (us
 -- messages doubles as the push outbox: the worker claims unsent rows after
 -- every verb. See push_drain().
 alter table messages add column if not exists pushed_at timestamptz;
+
+-- History, not deletion: when a block is cleared or flagged the earlier messages are
+-- archived, not deleted. Archived messages drop out of the inbox (policy below) but
+-- thread() still returns them, so both drivers can read the whole conversation later.
+alter table messages add column if not exists archived_at timestamptz;
+-- A block can be flagged at most twice; after that it stays closed.
+alter table blocks add column if not exists flags int not null default 0;
 create index if not exists messages_unpushed_idx on messages (created_at) where pushed_at is null;
 
 -- sha256 of the worker's push key, set per branch (db/README.md). Single row.
@@ -256,6 +290,7 @@ alter table advertisers    enable row level security;
 alter table ads            enable row level security;
 alter table ad_events      enable row level security;   -- no policies: function-only
 alter table trace_attempts enable row level security;   -- no policies: function-only
+alter table visits         enable row level security;   -- no policies: function-only
 alter table push_subscriptions enable row level security; -- no policies: function-only
 alter table push_config    enable row level security;   -- no policies: function-only
 
@@ -281,8 +316,10 @@ create policy read_targets on block_targets for select using (
 
 drop policy if exists my_messages on messages;
 create policy my_messages on messages for select using (
-  to_user = (select uid()) or from_user = (select uid())
-  or i_declared(block_id) or i_am_blocked(block_id)
+  archived_at is null and (
+    to_user = (select uid()) or from_user = (select uid())
+    or i_declared(block_id) or i_am_blocked(block_id)
+  )
 );
 
 drop policy if exists read_ads on ads;
@@ -387,7 +424,7 @@ begin
   end if;
 
   update blocks set status = 'cleared', cleared_at = now() where id = p_block;
-  delete from messages where block_id = p_block;
+  update messages set archived_at = now() where block_id = p_block and archived_at is null;
 
   insert into messages (block_id, to_user, from_label, kind, body)
   select distinct p_block, c.owner_id, 'All clear', 'cool',
@@ -426,13 +463,25 @@ begin
     return json_build_object('ok', true, 'already_open', true);
   end if;
 
+  -- A closed block is frozen. Flagging is for "they cleared it but are still
+  -- here", so it only works for 30 minutes after the clear, within 24 hours of the
+  -- declare, and at most twice. After that nobody can ping anybody about it.
+  if v_b.status = 'expired'
+     or v_b.declared_at < now() - interval '24 hours'
+     or v_b.cleared_at is null
+     or v_b.cleared_at < now() - interval '30 minutes'
+     or v_b.flags >= 2 then
+    raise exception 'This block is closed.' using errcode = '42501';
+  end if;
+
   update blocks
      set status     = 'disputed',
          cleared_at = null,
+         flags      = flags + 1,
          expires_at = greatest(expires_at, now() + interval '1 hour')
    where id = p_block;
 
-  delete from messages where block_id = p_block;
+  update messages set archived_at = now() where block_id = p_block and archived_at is null;
 
   insert into messages (block_id, to_user, from_label, kind, body)
   values (p_block, v_b.blocker_id, 'Still blocked', 'hot',
@@ -469,7 +518,9 @@ begin
     raise exception 'Sign in first.' using errcode = '28000';
   end if;
 
-  select * into v_b from blocks where id = p_block and status in ('open', 'disputed');
+  select * into v_b from blocks
+   where id = p_block and status in ('open', 'disputed')
+     and declared_at > now() - interval '24 hours';
   if v_b.id is null or not is_block_target(p_block, v_mine) then
     raise exception 'That block is not open, or it is not yours.' using errcode = '42501';
   end if;
@@ -560,7 +611,9 @@ begin
     raise exception 'Keep it under 300 characters.' using errcode = '22023';
   end if;
 
-  select * into v_b from blocks where id = p_block and status in ('open','disputed');
+  select * into v_b from blocks
+   where id = p_block and status in ('open','disputed')
+     and declared_at > now() - interval '24 hours';
   if v_b.id is null then
     raise exception 'That block is not open.' using errcode = '42501';
   end if;
@@ -696,6 +749,111 @@ begin
   return query select * from ad_performance order by period desc, merchant;
 end $$;
 
+-- The app calls this when a signed-in driver opens it. One row per driver per
+-- day; a later call the same day only refreshes last_seen and fills a missing state.
+create or replace function log_visit(p_state text)
+returns json
+language plpgsql security definer
+set search_path = public
+as $$
+declare
+  v_uid   text := auth.user_id();
+  v_state text := nullif(left(btrim(coalesce(p_state, '')), 60), '');
+begin
+  if v_uid is null then
+    raise exception 'Sign in first.' using errcode = '28000';
+  end if;
+  insert into visits (user_id, day, state)
+  values (v_uid, (now() at time zone 'Asia/Kuala_Lumpur')::date, v_state)
+  on conflict (user_id, day) do update
+    set last_seen = now(),
+        state     = coalesce(visits.state, excluded.state);
+  return json_build_object('ok', true);
+end $$;
+
+-- The driver agreed to the terms and privacy policy, version p_version.
+create or replace function record_consent(p_version text)
+returns json
+language plpgsql security definer
+set search_path = public
+as $$
+declare v_uid text := auth.user_id();
+begin
+  if v_uid is null then
+    raise exception 'Sign in first.' using errcode = '28000';
+  end if;
+  if coalesce(btrim(p_version), '') = '' or length(p_version) > 40 then
+    raise exception 'Bad version.' using errcode = '22023';
+  end if;
+  insert into profiles (id, consent_at, consent_version) values (v_uid, now(), btrim(p_version))
+  on conflict (id) do update set consent_at = now(), consent_version = btrim(p_version);
+  return json_build_object('ok', true);
+end $$;
+
+-- Name the place of a block the caller just declared: road, area, city, state.
+-- Only the blocker, only their own block, only in the first 10 minutes.
+create or replace function tag_block_place(p_block uuid, p_road text, p_area text, p_city text, p_state text)
+returns json
+language plpgsql security definer
+set search_path = public
+as $$
+declare v_uid text := auth.user_id();
+begin
+  if v_uid is null then
+    raise exception 'Sign in first.' using errcode = '28000';
+  end if;
+  update blocks set
+         place_road  = nullif(left(btrim(coalesce(p_road,  '')), 80), ''),
+         place_area  = nullif(left(btrim(coalesce(p_area,  '')), 80), ''),
+         place_city  = nullif(left(btrim(coalesce(p_city,  '')), 80), ''),
+         place_state = nullif(left(btrim(coalesce(p_state, '')), 60), '')
+   where id = p_block and blocker_id = v_uid
+     and declared_at > now() - interval '10 minutes';
+  if not found then
+    raise exception 'No recent block of yours with that id.' using errcode = '42501';
+  end if;
+  return json_build_object('ok', true);
+end $$;
+
+-- Blocks by state, city, area and road: counts and average length only. No plates,
+-- no accounts. Admins only; this is the table that can go to a council.
+create or replace function block_area_stats(p_days int default 90)
+returns table (state text, city text, area text, road text, blocks bigint, avg_minutes numeric)
+language plpgsql stable security definer
+set search_path = public
+as $$
+begin
+  if not is_admin() then
+    raise exception 'Admins only.' using errcode = '42501';
+  end if;
+  return query
+    select coalesce(b.place_state, 'Unknown'), b.place_city, b.place_area, b.place_road,
+           count(*),
+           round(avg(extract(epoch from (coalesce(b.cleared_at, b.expires_at) - b.declared_at)) / 60)::numeric, 1)
+      from blocks b
+     where b.declared_at > now() - make_interval(days => greatest(p_days, 1))
+     group by 1, 2, 3, 4
+     order by count(*) desc;
+end $$;
+
+-- Daily active drivers by state, newest first. Admins only; numbers, no people.
+create or replace function visit_stats(p_days int default 30)
+returns table (day date, state text, drivers bigint)
+language plpgsql stable security definer
+set search_path = public
+as $$
+begin
+  if not is_admin() then
+    raise exception 'Admins only.' using errcode = '42501';
+  end if;
+  return query
+    select v.day, coalesce(v.state, 'Unknown'), count(*)
+      from visits v
+     where v.day > (now() at time zone 'Asia/Kuala_Lumpur')::date - greatest(p_days, 1)
+     group by v.day, coalesce(v.state, 'Unknown')
+     order by v.day desc, count(*) desc;
+end $$;
+
 -- Totals only — nothing that identifies a person. Feeds the public About page.
 create or replace function public_stats()
 returns json language sql stable security definer
@@ -799,6 +957,7 @@ begin
       update messages m set pushed_at = now()
        where m.id in (select x.id from messages x
                        where x.pushed_at is null and x.to_user is not null
+                         and x.archived_at is null
                          and x.created_at > now() - interval '10 minutes'
                        for update skip locked)
       returning m.block_id, m.to_user, m.kind, m.from_label, m.body, m.is_typed
@@ -861,6 +1020,11 @@ grant execute on function
   thread(uuid),
   log_ad_event(uuid, text, text),
   ad_report(),
+  log_visit(text),
+  visit_stats(int),
+  record_consent(text),
+  tag_block_place(uuid, text, text, text, text),
+  block_area_stats(int),
   push_subscribe(text, text, text),
   push_unsubscribe(text),
   push_mine(),
