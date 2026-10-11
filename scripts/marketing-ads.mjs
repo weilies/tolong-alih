@@ -1,7 +1,7 @@
 import { chromium } from "@playwright/test";
 // Marketing images (1080x1080). Edit wording in COPY only, then from the repo root: node scripts/marketing-ads.mjs
 const COPY = {
-  zh: { file:"tolong-alih-softlaunch-zh-c1", badge:"试用中 SOFT LAUNCH", hl:"不挡人财路，", head2:"Block 车也不怕被骂", hs:128, h2s:104,
+  zh: { file:"tolong-alih-softlaunch-zh-c1", badge:"SOFT LAUNCH", hl:"不挡人财路，", head2:"Block 车也不怕被骂", hs:128, h2s:104,
         sub:"对方马上收到通知，<br>你的电话号码不用给陌生人", foot:"Next Novas" },
   ms: { file:"tolong-alih-softlaunch-ms-m1", badge:"SOFT LAUNCH", hl:"Kena block?", head2:"Tak payah bengang.", hs:124, h2s:104,
         sub:"Taip plat, pemandu tu terus dapat notis.<br>Nombor anda tak payah bagi<br>kat orang tak kenal.", foot:"Next Novas" },
