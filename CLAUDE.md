@@ -230,6 +230,41 @@ RPCs too; do not loosen a policy to make a write work.
 5. ~~**pg_cron** for `expire_blocks()`~~ — replaced by lazy expiry inside
    `declare_block` and `trace_block` (no cron on a scale-to-zero compute).
 
+## Marketing (owner rules, October 2026)
+
+Hub: Notion, "Marketing hub" under the Tolong Alih page (Campaigns, Posts, Groups,
+Assets). Canva is dropped (out of credit); do not bring it back.
+
+- **Copy first.** Claude proposes tagline, sub-tagline and tone per language; the
+  owner approves; then Claude renders the images. Chinese and Malay are written
+  separately, not translated. Chinese: casual, may mix English and lah/leh. Malay:
+  Malaysian Malay culture (adab, bengang, wary of strangers having your number).
+- **Never claim the app costs nothing** (no "free"/"percuma" anywhere). No hard
+  sell, Malaysia only, soft launch, no paid boosts, at most 2 community posts a day,
+  check each group's rules before posting. No fine amounts or legal claims in ads.
+- **Images**: `scripts/marketing-ads.mjs` (Playwright). Edit the `COPY` block, run
+  `node scripts/marketing-ads.mjs`, output in `public/marketing/` (1080x1080, hazard-
+  tape theme). Files there ship to alih.nextnovas.com/marketing/ only after the
+  usual release (owner says "release").
+- **Links** in posts go to `/start.html?utm_source=facebook&utm_medium=group&utm_campaign=softlaunch&utm_content=GROUPNAME`
+  (`utm_medium=page` for the fan page), never the root: its redirect drops the query.
+- Approved: Chinese **C1** (不挡人财路，Block 车也不怕被骂). Malay **M1** ("Kena
+  block? Tak payah bengang.") is drafted but **not yet approved**; M2, M3 and Chinese
+  C2, C3 are unused proposals.
+
+### Outstanding marketing tasks
+
+1. Owner picks Malay M1, M2 or M3; then set the Malay asset and post to Approved in Notion.
+2. Run `marketing/JOBS.md` in a new chat with computer use on (desktop app, Chrome
+   signed in to Facebook): study the rules of followed JB groups, test **2 public
+   groups only**, post only where rules allow, owner OKs each post first.
+3. Record the results in Notion (Groups verdict and rule quotes, Posts status, post
+   URL); update "Cowork Job 5" there, which still lists the old images.
+4. Release to production so the new images are live at /marketing/ (owner's word).
+5. Later, if wanted: story (1080x1920) and link-preview (1200x630) sizes, English
+   version, GA4 numbers per `utm_content` (the analytics MCP is read-only and
+   was down in the last session).
+
 ## Not yet built
 
 - ~~Rate limiting on `trace`~~ — done, 10/user/hour in `trace_block`.
